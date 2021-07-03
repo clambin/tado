@@ -1,6 +1,7 @@
 package tado_test
 
 import (
+	"context"
 	"github.com/clambin/gotools/httpstub"
 	"github.com/clambin/tado"
 	"github.com/stretchr/testify/assert"
@@ -86,14 +87,14 @@ func TestAPIClient_Zones(t *testing.T) {
 		Password:   "some-password",
 	}
 
-	tadoZones, err := client.GetZones()
+	tadoZones, err := client.GetZones(context.Background())
 	assert.Nil(t, err)
 	assert.Len(t, tadoZones, 3)
 	assert.Equal(t, "Living room", tadoZones[0].Name)
 	assert.Equal(t, "Study", tadoZones[1].Name)
 	assert.Equal(t, "Bathroom", tadoZones[2].Name)
 
-	tadoZoneInfo, err := client.GetZoneInfo(tadoZones[0].ID)
+	tadoZoneInfo, err := client.GetZoneInfo(context.Background(), tadoZones[0].ID)
 	assert.Nil(t, err)
 	assert.Equal(t, 20.0, tadoZoneInfo.Setting.Temperature.Celsius)
 	assert.Equal(t, "ON", tadoZoneInfo.Setting.Power)
@@ -101,7 +102,7 @@ func TestAPIClient_Zones(t *testing.T) {
 	assert.Equal(t, 19.94, tadoZoneInfo.SensorDataPoints.Temperature.Celsius)
 	assert.Equal(t, 37.7, tadoZoneInfo.SensorDataPoints.Humidity.Percentage)
 
-	tadoZoneInfo, err = client.GetZoneInfo(tadoZones[1].ID)
+	tadoZoneInfo, err = client.GetZoneInfo(context.Background(), tadoZones[1].ID)
 	assert.Nil(t, err)
 	assert.Equal(t, 50, tadoZoneInfo.OpenWindow.DurationInSeconds)
 	assert.Equal(t, 250, tadoZoneInfo.OpenWindow.RemainingTimeInSeconds)
@@ -116,7 +117,7 @@ func TestAPIClient_Weather(t *testing.T) {
 		Password:   "some-password",
 	}
 
-	tadoWeatherInfo, err := client.GetWeatherInfo()
+	tadoWeatherInfo, err := client.GetWeatherInfo(context.Background())
 	assert.Nil(t, err)
 	assert.Equal(t, 3.4, tadoWeatherInfo.OutsideTemperature.Celsius)
 	assert.Equal(t, 13.3, tadoWeatherInfo.SolarIntensity.Percentage)
@@ -132,7 +133,7 @@ func TestAPIClient_Devices(t *testing.T) {
 		Password:   "some-password",
 	}
 
-	zones, err := client.GetZones()
+	zones, err := client.GetZones(context.Background())
 	assert.Nil(t, err)
 	assert.Equal(t, "Living room", zones[0].Name)
 	assert.Len(t, zones[0].Devices, 1)
@@ -148,7 +149,7 @@ func TestAPIClient_MobileDevices(t *testing.T) {
 		Password:   "some-password",
 	}
 
-	mobileDevices, err := client.GetMobileDevices()
+	mobileDevices, err := client.GetMobileDevices(context.Background())
 	assert.Nil(t, err)
 	assert.Len(t, mobileDevices, 2)
 	assert.Equal(t, "device 1", mobileDevices[0].Name)
@@ -167,9 +168,9 @@ func TestAPIClient_ManualTemperature(t *testing.T) {
 		Password:   "some-password",
 	}
 
-	err := client.SetZoneOverlay(2, 4.0)
+	err := client.SetZoneOverlay(context.Background(), 2, 4.0)
 	assert.Nil(t, err)
 
-	err = client.DeleteZoneOverlay(2)
+	err = client.DeleteZoneOverlay(context.Background(), 2)
 	assert.Nil(t, err)
 }

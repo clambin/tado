@@ -1,8 +1,10 @@
 package tado
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 )
 
 // WeatherInfo contains the response to /api/v2/homes/<HomeID>/weather
@@ -18,19 +20,15 @@ type WeatherInfo struct {
 }
 
 // GetWeatherInfo retrieves weather information for the user's Home.
-func (client *APIClient) GetWeatherInfo() (WeatherInfo, error) {
-	var (
-		err             error
-		tadoWeatherInfo WeatherInfo
-		body            []byte
-	)
-	if err = client.initialize(); err == nil {
+func (client *APIClient) GetWeatherInfo(ctx context.Context) (weatherInfo WeatherInfo, err error) {
+	if err = client.initialize(ctx); err == nil {
+		var body []byte
 		apiURL := client.apiURL("/weather")
-		if body, err = client.call("GET", apiURL, ""); err == nil {
-			err = json.Unmarshal(body, &tadoWeatherInfo)
+		if body, err = client.call(ctx, http.MethodGet, apiURL, ""); err == nil {
+			err = json.Unmarshal(body, &weatherInfo)
 		}
 	}
-	return tadoWeatherInfo, err
+	return
 }
 
 // String converts WeatherInfo to a loggable string

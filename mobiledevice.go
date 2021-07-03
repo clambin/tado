@@ -1,8 +1,10 @@
 package tado
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 )
 
 // MobileDevice contains the response to /api/v2/homes/<HomeID>/mobileDevices
@@ -25,15 +27,15 @@ type MobileDeviceLocation struct {
 }
 
 // GetMobileDevices retrieves the status of all registered mobile devices.
-func (client *APIClient) GetMobileDevices() ([]MobileDevice, error) {
+func (client *APIClient) GetMobileDevices(ctx context.Context) ([]MobileDevice, error) {
 	var (
 		err               error
 		tadoMobileDevices []MobileDevice
 		body              []byte
 	)
-	if err = client.initialize(); err == nil {
+	if err = client.initialize(ctx); err == nil {
 		apiURL := client.apiURL("/mobileDevices")
-		if body, err = client.call("GET", apiURL, ""); err == nil {
+		if body, err = client.call(ctx, http.MethodGet, apiURL, ""); err == nil {
 			err = json.Unmarshal(body, &tadoMobileDevices)
 		}
 	}

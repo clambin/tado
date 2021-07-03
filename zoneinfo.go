@@ -1,8 +1,10 @@
 package tado
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"strconv"
 	"time"
 )
@@ -75,14 +77,14 @@ type ZoneInfoOverlayTermination struct {
 }
 
 // GetZoneInfo gets the info for the specified ZoneID
-func (client *APIClient) GetZoneInfo(zoneID int) (ZoneInfo, error) {
+func (client *APIClient) GetZoneInfo(ctx context.Context, zoneID int) (ZoneInfo, error) {
 	var (
 		err          error
 		body         []byte
 		tadoZoneInfo ZoneInfo
 	)
-	if err = client.initialize(); err == nil {
-		if body, err = client.call("GET", client.apiURL("/zones/"+strconv.Itoa(zoneID)+"/state"), ""); err == nil {
+	if err = client.initialize(ctx); err == nil {
+		if body, err = client.call(ctx, http.MethodGet, client.apiURL("/zones/"+strconv.Itoa(zoneID)+"/state"), ""); err == nil {
 			err = json.Unmarshal(body, &tadoZoneInfo)
 		}
 	}
@@ -90,7 +92,7 @@ func (client *APIClient) GetZoneInfo(zoneID int) (ZoneInfo, error) {
 }
 
 // SetZoneOverlay sets an overlay (manual temperature setting) for the specified ZoneID
-func (client *APIClient) SetZoneOverlay(zoneID int, temperature float64) error {
+func (client *APIClient) SetZoneOverlay(ctx context.Context, zoneID int, temperature float64) error {
 	if temperature < 5 {
 		temperature = 5
 	}
@@ -100,7 +102,7 @@ func (client *APIClient) SetZoneOverlay(zoneID int, temperature float64) error {
 		payload []byte
 	)
 
-	if err = client.initialize(); err == nil {
+	if err = client.initialize(ctx); err == nil {
 		request := ZoneInfoOverlay{
 			Type: "MANUAL",
 			Setting: ZoneInfoOverlaySetting{
@@ -117,17 +119,17 @@ func (client *APIClient) SetZoneOverlay(zoneID int, temperature float64) error {
 
 		payload, err = json.Marshal(request)
 
-		_, err = client.call("PUT", client.apiURL("/zones/"+strconv.Itoa(zoneID)+"/overlay"), string(payload))
+		_, err = client.call(ctx, http.MethodPut, client.apiURL("/zones/"+strconv.Itoa(zoneID)+"/overlay"), string(payload))
 	}
 
 	return err
 }
 
 // DeleteZoneOverlay deletes the overlay (manual temperature setting) for the specified ZoneID
-func (client *APIClient) DeleteZoneOverlay(zoneID int) error {
+func (client *APIClient) DeleteZoneOverlay(ctx context.Context, zoneID int) error {
 	var err error
-	if err = client.initialize(); err == nil {
-		_, err = client.call("DELETE", client.apiURL("/zones/"+strconv.Itoa(zoneID)+"/overlay"), "")
+	if err = client.initialize(ctx); err == nil {
+		_, err = client.call(ctx, http.MethodDelete, client.apiURL("/zones/"+strconv.Itoa(zoneID)+"/overlay"), "")
 	}
 
 	return err

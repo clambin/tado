@@ -19,9 +19,11 @@ package tado
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	log "github.com/sirupsen/logrus"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -49,14 +51,14 @@ type Value struct {
 }
 
 // API for the Tado APIClient.
-// Used to mockscheduler the API during unit testing
+// Used to mock the API during unit testing
 type API interface {
-	GetZones() ([]Zone, error)
-	GetZoneInfo(zoneID int) (ZoneInfo, error)
-	GetWeatherInfo() (WeatherInfo, error)
-	GetMobileDevices() ([]MobileDevice, error)
-	SetZoneOverlay(int, float64) error
-	DeleteZoneOverlay(int) error
+	GetZones() (context.Context, []Zone, error)
+	GetZoneInfo(context.Context, int) (ZoneInfo, error)
+	GetWeatherInfo() (context.Context, WeatherInfo, error)
+	GetMobileDevices() (context.Context, []MobileDevice, error)
+	SetZoneOverlay(context.Context, int, float64) error
+	DeleteZoneOverlay(context.Context, int) error
 }
 
 // APIClient represents a Tado API client.
@@ -101,7 +103,7 @@ func (client *APIClient) apiURL(endpoint string) string {
 // getHomeID gets the user's Home ID, used by the GetZones API
 //
 // Called by Initialize, so doesn't need to be called by the calling application.
-func (client *APIClient) getHomeID() error {
+func (client *APIClient) getHomeID(ctx context.Context) error {
 	if client.HomeID > 0 {
 		return nil
 	}
@@ -111,7 +113,7 @@ func (client *APIClient) getHomeID() error {
 		body []byte
 	)
 
-	if body, err = client.call("GET", baseAPIURL+"/api/v1/me", ""); err == nil {
+	if body, err = client.call(ctx, http.MethodGet, baseAPIURL+"/api/v1/me", ""); err == nil {
 		var resp interface{}
 		if err = json.Unmarshal(body, &resp); err == nil {
 			m := resp.(map[string]interface{})
@@ -127,31 +129,34 @@ func (client *APIClient) getHomeID() error {
 //
 // Each API function calls this before invoking the API, so normally this doesn't need to be
 // called by the calling application.
-func (client *APIClient) initialize() error {
-	var err error
-	if err = client.authenticate(); err == nil {
-		err = client.getHomeID()
+func (client *APIClient) initialize(ctx context.Context) (err error) {
+	log.Info("authenticating")
+	if err = client.authenticate(ctx); err == nil {
+		log.Info("get home id")
+		err = client.getHomeID(ctx)
 	}
-	return err
+	log.WithError(err).Info("done")
+	return
 }
 
 // authenticate logs in to tado.com and gets an Access Token to invoke the API functions.
 // Once logged in, authenticate renews the Access Token if it's expired since the last call.
-func (client *APIClient) authenticate() (err error) {
+func (client *APIClient) authenticate(ctx context.Context) (err error) {
 	client.lock.Lock()
 	defer client.lock.Unlock()
 
 	if client.ClientSecret == "" {
 		client.ClientSecret = "wZaRN7rpjn3FoNyF5IFuxg9uMzYJcvOoQ8QWiIqS3hfk6gLhVlG57j5YNoZL2Rtc"
 	}
+
 	if client.RefreshToken != "" {
 		if time.Now().After(client.Expires) {
-			err = client.doAuthentication("refresh_token", client.RefreshToken)
+			err = client.doAuthentication(ctx, "refresh_token", client.RefreshToken)
 		}
 	} else {
-		err = client.doAuthentication("password", client.Password)
+		err = client.doAuthentication(ctx, "password", client.Password)
 	}
-	return err
+	return
 }
 
 func (client *APIClient) getToken() string {
@@ -160,7 +165,7 @@ func (client *APIClient) getToken() string {
 	return client.AccessToken
 }
 
-func (client *APIClient) doAuthentication(grantType, credential string) error {
+func (client *APIClient) doAuthentication(ctx context.Context, grantType, credential string) error {
 	var (
 		err  error
 		resp *http.Response
@@ -178,18 +183,20 @@ func (client *APIClient) doAuthentication(grantType, credential string) error {
 		form.Add("username", client.Username)
 	}
 
-	req, _ := http.NewRequest("POST", authURL, strings.NewReader(form.Encode()))
+	req, _ := http.NewRequestWithContext(ctx, http.MethodPost, authURL, strings.NewReader(form.Encode()))
 	req.Header.Add("Referer", "https://my.tado.com/")
 	req.Header.Add("content-type", "application/x-www-form-urlencoded")
 
 	if resp, err = client.HTTPClient.Do(req); err == nil {
-		defer resp.Body.Close()
+		defer func(Body io.ReadCloser) {
+			_ = Body.Close()
+		}(resp.Body)
 		if resp.StatusCode == 200 {
 			body, _ := ioutil.ReadAll(resp.Body)
 
-			var resp interface{}
-			if err = json.Unmarshal(body, &resp); err == nil {
-				m := resp.(map[string]interface{})
+			var response interface{}
+			if err = json.Unmarshal(body, &response); err == nil {
+				m := response.(map[string]interface{})
 				client.AccessToken = m["access_token"].(string)
 				client.RefreshToken = m["refresh_token"].(string)
 				client.Expires = time.Now().Add(time.Second * time.Duration(m["expires_in"].(float64)))
@@ -208,18 +215,20 @@ func (client *APIClient) doAuthentication(grantType, credential string) error {
 	return err
 }
 
-func (client *APIClient) call(method string, apiURL string, payload string) ([]byte, error) {
+func (client *APIClient) call(ctx context.Context, method string, apiURL string, payload string) ([]byte, error) {
 	var (
 		err  error
 		req  *http.Request
 		resp *http.Response
 	)
 
-	req, _ = http.NewRequest(method, apiURL, bytes.NewBufferString(payload))
+	req, _ = http.NewRequestWithContext(ctx, method, apiURL, bytes.NewBufferString(payload))
 	req.Header.Add("Content-Type", "application/json;charset=UTF-8")
 	req.Header.Add("Authorization", "Bearer "+client.getToken())
 	if resp, err = client.HTTPClient.Do(req); err == nil {
-		defer resp.Body.Close()
+		defer func(Body io.ReadCloser) {
+			_ = Body.Close()
+		}(resp.Body)
 		switch resp.StatusCode {
 		case http.StatusOK:
 			return ioutil.ReadAll(resp.Body)
