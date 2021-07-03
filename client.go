@@ -53,10 +53,10 @@ type Value struct {
 // API for the Tado APIClient.
 // Used to mock the API during unit testing
 type API interface {
-	GetZones() (context.Context, []Zone, error)
+	GetZones(context.Context) ([]Zone, error)
 	GetZoneInfo(context.Context, int) (ZoneInfo, error)
-	GetWeatherInfo() (context.Context, WeatherInfo, error)
-	GetMobileDevices() (context.Context, []MobileDevice, error)
+	GetWeatherInfo(context.Context) (WeatherInfo, error)
+	GetMobileDevices(context.Context) ([]MobileDevice, error)
 	SetZoneOverlay(context.Context, int, float64) error
 	DeleteZoneOverlay(context.Context, int) error
 }
