@@ -130,9 +130,7 @@ func (client *APIClient) getHomeID(ctx context.Context) error {
 // Each API function calls this before invoking the API, so normally this doesn't need to be
 // called by the calling application.
 func (client *APIClient) initialize(ctx context.Context) (err error) {
-	log.Info("authenticating")
 	if err = client.authenticate(ctx); err == nil {
-		log.Info("get home id")
 		err = client.getHomeID(ctx)
 	}
 	log.WithError(err).Info("done")

@@ -19,6 +19,24 @@ type APIServer struct {
 	failRefresh  bool
 }
 
+func (apiServer *APIServer) slowserve(req *http.Request) *http.Response {
+	ctx := req.Context()
+	timer := time.NewTimer(5 * time.Millisecond)
+
+loop:
+	for {
+		select {
+		case <-ctx.Done():
+			break loop
+		case <-timer.C:
+			break loop
+		}
+	}
+	timer.Stop()
+
+	return &http.Response{StatusCode: http.StatusInternalServerError}
+}
+
 func (apiServer *APIServer) serve(req *http.Request) *http.Response {
 	if req.URL.Path == "/oauth/token" {
 		return apiServer.respondAuth(req)
@@ -70,7 +88,10 @@ func (apiServer *APIServer) respondAuth(req *http.Request) *http.Response {
   "jti":"jti"
 }`
 
-	defer req.Body.Close()
+	defer func(Body io.ReadCloser) {
+		_ = Body.Close()
+	}(req.Body)
+
 	grantType := getGrantType(req.Body)
 
 	if grantType == "refresh_token" {

@@ -6,6 +6,7 @@ import (
 	"github.com/clambin/tado"
 	"github.com/stretchr/testify/assert"
 	"testing"
+	"time"
 )
 
 func TestTypesToString(t *testing.T) {
@@ -173,4 +174,20 @@ func TestAPIClient_ManualTemperature(t *testing.T) {
 
 	err = client.DeleteZoneOverlay(context.Background(), 2)
 	assert.Nil(t, err)
+}
+
+func TestAPIClient_Timeout(t *testing.T) {
+	server := &APIServer{}
+	client := tado.APIClient{
+		HTTPClient: httpstub.NewTestClient(server.slowserve),
+		Username:   "user@example.com",
+		Password:   "some-password",
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Minute)
+	defer cancel()
+
+	_, err := client.GetWeatherInfo(ctx)
+
+	assert.Error(t, err)
 }
