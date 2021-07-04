@@ -133,7 +133,6 @@ func (client *APIClient) initialize(ctx context.Context) (err error) {
 	if err = client.authenticate(ctx); err == nil {
 		err = client.getHomeID(ctx)
 	}
-	log.WithError(err).Info("done")
 	return
 }
 
