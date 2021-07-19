@@ -2,9 +2,10 @@ package tado_test
 
 import (
 	"context"
-	"github.com/clambin/gotools/httpstub"
 	"github.com/clambin/tado"
 	"github.com/stretchr/testify/assert"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 	"time"
 )
@@ -82,10 +83,17 @@ func TestTypesToString(t *testing.T) {
 
 func TestAPIClient_Zones(t *testing.T) {
 	server := APIServer{}
+	apiServer := httptest.NewServer(http.HandlerFunc(server.apiHandler))
+	defer apiServer.Close()
+	authServer := httptest.NewServer(http.HandlerFunc(server.authHandler))
+	defer authServer.Close()
+
 	client := tado.APIClient{
-		HTTPClient: httpstub.NewTestClient(server.serve),
+		HTTPClient: &http.Client{},
 		Username:   "user@examle.com",
 		Password:   "some-password",
+		AuthURL:    authServer.URL,
+		APIURL:     apiServer.URL,
 	}
 
 	tadoZones, err := client.GetZones(context.Background())
@@ -111,11 +119,18 @@ func TestAPIClient_Zones(t *testing.T) {
 }
 
 func TestAPIClient_Weather(t *testing.T) {
-	server := &APIServer{}
+	server := APIServer{}
+	apiServer := httptest.NewServer(http.HandlerFunc(server.apiHandler))
+	defer apiServer.Close()
+	authServer := httptest.NewServer(http.HandlerFunc(server.authHandler))
+	defer authServer.Close()
+
 	client := tado.APIClient{
-		HTTPClient: httpstub.NewTestClient(server.serve),
+		HTTPClient: &http.Client{},
 		Username:   "user@examle.com",
 		Password:   "some-password",
+		AuthURL:    authServer.URL,
+		APIURL:     apiServer.URL,
 	}
 
 	tadoWeatherInfo, err := client.GetWeatherInfo(context.Background())
@@ -127,11 +142,18 @@ func TestAPIClient_Weather(t *testing.T) {
 }
 
 func TestAPIClient_Devices(t *testing.T) {
-	server := &APIServer{}
+	server := APIServer{}
+	apiServer := httptest.NewServer(http.HandlerFunc(server.apiHandler))
+	defer apiServer.Close()
+	authServer := httptest.NewServer(http.HandlerFunc(server.authHandler))
+	defer authServer.Close()
+
 	client := tado.APIClient{
-		HTTPClient: httpstub.NewTestClient(server.serve),
-		Username:   "user@example.com",
+		HTTPClient: &http.Client{},
+		Username:   "user@examle.com",
 		Password:   "some-password",
+		AuthURL:    authServer.URL,
+		APIURL:     apiServer.URL,
 	}
 
 	zones, err := client.GetZones(context.Background())
@@ -143,11 +165,18 @@ func TestAPIClient_Devices(t *testing.T) {
 }
 
 func TestAPIClient_MobileDevices(t *testing.T) {
-	server := &APIServer{}
+	server := APIServer{}
+	apiServer := httptest.NewServer(http.HandlerFunc(server.apiHandler))
+	defer apiServer.Close()
+	authServer := httptest.NewServer(http.HandlerFunc(server.authHandler))
+	defer authServer.Close()
+
 	client := tado.APIClient{
-		HTTPClient: httpstub.NewTestClient(server.serve),
-		Username:   "user@example.com",
+		HTTPClient: &http.Client{},
+		Username:   "user@examle.com",
 		Password:   "some-password",
+		AuthURL:    authServer.URL,
+		APIURL:     apiServer.URL,
 	}
 
 	mobileDevices, err := client.GetMobileDevices(context.Background())
@@ -162,11 +191,18 @@ func TestAPIClient_MobileDevices(t *testing.T) {
 }
 
 func TestAPIClient_ManualTemperature(t *testing.T) {
-	server := &APIServer{}
+	server := APIServer{}
+	apiServer := httptest.NewServer(http.HandlerFunc(server.apiHandler))
+	defer apiServer.Close()
+	authServer := httptest.NewServer(http.HandlerFunc(server.authHandler))
+	defer authServer.Close()
+
 	client := tado.APIClient{
-		HTTPClient: httpstub.NewTestClient(server.serve),
-		Username:   "user@example.com",
+		HTTPClient: &http.Client{},
+		Username:   "user@examle.com",
 		Password:   "some-password",
+		AuthURL:    authServer.URL,
+		APIURL:     apiServer.URL,
 	}
 
 	err := client.SetZoneOverlay(context.Background(), 2, 4.0)
@@ -177,14 +213,21 @@ func TestAPIClient_ManualTemperature(t *testing.T) {
 }
 
 func TestAPIClient_Timeout(t *testing.T) {
-	server := &APIServer{}
+	server := APIServer{slow: true}
+	apiServer := httptest.NewServer(http.HandlerFunc(server.apiHandler))
+	defer apiServer.Close()
+	authServer := httptest.NewServer(http.HandlerFunc(server.authHandler))
+	defer authServer.Close()
+
 	client := tado.APIClient{
-		HTTPClient: httpstub.NewTestClient(server.slowserve),
-		Username:   "user@example.com",
+		HTTPClient: &http.Client{Timeout: 100 * time.Millisecond},
+		Username:   "user@examle.com",
 		Password:   "some-password",
+		AuthURL:    authServer.URL,
+		APIURL:     apiServer.URL,
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Minute)
+	ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
 	defer cancel()
 
 	_, err := client.GetWeatherInfo(ctx)

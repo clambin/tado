@@ -2,19 +2,27 @@ package tado_test
 
 import (
 	"context"
-	"github.com/clambin/gotools/httpstub"
 	"github.com/clambin/tado"
 	"github.com/stretchr/testify/assert"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 	"time"
 )
 
 func TestAPIClient_Initialization(t *testing.T) {
 	server := APIServer{}
+	apiServer := httptest.NewServer(http.HandlerFunc(server.apiHandler))
+	defer apiServer.Close()
+	authServer := httptest.NewServer(http.HandlerFunc(server.authHandler))
+	defer authServer.Close()
+
 	client := tado.APIClient{
-		HTTPClient: httpstub.NewTestClient(server.serve),
+		HTTPClient: &http.Client{},
 		Username:   "user@examle.com",
 		Password:   "some-password",
+		AuthURL:    authServer.URL,
+		APIURL:     apiServer.URL,
 	}
 
 	var err error
@@ -26,10 +34,17 @@ func TestAPIClient_Initialization(t *testing.T) {
 
 func TestAPIClient_Authentication(t *testing.T) {
 	server := APIServer{}
+	apiServer := httptest.NewServer(http.HandlerFunc(server.apiHandler))
+	defer apiServer.Close()
+	authServer := httptest.NewServer(http.HandlerFunc(server.authHandler))
+	defer authServer.Close()
+
 	client := tado.APIClient{
-		HTTPClient: httpstub.NewTestClient(server.serve),
+		HTTPClient: &http.Client{},
 		Username:   "user@examle.com",
 		Password:   "some-password",
+		AuthURL:    authServer.URL,
+		APIURL:     apiServer.URL,
 	}
 
 	var err error
@@ -47,7 +62,7 @@ func TestAPIClient_Authentication(t *testing.T) {
 	server.expires = time.Date(1970, 1, 1, 0, 0, 0, 0, time.UTC)
 	_, err = client.GetZones(context.Background())
 	assert.NotNil(t, err)
-	assert.Equal(t, "Forbidden", err.Error())
+	assert.Equal(t, "403 Forbidden", err.Error())
 
 	// now retry. we should go back to a reset token
 	_, err = client.GetZones(context.Background())

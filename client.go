@@ -85,6 +85,8 @@ type APIClient struct {
 	Password     string
 	ClientSecret string
 	AccessToken  string
+	APIURL       string
+	AuthURL      string
 
 	Expires      time.Time
 	RefreshToken string
@@ -93,11 +95,23 @@ type APIClient struct {
 }
 
 const baseAPIURL = "https://my.tado.com"
-const authURL = "https://auth.tado.com/oauth/token"
+const baseAuthURL = "https://auth.tado.com"
 
 // apiURL returns a API v2 URL
 func (client *APIClient) apiURL(endpoint string) string {
-	return baseAPIURL + "/api/v2/homes/" + strconv.Itoa(client.HomeID) + endpoint
+	apiURL := client.APIURL
+	if apiURL == "" {
+		apiURL = baseAPIURL
+	}
+	return apiURL + "/api/v2/homes/" + strconv.Itoa(client.HomeID) + endpoint
+}
+
+// baseAuthURL returns the URL of the authentication server
+func (client *APIClient) authURL() string {
+	if client.AuthURL != "" {
+		return client.AuthURL
+	}
+	return baseAuthURL
 }
 
 // getHomeID gets the user's Home ID, used by the GetZones API
@@ -108,12 +122,14 @@ func (client *APIClient) getHomeID(ctx context.Context) error {
 		return nil
 	}
 
-	var (
-		err  error
-		body []byte
-	)
+	apiURL := client.APIURL
+	if apiURL == "" {
+		apiURL = baseAPIURL
+	}
 
-	if body, err = client.call(ctx, http.MethodGet, baseAPIURL+"/api/v1/me", ""); err == nil {
+	body, err := client.call(ctx, http.MethodGet, apiURL+"/api/v1/me", "")
+
+	if err == nil {
 		var resp interface{}
 		if err = json.Unmarshal(body, &resp); err == nil {
 			m := resp.(map[string]interface{})
@@ -180,14 +196,13 @@ func (client *APIClient) doAuthentication(ctx context.Context, grantType, creden
 		form.Add("username", client.Username)
 	}
 
-	req, _ := http.NewRequestWithContext(ctx, http.MethodPost, authURL, strings.NewReader(form.Encode()))
+	req, _ := http.NewRequestWithContext(ctx, http.MethodPost, client.authURL()+"/oauth/token", strings.NewReader(form.Encode()))
 	req.Header.Add("Referer", "https://my.tado.com/")
 	req.Header.Add("content-type", "application/x-www-form-urlencoded")
 
-	if resp, err = client.HTTPClient.Do(req); err == nil {
-		defer func(Body io.ReadCloser) {
-			_ = Body.Close()
-		}(resp.Body)
+	resp, err = client.HTTPClient.Do(req)
+
+	if err == nil {
 		if resp.StatusCode == 200 {
 			body, _ := ioutil.ReadAll(resp.Body)
 
@@ -201,6 +216,7 @@ func (client *APIClient) doAuthentication(ctx context.Context, grantType, creden
 		} else {
 			err = errors.New(resp.Status)
 		}
+		_ = req.Body.Close()
 	}
 
 	if err != nil && grantType == "refresh_token" {
@@ -222,10 +238,14 @@ func (client *APIClient) call(ctx context.Context, method string, apiURL string,
 	req, _ = http.NewRequestWithContext(ctx, method, apiURL, bytes.NewBufferString(payload))
 	req.Header.Add("Content-Type", "application/json;charset=UTF-8")
 	req.Header.Add("Authorization", "Bearer "+client.getToken())
-	if resp, err = client.HTTPClient.Do(req); err == nil {
-		defer func(Body io.ReadCloser) {
-			_ = Body.Close()
-		}(resp.Body)
+
+	resp, err = client.HTTPClient.Do(req)
+
+	if err == nil {
+		defer func(body io.ReadCloser) {
+			_ = body.Close()
+		}(req.Body)
+
 		switch resp.StatusCode {
 		case http.StatusOK:
 			return ioutil.ReadAll(resp.Body)
@@ -242,6 +262,7 @@ func (client *APIClient) call(ctx context.Context, method string, apiURL string,
 		default:
 			err = errors.New(resp.Status)
 		}
+
 	}
 
 	log.WithFields(log.Fields{

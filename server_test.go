@@ -1,8 +1,9 @@
 package tado_test
 
 import (
-	"bytes"
+	"context"
 	"fmt"
+	log "github.com/sirupsen/logrus"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -17,55 +18,94 @@ type APIServer struct {
 	refreshToken string
 	expires      time.Time
 	failRefresh  bool
+	slow         bool
 }
 
-func (apiServer *APIServer) slowserve(req *http.Request) *http.Response {
-	ctx := req.Context()
-	timer := time.NewTimer(5 * time.Millisecond)
+func (apiServer *APIServer) authHandler(w http.ResponseWriter, req *http.Request) {
+	log.Debug("authHandler: " + req.URL.Path)
 
+	if req.URL.Path != "/oauth/token" {
+		http.Error(w, "endpoint not implemented", http.StatusNotFound)
+		return
+	}
+
+	response, ok := apiServer.handleAuthentication(req)
+
+	if ok == false {
+		http.Error(w, "Forbidden", http.StatusForbidden)
+	} else {
+		_, _ = w.Write([]byte(response))
+	}
+}
+
+func (apiServer *APIServer) apiHandler(w http.ResponseWriter, req *http.Request) {
+	log.Debug("apiHandler: " + req.URL.Path)
+
+	if apiServer.slow && wait(req.Context(), 5*time.Second) == false {
+		http.Error(w, "context exceeded", http.StatusRequestTimeout)
+		return
+	}
+
+	contentType, ok := req.Header["Content-Type"]
+	if ok == false || contentType[0] != "application/json;charset=UTF-8" {
+		http.Error(w, "content type should be application/json", http.StatusUnprocessableEntity)
+		return
+	}
+
+	if apiServer.authenticateRequest(req) == false {
+		http.Error(w, "Forbidden", http.StatusForbidden)
+		return
+	}
+
+	response, ok := responses[req.URL.Path]
+
+	if ok {
+		_, _ = w.Write([]byte(response))
+	} else {
+		http.Error(w, "endpoint not implemented: "+req.URL.Path, http.StatusForbidden)
+	}
+}
+
+func wait(ctx context.Context, duration time.Duration) (passed bool) {
+	timer := time.NewTimer(duration)
 loop:
 	for {
 		select {
-		case <-ctx.Done():
-			break loop
 		case <-timer.C:
 			break loop
+		case <-ctx.Done():
+			return false
 		}
 	}
-	timer.Stop()
-
-	return &http.Response{StatusCode: http.StatusInternalServerError}
+	return true
 }
 
-func (apiServer *APIServer) serve(req *http.Request) *http.Response {
-	if req.URL.Path == "/oauth/token" {
-		return apiServer.respondAuth(req)
+func (apiServer *APIServer) handleAuthentication(req *http.Request) (response string, ok bool) {
+	const authResponse = `{
+  		"access_token":"%s",
+  		"token_type":"bearer",
+  		"refresh_token":"%s",
+  		"expires_in":%d,
+  		"scope":"home.user",
+  		"jti":"jti"
+	}`
+
+	grantType := getGrantType(req.Body)
+
+	if grantType == "refresh_token" {
+		if apiServer.failRefresh {
+			return "test server in failRefresh mode", false
+		}
+		apiServer.counter++
+	} else {
+		apiServer.counter = 1
 	}
 
-	if contentType, ok := req.Header["Content-Type"]; ok == false || contentType[0] != "application/json;charset=UTF-8" {
-		return &http.Response{
-			StatusCode: http.StatusUnprocessableEntity,
-			Status:     "content type should be application/json",
-		}
-	}
+	apiServer.accessToken = fmt.Sprintf("token_%d", apiServer.counter)
+	apiServer.refreshToken = apiServer.accessToken
+	apiServer.expires = time.Now().Add(20 * time.Second)
 
-	if apiServer.validate(req) == false {
-		return &http.Response{
-			StatusCode: http.StatusForbidden,
-			Status:     "Forbidden",
-		}
-	}
-
-	if response, ok := responses[req.URL.Path]; ok {
-		return &http.Response{
-			StatusCode: http.StatusOK,
-			Body:       ioutil.NopCloser(bytes.NewBufferString(response)),
-		}
-	}
-	return &http.Response{
-		StatusCode: http.StatusNotFound,
-		Status:     "API " + req.URL.Path + " not implemented",
-	}
+	return fmt.Sprintf(authResponse, apiServer.accessToken, apiServer.refreshToken, 20), true
 }
 
 func getGrantType(body io.Reader) string {
@@ -78,56 +118,16 @@ func getGrantType(body io.Reader) string {
 	panic("grant_type not found in body")
 }
 
-func (apiServer *APIServer) respondAuth(req *http.Request) *http.Response {
-	const authResponse = `{
-  "access_token":"%s",
-  "token_type":"bearer",
-  "refresh_token":"%s",
-  "expires_in":%d,
-  "scope":"home.user",
-  "jti":"jti"
-}`
-
-	defer func(Body io.ReadCloser) {
-		_ = Body.Close()
-	}(req.Body)
-
-	grantType := getGrantType(req.Body)
-
-	if grantType == "refresh_token" {
-		if apiServer.failRefresh {
-			return &http.Response{
-				StatusCode: http.StatusForbidden,
-				Status:     "Forbidden: test server in failRefresh mode",
-			}
-		}
-		apiServer.counter++
-	} else {
-		apiServer.counter = 1
-	}
-
-	apiServer.accessToken = fmt.Sprintf("token_%d", apiServer.counter)
-	apiServer.refreshToken = apiServer.accessToken
-	apiServer.expires = time.Now().Add(20 * time.Second)
-
-	return &http.Response{
-		StatusCode: http.StatusOK,
-		Body: ioutil.NopCloser(bytes.NewBufferString(fmt.Sprintf(authResponse,
-			apiServer.accessToken,
-			apiServer.refreshToken,
-			20,
-		))),
-	}
-}
-
-func (apiServer *APIServer) validate(req *http.Request) bool {
+func (apiServer *APIServer) authenticateRequest(req *http.Request) (ok bool) {
 	if apiServer.accessToken == "" {
 		return false
 	}
+
 	bearer := req.Header.Get("Authorization")
 	if bearer != "Bearer "+apiServer.accessToken {
 		return false
 	}
+
 	if time.Now().After(apiServer.expires) {
 		return false
 	}
