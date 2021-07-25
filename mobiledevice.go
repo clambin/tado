@@ -52,3 +52,24 @@ func (mobileDevice *MobileDevice) String() string {
 		mobileDevice.Location.AtHome,
 	)
 }
+
+const (
+	DeviceUnknown = iota
+	DeviceHome
+	DeviceAway
+)
+
+type MobileDeviceLocationState int
+
+// IsHome returns the location of the MobileDevice
+func (mobileDevice *MobileDevice) IsHome() (state MobileDeviceLocationState) {
+	state = DeviceUnknown
+	if mobileDevice.Settings.GeoTrackingEnabled == true {
+		if mobileDevice.Location.AtHome {
+			state = DeviceHome
+		} else {
+			state = DeviceAway
+		}
+	}
+	return
+}
