@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	log "github.com/sirupsen/logrus"
+	"html"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -39,7 +40,7 @@ func (apiServer *APIServer) authHandler(w http.ResponseWriter, req *http.Request
 }
 
 func (apiServer *APIServer) apiHandler(w http.ResponseWriter, req *http.Request) {
-	log.Debug("apiHandler: " + req.URL.Path)
+	log.Debug("apiHandler: " + html.EscapeString(req.URL.Path))
 
 	if apiServer.slow && wait(req.Context(), 5*time.Second) == false {
 		http.Error(w, "context exceeded", http.StatusRequestTimeout)
