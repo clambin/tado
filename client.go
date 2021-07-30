@@ -128,9 +128,9 @@ func (client *APIClient) getHomeID(ctx context.Context) error {
 		return nil
 	}
 
-	apiURL := client.APIURL
-	if apiURL == "" {
-		apiURL = baseAPIURL
+	apiURL := baseAPIURL
+	if client.APIURL != "" {
+		apiURL = client.APIURL
 	}
 
 	body, err := client.call(ctx, http.MethodGet, apiURL+"/api/v1/me", "")
