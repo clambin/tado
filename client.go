@@ -99,19 +99,21 @@ const baseAuthURL = "https://auth.tado.com"
 
 // apiV2URL returns a API v2 URL
 func (client *APIClient) apiV2URL(endpoint string) string {
-	apiURL := client.APIURL
-	if apiURL == "" {
-		apiURL = baseAPIURL
+	apiURL := baseAPIURL
+	if client.APIURL != "" {
+		apiURL = client.APIURL
 	}
 	return apiURL + "/api/v2/homes/" + strconv.Itoa(client.HomeID) + endpoint
 }
 
 // baseAuthURL returns the URL of the authentication server
-func (client *APIClient) authURL() string {
+func (client *APIClient) authURL() (authURL string) {
+	authURL = baseAuthURL
 	if client.AuthURL != "" {
-		return client.AuthURL
+		authURL = client.AuthURL
+
 	}
-	return baseAuthURL
+	return
 }
 
 // getHomeID gets the user's Home ID
