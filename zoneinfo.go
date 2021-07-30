@@ -84,7 +84,7 @@ func (client *APIClient) GetZoneInfo(ctx context.Context, zoneID int) (ZoneInfo,
 		tadoZoneInfo ZoneInfo
 	)
 	if err = client.initialize(ctx); err == nil {
-		if body, err = client.call(ctx, http.MethodGet, client.apiURL("/zones/"+strconv.Itoa(zoneID)+"/state"), ""); err == nil {
+		if body, err = client.call(ctx, http.MethodGet, client.apiV2URL("/zones/"+strconv.Itoa(zoneID)+"/state"), ""); err == nil {
 			err = json.Unmarshal(body, &tadoZoneInfo)
 		}
 	}
@@ -119,7 +119,7 @@ func (client *APIClient) SetZoneOverlay(ctx context.Context, zoneID int, tempera
 
 		payload, err = json.Marshal(request)
 
-		_, err = client.call(ctx, http.MethodPut, client.apiURL("/zones/"+strconv.Itoa(zoneID)+"/overlay"), string(payload))
+		_, err = client.call(ctx, http.MethodPut, client.apiV2URL("/zones/"+strconv.Itoa(zoneID)+"/overlay"), string(payload))
 	}
 
 	return err
@@ -129,7 +129,7 @@ func (client *APIClient) SetZoneOverlay(ctx context.Context, zoneID int, tempera
 func (client *APIClient) DeleteZoneOverlay(ctx context.Context, zoneID int) error {
 	var err error
 	if err = client.initialize(ctx); err == nil {
-		_, err = client.call(ctx, http.MethodDelete, client.apiURL("/zones/"+strconv.Itoa(zoneID)+"/overlay"), "")
+		_, err = client.call(ctx, http.MethodDelete, client.apiV2URL("/zones/"+strconv.Itoa(zoneID)+"/overlay"), "")
 	}
 
 	return err

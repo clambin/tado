@@ -34,7 +34,7 @@ func (client *APIClient) GetMobileDevices(ctx context.Context) ([]MobileDevice, 
 		body              []byte
 	)
 	if err = client.initialize(ctx); err == nil {
-		apiURL := client.apiURL("/mobileDevices")
+		apiURL := client.apiV2URL("/mobileDevices")
 		if body, err = client.call(ctx, http.MethodGet, apiURL, ""); err == nil {
 			err = json.Unmarshal(body, &tadoMobileDevices)
 		}

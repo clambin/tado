@@ -97,8 +97,8 @@ type APIClient struct {
 const baseAPIURL = "https://my.tado.com"
 const baseAuthURL = "https://auth.tado.com"
 
-// apiURL returns a API v2 URL
-func (client *APIClient) apiURL(endpoint string) string {
+// apiV2URL returns a API v2 URL
+func (client *APIClient) apiV2URL(endpoint string) string {
 	apiURL := client.APIURL
 	if apiURL == "" {
 		apiURL = baseAPIURL
@@ -114,11 +114,15 @@ func (client *APIClient) authURL() string {
 	return baseAuthURL
 }
 
-// getHomeID gets the user's Home ID, used by the GetZones API
+// getHomeID gets the user's Home ID
 //
 // Called by Initialize, so doesn't need to be called by the calling application.
 func (client *APIClient) getHomeID(ctx context.Context) error {
-	if client.HomeID > 0 {
+	client.lock.Lock()
+	homeID := client.HomeID
+	client.lock.Unlock()
+
+	if homeID > 0 {
 		return nil
 	}
 
@@ -133,7 +137,9 @@ func (client *APIClient) getHomeID(ctx context.Context) error {
 		var resp interface{}
 		if err = json.Unmarshal(body, &resp); err == nil {
 			m := resp.(map[string]interface{})
+			client.lock.Lock()
 			client.HomeID = int(m["homeId"].(float64))
+			client.lock.Unlock()
 		}
 	}
 	return err
@@ -256,9 +262,9 @@ func (client *APIClient) call(ctx context.Context, method string, apiURL string,
 			// force password login to get a new token.
 			client.RefreshToken = ""
 			err = errors.New(resp.Status)
-		case http.StatusUnprocessableEntity:
-			errBody, _ := ioutil.ReadAll(resp.Body)
-			err = errors.New(string(errBody))
+		// case http.StatusUnprocessableEntity:
+		//	errBody, _ := ioutil.ReadAll(resp.Body)
+		//	err = errors.New(string(errBody))
 		default:
 			err = errors.New(resp.Status)
 		}

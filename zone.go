@@ -39,7 +39,7 @@ func (client *APIClient) GetZones(ctx context.Context) ([]Zone, error) {
 	zones := make([]Zone, 0)
 
 	if err = client.initialize(ctx); err == nil {
-		if body, err = client.call(ctx, http.MethodGet, client.apiURL("/zones"), ""); err == nil {
+		if body, err = client.call(ctx, http.MethodGet, client.apiV2URL("/zones"), ""); err == nil {
 			err = json.Unmarshal(body, &zones)
 		}
 	}
