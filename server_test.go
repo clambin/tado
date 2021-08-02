@@ -61,7 +61,11 @@ func (apiServer *APIServer) apiHandler(w http.ResponseWriter, req *http.Request)
 	response, ok := responses[req.URL.Path]
 
 	if ok {
-		_, _ = w.Write([]byte(response))
+		if response == "" {
+			http.Error(w, "", http.StatusNoContent)
+		} else {
+			_, _ = w.Write([]byte(response))
+		}
 	} else {
 		http.Error(w, "endpoint not implemented: "+req.URL.Path, http.StatusForbidden)
 	}
@@ -233,5 +237,5 @@ var responses = map[string]string{
 	}
 }]`,
 	// TODO: this doesn't test whether PUT/DELETE were used, nor validates the payload
-	"/api/v2/homes/242/zones/2/overlay": `{}`,
+	"/api/v2/homes/242/zones/2/overlay": ``,
 }
