@@ -58,6 +58,7 @@ type API interface {
 	GetWeatherInfo(context.Context) (WeatherInfo, error)
 	GetMobileDevices(context.Context) ([]MobileDevice, error)
 	SetZoneOverlay(context.Context, int, float64) error
+	SetZoneOverlayWithDuration(context.Context, int, float64, time.Duration) error
 	DeleteZoneOverlay(context.Context, int) error
 }
 

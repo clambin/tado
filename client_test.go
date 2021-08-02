@@ -190,28 +190,6 @@ func TestAPIClient_MobileDevices(t *testing.T) {
 	assert.False(t, mobileDevices[1].Location.AtHome)
 }
 
-func TestAPIClient_ManualTemperature(t *testing.T) {
-	server := APIServer{}
-	apiServer := httptest.NewServer(http.HandlerFunc(server.apiHandler))
-	defer apiServer.Close()
-	authServer := httptest.NewServer(http.HandlerFunc(server.authHandler))
-	defer authServer.Close()
-
-	client := tado.APIClient{
-		HTTPClient: &http.Client{},
-		Username:   "user@examle.com",
-		Password:   "some-password",
-		AuthURL:    authServer.URL,
-		APIURL:     apiServer.URL,
-	}
-
-	err := client.SetZoneOverlay(context.Background(), 2, 4.0)
-	assert.Nil(t, err)
-
-	err = client.DeleteZoneOverlay(context.Background(), 2)
-	assert.Nil(t, err)
-}
-
 func TestAPIClient_Timeout(t *testing.T) {
 	server := APIServer{slow: true}
 	apiServer := httptest.NewServer(http.HandlerFunc(server.apiHandler))

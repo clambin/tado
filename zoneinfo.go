@@ -67,11 +67,11 @@ type ZoneInfoOverlaySetting struct {
 
 // ZoneInfoOverlayTermination contains the termination parameters for the zone's overlay
 type ZoneInfoOverlayTermination struct {
-	Type          string `json:"type"`
-	RemainingTime int    `json:"remainingTimeInSeconds,omitempty"`
+	Type              string `json:"type"`
+	RemainingTime     int    `json:"remainingTimeInSeconds,omitempty"`
+	DurationInSeconds int    `json:"durationInSeconds,omitempty"`
 	// not specified:
 	//  "typeSkillBasedApp":"NEXT_TIME_BLOCK",
-	//  "durationInSeconds":1800,
 	//  "expiry":"2021-02-05T23:00:00Z",
 	//  "projectedExpiry":"2021-02-05T23:00:00Z"
 }
@@ -114,6 +114,46 @@ func (client *APIClient) SetZoneOverlay(ctx context.Context, zoneID int, tempera
 			},
 			Termination: ZoneInfoOverlayTermination{
 				Type: "MANUAL",
+			},
+		}
+
+		payload, err = json.Marshal(request)
+
+		_, err = client.call(ctx, http.MethodPut, client.apiV2URL("/zones/"+strconv.Itoa(zoneID)+"/overlay"), string(payload))
+	}
+
+	return err
+}
+
+// SetZoneOverlayWithDuration sets an overlay (manual temperature setting) for the specified ZoneID for a specified amount of time.
+// If duration is zero, it calls SetZoneOverlay.
+func (client *APIClient) SetZoneOverlayWithDuration(ctx context.Context, zoneID int, temperature float64, duration time.Duration) error {
+	if duration == 0 {
+		return client.SetZoneOverlay(ctx, zoneID, temperature)
+	}
+
+	if temperature < 5 {
+		temperature = 5
+	}
+
+	var (
+		err     error
+		payload []byte
+	)
+
+	if err = client.initialize(ctx); err == nil {
+		request := ZoneInfoOverlay{
+			Type: "MANUAL",
+			Setting: ZoneInfoOverlaySetting{
+				Type:  "HEATING",
+				Power: "ON",
+				Temperature: Temperature{
+					Celsius: temperature,
+				},
+			},
+			Termination: ZoneInfoOverlayTermination{
+				Type:              "TIMER",
+				DurationInSeconds: int(duration.Seconds()),
 			},
 		}
 
