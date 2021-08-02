@@ -221,14 +221,15 @@ type ZoneState int
 func (zoneInfo *ZoneInfo) GetState() (state ZoneState) {
 	state = ZoneStateUnknown
 	if zoneInfo.Overlay.Type == "MANUAL" && zoneInfo.Overlay.Setting.Type == "HEATING" {
-		if zoneInfo.Overlay.Termination.Type != "MANUAL" {
-			state = ZoneStateTemporaryManual
-		} else if zoneInfo.Overlay.Setting.Temperature.Celsius <= 5.0 {
-			// TODO: probably more states that should be considered "off"?
+		if zoneInfo.Overlay.Setting.Power != "ON" || zoneInfo.Overlay.Setting.Temperature.Celsius <= 5.0 {
 			state = ZoneStateOff
+		} else if zoneInfo.Overlay.Termination.Type != "MANUAL" {
+			state = ZoneStateTemporaryManual
 		} else {
 			state = ZoneStateManual
 		}
+	} else if zoneInfo.Setting.Power != "ON" {
+		state = ZoneStateOff
 	} else {
 		state = ZoneStateAuto
 	}

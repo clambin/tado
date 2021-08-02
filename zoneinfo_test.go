@@ -11,27 +11,38 @@ import (
 )
 
 func TestZoneInfo_GetState(t *testing.T) {
-	zoneInfo := tado.ZoneInfo{}
-	assert.Equal(t, tado.ZoneStateAuto, int(zoneInfo.GetState()))
+	zoneInfo := tado.ZoneInfo{
+		Setting: tado.ZoneInfoSetting{
+			Power:       "ON",
+			Temperature: tado.Temperature{Celsius: 17.0},
+		},
+	}
+	assert.Equal(t, tado.ZoneState(tado.ZoneStateAuto), zoneInfo.GetState())
 
 	zoneInfo.Overlay = tado.ZoneInfoOverlay{
 		Type: "MANUAL",
 		Setting: tado.ZoneInfoOverlaySetting{
 			Type:        "HEATING",
+			Power:       "ON",
 			Temperature: tado.Temperature{Celsius: 22.0},
 		},
 		Termination: tado.ZoneInfoOverlayTermination{
 			Type: "MANUAL",
 		},
 	}
-	assert.Equal(t, tado.ZoneStateManual, int(zoneInfo.GetState()))
-
-	zoneInfo.Overlay.Setting.Temperature.Celsius = 5.0
-	assert.Equal(t, tado.ZoneStateOff, int(zoneInfo.GetState()))
+	assert.Equal(t, tado.ZoneState(tado.ZoneStateManual), zoneInfo.GetState())
 
 	zoneInfo.Overlay.Termination.Type = "AUTO"
-	assert.Equal(t, tado.ZoneStateTemporaryManual, int(zoneInfo.GetState()))
+	assert.Equal(t, tado.ZoneState(tado.ZoneStateTemporaryManual), zoneInfo.GetState())
 
+	zoneInfo.Overlay.Setting.Temperature.Celsius = 5.0
+	assert.Equal(t, tado.ZoneState(tado.ZoneStateOff), zoneInfo.GetState())
+
+	zoneInfo.Setting.Power = "OFF"
+	zoneInfo.Setting.Temperature.Celsius = 0
+	zoneInfo.Overlay = tado.ZoneInfoOverlay{}
+
+	assert.Equal(t, tado.ZoneState(tado.ZoneStateOff), zoneInfo.GetState())
 }
 
 func TestAPIClient_ManualTemperature(t *testing.T) {
