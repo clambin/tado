@@ -1,9 +1,13 @@
 package tado_test
 
 import (
+	"context"
 	"github.com/clambin/tado"
 	"github.com/stretchr/testify/assert"
+	"net/http"
+	"net/http/httptest"
 	"testing"
+	"time"
 )
 
 func TestZoneInfo_GetState(t *testing.T) {
@@ -28,4 +32,31 @@ func TestZoneInfo_GetState(t *testing.T) {
 	zoneInfo.Overlay.Termination.Type = "AUTO"
 	assert.Equal(t, tado.ZoneStateTemporaryManual, int(zoneInfo.GetState()))
 
+}
+
+func TestAPIClient_ManualTemperature(t *testing.T) {
+	server := APIServer{}
+	apiServer := httptest.NewServer(http.HandlerFunc(server.apiHandler))
+	defer apiServer.Close()
+	authServer := httptest.NewServer(http.HandlerFunc(server.authHandler))
+	defer authServer.Close()
+
+	client := tado.APIClient{
+		HTTPClient: &http.Client{},
+		Username:   "user@examle.com",
+		Password:   "some-password",
+		AuthURL:    authServer.URL,
+		APIURL:     apiServer.URL,
+	}
+
+	ctx := context.Background()
+
+	err := client.SetZoneOverlay(ctx, 2, 4.0)
+	assert.Nil(t, err)
+
+	err = client.DeleteZoneOverlay(ctx, 2)
+	assert.Nil(t, err)
+
+	err = client.SetZoneOverlayWithDuration(ctx, 2, 10.0, 300*time.Second)
+	assert.Nil(t, err)
 }
