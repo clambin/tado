@@ -57,6 +57,13 @@ func TestAPIClient_ManualTemperature(t *testing.T) {
 	err = client.DeleteZoneOverlay(ctx, 2)
 	assert.Nil(t, err)
 
-	err = client.SetZoneOverlayWithDuration(ctx, 2, 10.0, 300*time.Second)
+	err = client.SetZoneOverlayWithDuration(ctx, 2, 0.0, 300*time.Second)
 	assert.Nil(t, err)
+
+	err = client.DeleteZoneOverlay(ctx, 2)
+	assert.Nil(t, err)
+
+	err = client.SetZoneOverlayWithDuration(ctx, 2, 10.0, 0)
+	assert.Nil(t, err)
+
 }
