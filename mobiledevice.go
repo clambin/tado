@@ -54,11 +54,15 @@ func (mobileDevice *MobileDevice) String() string {
 }
 
 const (
+	// DeviceUnknown means the device state is not initialized yet
 	DeviceUnknown = iota
+	// DeviceHome means the user's device is home
 	DeviceHome
+	// DeviceAway means the user's device is not home
 	DeviceAway
 )
 
+// MobileDeviceLocationState is the state of the user's device (mobile phone), i.e. home or away
 type MobileDeviceLocationState int
 
 // IsHome returns the location of the MobileDevice

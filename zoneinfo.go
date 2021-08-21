@@ -208,13 +208,19 @@ func (setting *ZoneInfoOverlaySetting) String() string {
 }
 
 const (
+	// ZoneStateUnknown indicates the zone's state is not initialized yet
 	ZoneStateUnknown = iota
+	// ZoneStateOff indicates the zone's heating is switched off
 	ZoneStateOff
+	// ZoneStateAuto indicates the zone's heating is controlled manually (e.g. as per schedule)
 	ZoneStateAuto
+	// ZoneStateTemporaryManual indicates the zone's target temperature is set manually, for a period of time
 	ZoneStateTemporaryManual
+	// ZoneStateManual indicates the zone's target temperature is set manually
 	ZoneStateManual
 )
 
+// ZoneState is the state of the zone, i.e. heating is off, controlled automatically, or controlled manually
 type ZoneState int
 
 // GetState returns the state of the zone, i.e.

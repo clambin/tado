@@ -51,7 +51,7 @@ type Value struct {
 }
 
 // API for the Tado APIClient.
-// Used to mock the API during unit testing
+//go:generate mockery --name API
 type API interface {
 	GetZones(context.Context) ([]Zone, error)
 	GetZoneInfo(context.Context, int) (ZoneInfo, error)
