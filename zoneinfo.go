@@ -117,8 +117,7 @@ func (client *APIClient) SetZoneOverlay(ctx context.Context, zoneID int, tempera
 			},
 		}
 
-		payload, err = json.Marshal(request)
-
+		payload, _ = json.Marshal(request)
 		_, err = client.call(ctx, http.MethodPut, client.apiV2URL("/zones/"+strconv.Itoa(zoneID)+"/overlay"), string(payload))
 	}
 
