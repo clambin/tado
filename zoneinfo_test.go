@@ -3,7 +3,9 @@ package tado_test
 import (
 	"context"
 	"github.com/clambin/tado"
+	"github.com/clambin/tado/mocks"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -49,16 +51,14 @@ func TestAPIClient_ManualTemperature(t *testing.T) {
 	server := APIServer{}
 	apiServer := httptest.NewServer(http.HandlerFunc(server.apiHandler))
 	defer apiServer.Close()
-	authServer := httptest.NewServer(http.HandlerFunc(server.authHandler))
-	defer authServer.Close()
+	authenticator := &mocks.Authenticator{}
+	authenticator.
+		On("AuthHeaders", mock.AnythingOfType("*context.emptyCtx")).
+		Return(http.Header{"Authorization": []string{"Bearer good_token"}}, nil)
 
-	client := tado.APIClient{
-		HTTPClient: &http.Client{},
-		Username:   "user@examle.com",
-		Password:   "some-password",
-		AuthURL:    authServer.URL,
-		APIURL:     apiServer.URL,
-	}
+	client := tado.New("user@examle.com", "some-password", "")
+	client.APIURL = apiServer.URL
+	client.Authenticator = authenticator
 
 	ctx := context.Background()
 

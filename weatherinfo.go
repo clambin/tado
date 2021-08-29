@@ -23,8 +23,7 @@ type WeatherInfo struct {
 func (client *APIClient) GetWeatherInfo(ctx context.Context) (weatherInfo WeatherInfo, err error) {
 	if err = client.initialize(ctx); err == nil {
 		var body []byte
-		apiURL := client.apiV2URL("/weather")
-		if body, err = client.call(ctx, http.MethodGet, apiURL, ""); err == nil {
+		if body, err = client.call(ctx, http.MethodGet, client.apiV2URL("/weather"), ""); err == nil {
 			err = json.Unmarshal(body, &weatherInfo)
 		}
 	}

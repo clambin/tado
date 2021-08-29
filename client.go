@@ -2,19 +2,26 @@
 //
 // Using this package typically involves creating an APIClient as follows:
 //
-//     client := tado.APIClient{
-//        HTTPClient: &http.Client{},
-//        Username: "your-tado-username",
-//        Password: "your-tado-password",
+// 		client := tado.APIClient{
+//			Authenticator: tado.Authenticator{
+//				HTTPClient: &http.Client{},
+//				Username:   "your-tado-username",
+//				Password:   "your-tado-password",
+// 			},
+//			HTTPClient: &http.Client{},
 //     }
 //
 // Once a client has been created, you can query tado.com for information about your different Tado devices.
-// Currently the following three APIs are supported:
+// Currently, the following endpoints are supported:
 //
-//   GetZones:         get the different zones (rooms) defined in your home
-//   GetZoneInfo:      get metrics for a specified zone in your home
-//   GetWeatherInfo:   get overall weather information
-//   GetMobileDevices: get status of each registered mobile device
+//   GetZones:                   get the different zones (rooms) defined in your home
+//   GetZoneInfo:                get metrics for a specified zone in your home
+//   GetWeatherInfo:             get overall weather information
+//   GetMobileDevices:           get status of each registered mobile device
+//   SetZoneOverlay              set a permanent overlay for a zone
+//   SetZoneOverlayWithDuration  set a temporary overlay for a zone
+//   DeleteZoneOverlay           delete the overlay for a zone
+//
 package tado
 
 import (
@@ -22,13 +29,10 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	log "github.com/sirupsen/logrus"
-	"io"
+	"fmt"
 	"io/ioutil"
 	"net/http"
-	"net/url"
 	"strconv"
-	"strings"
 	"sync"
 	"time"
 )
@@ -64,35 +68,53 @@ type API interface {
 
 // APIClient represents a Tado API client.
 //
-// Basic example to create a Tado API client:
-//     client := tado.APIClient{
-//        HTTPClient: &http.Client{},
-//        Username: "your-tado-username",
-//        Password: "your-tado-password",
+// 		client := tado.APIClient{
+//			Authenticator: tado.Authenticator{
+//				HTTPClient: &http.Client{},
+//				Username:   "your-tado-username",
+//				Password:   "your-tado-password",
+// 			},
+//			HTTPClient: &http.Client{},
 //     }
 //
 // If the default Client Secret does not work, you can provide your own secret:
-//     client := tado.APIClient{
-//        HTTPClient:    &http.Client{},
-//        Username:     "your-tado-username",
-//        Password:     "your-tado-password",
-//        ClientSecret: "your-client-secret",
+// 		client := tado.APIClient{
+//			Authenticator: tado.Authenticator{
+//				HTTPClient: &http.Client{},
+//				Username:   "your-tado-username",
+//				Password:   "your-tado-password",
+//				ClientSecret: "your-client-secret",
+// 			},
+//			HTTPClient: &http.Client{},
 //     }
 //
-// where your-client-secret can be found by visiting https://my.tado.com/webapp/env.js after logging in to my.tado.com
+// where your-client-secret can be found by visiting https://my.tado.com/webapp/env.js after logging in to https://my.tado.com
+//
 type APIClient struct {
-	HTTPClient   *http.Client
-	Username     string
-	Password     string
-	ClientSecret string
-	AccessToken  string
-	APIURL       string
-	AuthURL      string
+	// Authenticator handles logging in to the Tado server
+	Authenticator Authenticator
+	// HTTPClient is used to perform HTTP requests
+	HTTPClient *http.Client
+	// APIURL can be left blank. Only exposed for unit tests.
+	APIURL string
 
-	Expires      time.Time
-	RefreshToken string
-	HomeID       int
-	lock         sync.RWMutex
+	HomeID int
+	lock   sync.RWMutex
+}
+
+// New creates a new client.
+func New(username, password, clientSecret string) *APIClient {
+	return &APIClient{
+		Authenticator: &authenticator{
+			HTTPClient:   &http.Client{},
+			Username:     username,
+			Password:     password,
+			ClientSecret: clientSecret,
+			AuthURL:      baseAuthURL,
+		},
+		HTTPClient: &http.Client{},
+		APIURL:     baseAPIURL,
+	}
 }
 
 const baseAPIURL = "https://my.tado.com"
@@ -100,21 +122,7 @@ const baseAuthURL = "https://auth.tado.com"
 
 // apiV2URL returns a API v2 URL
 func (client *APIClient) apiV2URL(endpoint string) string {
-	apiURL := baseAPIURL
-	if client.APIURL != "" {
-		apiURL = client.APIURL
-	}
-	return apiURL + "/api/v2/homes/" + strconv.Itoa(client.HomeID) + endpoint
-}
-
-// baseAuthURL returns the URL of the authentication server
-func (client *APIClient) authURL() (authURL string) {
-	authURL = baseAuthURL
-	if client.AuthURL != "" {
-		authURL = client.AuthURL
-
-	}
-	return
+	return client.APIURL + "/api/v2/homes/" + strconv.Itoa(client.HomeID) + endpoint
 }
 
 // getHomeID gets the user's Home ID
@@ -129,12 +137,7 @@ func (client *APIClient) getHomeID(ctx context.Context) error {
 		return nil
 	}
 
-	apiURL := baseAPIURL
-	if client.APIURL != "" {
-		apiURL = client.APIURL
-	}
-
-	body, err := client.call(ctx, http.MethodGet, apiURL+"/api/v1/me", "")
+	body, err := client.call(ctx, http.MethodGet, client.APIURL+"/api/v1/me", "")
 
 	if err == nil {
 		var resp interface{}
@@ -155,131 +158,55 @@ func (client *APIClient) getHomeID(ctx context.Context) error {
 // Each API function calls this before invoking the API, so normally this doesn't need to be
 // called by the calling application.
 func (client *APIClient) initialize(ctx context.Context) (err error) {
-	if err = client.authenticate(ctx); err == nil {
-		err = client.getHomeID(ctx)
-	}
-	return
+	return client.getHomeID(ctx)
 }
 
-// authenticate logs in to tado.com and gets an Access Token to invoke the API functions.
-// Once logged in, authenticate renews the Access Token if it's expired since the last call.
-func (client *APIClient) authenticate(ctx context.Context) (err error) {
-	client.lock.Lock()
-	defer client.lock.Unlock()
-
-	if client.ClientSecret == "" {
-		client.ClientSecret = "wZaRN7rpjn3FoNyF5IFuxg9uMzYJcvOoQ8QWiIqS3hfk6gLhVlG57j5YNoZL2Rtc"
+func (client *APIClient) call(ctx context.Context, method string, apiURL string, payload string) (response []byte, err error) {
+	var req *http.Request
+	req, err = client.buildRequest(ctx, method, apiURL, payload)
+	if err != nil {
+		return
 	}
 
-	if client.RefreshToken != "" {
-		if time.Now().After(client.Expires) {
-			err = client.doAuthentication(ctx, "refresh_token", client.RefreshToken)
-		}
-	} else {
-		err = client.doAuthentication(ctx, "password", client.Password)
-	}
-	return
-}
-
-func (client *APIClient) getToken() string {
-	client.lock.RLock()
-	defer client.lock.RUnlock()
-	return client.AccessToken
-}
-
-func (client *APIClient) doAuthentication(ctx context.Context, grantType, credential string) error {
-	var (
-		err  error
-		resp *http.Response
-	)
-
-	log.WithField("grant_type", grantType).Debug("authenticating")
-
-	form := url.Values{}
-	form.Add("client_id", "tado-web-app")
-	form.Add("client_secret", client.ClientSecret)
-	form.Add("grant_type", grantType)
-	form.Add(grantType, credential)
-	form.Add("scope", "home.user")
-	if grantType == "password" {
-		form.Add("username", client.Username)
-	}
-
-	req, _ := http.NewRequestWithContext(ctx, http.MethodPost, client.authURL()+"/oauth/token", strings.NewReader(form.Encode()))
-	req.Header.Add("Referer", "https://my.tado.com/")
-	req.Header.Add("content-type", "application/x-www-form-urlencoded")
-
+	var resp *http.Response
 	resp, err = client.HTTPClient.Do(req)
-
-	if err == nil {
-		if resp.StatusCode == 200 {
-			body, _ := ioutil.ReadAll(resp.Body)
-
-			var response interface{}
-			if err = json.Unmarshal(body, &response); err == nil {
-				m := response.(map[string]interface{})
-				client.AccessToken = m["access_token"].(string)
-				client.RefreshToken = m["refresh_token"].(string)
-				client.Expires = time.Now().Add(time.Second * time.Duration(m["expires_in"].(float64)))
-			}
-		} else {
-			err = errors.New(resp.Status)
-		}
-		_ = req.Body.Close()
+	if err != nil {
+		return
 	}
 
-	if err != nil && grantType == "refresh_token" {
-		// failed during refresh. reset refresh_token to force a password login
-		client.RefreshToken = ""
+	switch resp.StatusCode {
+	case http.StatusOK:
+		response, err = ioutil.ReadAll(resp.Body)
+	case http.StatusNoContent:
+		err = nil
+	case http.StatusForbidden, http.StatusUnauthorized:
+		// we're authenticated, but still got forbidden.
+		// force password login to get a new token.
+		client.Authenticator.Reset()
+		err = errors.New(resp.Status)
+	default:
+		err = errors.New(resp.Status)
 	}
-	log.WithFields(log.Fields{"err": err, "expires": client.Expires}).Debug("authenticated")
+	_ = resp.Body.Close()
 
-	return err
+	return
 }
 
-func (client *APIClient) call(ctx context.Context, method string, apiURL string, payload string) ([]byte, error) {
-	var (
-		err  error
-		req  *http.Request
-		resp *http.Response
-	)
-
-	req, _ = http.NewRequestWithContext(ctx, method, apiURL, bytes.NewBufferString(payload))
+func (client *APIClient) buildRequest(ctx context.Context, method string, path string, payload string) (req *http.Request, err error) {
+	req, _ = http.NewRequestWithContext(ctx, method, path, bytes.NewBufferString(payload))
 	req.Header.Add("Content-Type", "application/json;charset=UTF-8")
-	req.Header.Add("Authorization", "Bearer "+client.getToken())
 
-	resp, err = client.HTTPClient.Do(req)
-
-	if err == nil {
-		defer func(body io.ReadCloser) {
-			_ = body.Close()
-		}(req.Body)
-
-		switch resp.StatusCode {
-		case http.StatusOK:
-			return ioutil.ReadAll(resp.Body)
-		case http.StatusNoContent:
-			return []byte{}, nil
-		case http.StatusForbidden, http.StatusUnauthorized:
-			// we're authenticated, but still got forbidden.
-			// force password login to get a new token.
-			client.RefreshToken = ""
-			err = errors.New(resp.Status)
-		// case http.StatusUnprocessableEntity:
-		//	errBody, _ := ioutil.ReadAll(resp.Body)
-		//	err = errors.New(string(errBody))
-		default:
-			err = errors.New(resp.Status)
-		}
-
+	var authHeaders http.Header
+	authHeaders, err = client.Authenticator.AuthHeaders(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("tado authentication failed: %s", err)
 	}
 
-	log.WithFields(log.Fields{
-		"err":               err,
-		"url":               apiURL,
-		"expiry":            client.Expires,
-		"accessTokenLength": len(client.AccessToken)},
-	).Debug("call failed")
+	for key, values := range authHeaders {
+		for _, value := range values {
+			req.Header.Add(key, value)
+		}
+	}
 
-	return nil, err
+	return
 }

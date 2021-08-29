@@ -2,8 +2,11 @@ package tado_test
 
 import (
 	"context"
+	"fmt"
 	"github.com/clambin/tado"
+	"github.com/clambin/tado/mocks"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -81,20 +84,58 @@ func TestTypesToString(t *testing.T) {
 	assert.Equal(t, `name=phone, geotrack=true, stale=false, athome=true`, mobileDevice.String())
 }
 
+func TestAPIClient_Authentication(t *testing.T) {
+	server := APIServer{}
+	apiServer := httptest.NewServer(http.HandlerFunc(server.apiHandler))
+	defer apiServer.Close()
+	authenticator := &mocks.Authenticator{}
+	authenticator.
+		On("AuthHeaders", mock.AnythingOfType("*context.emptyCtx")).
+		Return(http.Header{"Authorization": []string{"Bearer bad_token"}}, nil).Once()
+	authenticator.On("Reset").Once()
+
+	client := tado.New("user@examle.com", "some-password", "")
+	client.APIURL = apiServer.URL
+	client.Authenticator = authenticator
+
+	_, err := client.GetZones(context.Background())
+	assert.Error(t, err)
+	assert.Equal(t, "403 Forbidden", err.Error())
+
+	authenticator.
+		On("AuthHeaders", mock.AnythingOfType("*context.emptyCtx")).
+		Return(http.Header{}, fmt.Errorf("server is down")).Once()
+
+	_, err = client.GetZones(context.Background())
+	assert.Error(t, err)
+	assert.Equal(t, "tado authentication failed: server is down", err.Error())
+
+	authenticator.
+		On("AuthHeaders", mock.AnythingOfType("*context.emptyCtx")).
+		Return(http.Header{"Authorization": []string{"Bearer good_token"}}, nil)
+
+	_, err = client.GetZones(context.Background())
+	assert.NoError(t, err)
+	assert.Equal(t, 242, client.HomeID)
+
+	server.fail = true
+	_, err = client.GetZones(context.Background())
+	assert.Error(t, err)
+	assert.Equal(t, "500 Internal Server Error", err.Error())
+}
+
 func TestAPIClient_Zones(t *testing.T) {
 	server := APIServer{}
 	apiServer := httptest.NewServer(http.HandlerFunc(server.apiHandler))
 	defer apiServer.Close()
-	authServer := httptest.NewServer(http.HandlerFunc(server.authHandler))
-	defer authServer.Close()
+	authenticator := &mocks.Authenticator{}
+	authenticator.
+		On("AuthHeaders", mock.AnythingOfType("*context.emptyCtx")).
+		Return(http.Header{"Authorization": []string{"Bearer good_token"}}, nil)
 
-	client := tado.APIClient{
-		HTTPClient: &http.Client{},
-		Username:   "user@examle.com",
-		Password:   "some-password",
-		AuthURL:    authServer.URL,
-		APIURL:     apiServer.URL,
-	}
+	client := tado.New("user@examle.com", "some-password", "")
+	client.APIURL = apiServer.URL
+	client.Authenticator = authenticator
 
 	tadoZones, err := client.GetZones(context.Background())
 	assert.Nil(t, err)
@@ -122,16 +163,14 @@ func TestAPIClient_Weather(t *testing.T) {
 	server := APIServer{}
 	apiServer := httptest.NewServer(http.HandlerFunc(server.apiHandler))
 	defer apiServer.Close()
-	authServer := httptest.NewServer(http.HandlerFunc(server.authHandler))
-	defer authServer.Close()
+	authenticator := &mocks.Authenticator{}
+	authenticator.
+		On("AuthHeaders", mock.AnythingOfType("*context.emptyCtx")).
+		Return(http.Header{"Authorization": []string{"Bearer good_token"}}, nil)
 
-	client := tado.APIClient{
-		HTTPClient: &http.Client{},
-		Username:   "user@examle.com",
-		Password:   "some-password",
-		AuthURL:    authServer.URL,
-		APIURL:     apiServer.URL,
-	}
+	client := tado.New("user@examle.com", "some-password", "")
+	client.APIURL = apiServer.URL
+	client.Authenticator = authenticator
 
 	tadoWeatherInfo, err := client.GetWeatherInfo(context.Background())
 	assert.Nil(t, err)
@@ -145,16 +184,14 @@ func TestAPIClient_Devices(t *testing.T) {
 	server := APIServer{}
 	apiServer := httptest.NewServer(http.HandlerFunc(server.apiHandler))
 	defer apiServer.Close()
-	authServer := httptest.NewServer(http.HandlerFunc(server.authHandler))
-	defer authServer.Close()
+	authenticator := &mocks.Authenticator{}
+	authenticator.
+		On("AuthHeaders", mock.AnythingOfType("*context.emptyCtx")).
+		Return(http.Header{"Authorization": []string{"Bearer good_token"}}, nil)
 
-	client := tado.APIClient{
-		HTTPClient: &http.Client{},
-		Username:   "user@examle.com",
-		Password:   "some-password",
-		AuthURL:    authServer.URL,
-		APIURL:     apiServer.URL,
-	}
+	client := tado.New("user@examle.com", "some-password", "")
+	client.APIURL = apiServer.URL
+	client.Authenticator = authenticator
 
 	zones, err := client.GetZones(context.Background())
 	assert.Nil(t, err)
@@ -168,16 +205,14 @@ func TestAPIClient_MobileDevices(t *testing.T) {
 	server := APIServer{}
 	apiServer := httptest.NewServer(http.HandlerFunc(server.apiHandler))
 	defer apiServer.Close()
-	authServer := httptest.NewServer(http.HandlerFunc(server.authHandler))
-	defer authServer.Close()
+	authenticator := &mocks.Authenticator{}
+	authenticator.
+		On("AuthHeaders", mock.AnythingOfType("*context.emptyCtx")).
+		Return(http.Header{"Authorization": []string{"Bearer good_token"}}, nil)
 
-	client := tado.APIClient{
-		HTTPClient: &http.Client{},
-		Username:   "user@examle.com",
-		Password:   "some-password",
-		AuthURL:    authServer.URL,
-		APIURL:     apiServer.URL,
-	}
+	client := tado.New("user@examle.com", "some-password", "")
+	client.APIURL = apiServer.URL
+	client.Authenticator = authenticator
 
 	mobileDevices, err := client.GetMobileDevices(context.Background())
 	assert.Nil(t, err)
@@ -194,16 +229,14 @@ func TestAPIClient_Timeout(t *testing.T) {
 	server := APIServer{slow: true}
 	apiServer := httptest.NewServer(http.HandlerFunc(server.apiHandler))
 	defer apiServer.Close()
-	authServer := httptest.NewServer(http.HandlerFunc(server.authHandler))
-	defer authServer.Close()
+	authenticator := &mocks.Authenticator{}
+	authenticator.
+		On("AuthHeaders", mock.AnythingOfType("*context.timerCtx")).
+		Return(http.Header{"Authorization": []string{"Bearer good_token"}}, nil)
 
-	client := tado.APIClient{
-		HTTPClient: &http.Client{Timeout: 100 * time.Millisecond},
-		Username:   "user@examle.com",
-		Password:   "some-password",
-		AuthURL:    authServer.URL,
-		APIURL:     apiServer.URL,
-	}
+	client := tado.New("user@examle.com", "some-password", "")
+	client.APIURL = apiServer.URL
+	client.Authenticator = authenticator
 
 	ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
 	defer cancel()

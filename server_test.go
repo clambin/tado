@@ -2,59 +2,40 @@ package tado_test
 
 import (
 	"context"
-	"fmt"
 	log "github.com/sirupsen/logrus"
 	"html"
-	"io"
-	"io/ioutil"
 	"net/http"
-	"net/url"
 	"time"
 )
 
 // APIServer implements an authenticating API server
 type APIServer struct {
-	counter      int
-	accessToken  string
-	refreshToken string
-	expires      time.Time
-	failRefresh  bool
-	slow         bool
-}
-
-func (apiServer *APIServer) authHandler(w http.ResponseWriter, req *http.Request) {
-	log.Debug("authHandler: " + req.URL.Path)
-
-	if req.URL.Path != "/oauth/token" {
-		http.Error(w, "endpoint not implemented", http.StatusNotFound)
-		return
-	}
-
-	response, ok := apiServer.handleAuthentication(req)
-
-	if ok == false {
-		http.Error(w, "Forbidden", http.StatusForbidden)
-	} else {
-		_, _ = w.Write([]byte(response))
-	}
+	fail bool
+	slow bool
 }
 
 func (apiServer *APIServer) apiHandler(w http.ResponseWriter, req *http.Request) {
 	log.Debug("apiHandler: " + html.EscapeString(req.URL.Path))
+
+	if apiServer.fail {
+		http.Error(w, "server is having issues", http.StatusInternalServerError)
+		return
+	}
 
 	if apiServer.slow && wait(req.Context(), 5*time.Second) == false {
 		http.Error(w, "context exceeded", http.StatusRequestTimeout)
 		return
 	}
 
-	contentType, ok := req.Header["Content-Type"]
-	if ok == false || contentType[0] != "application/json;charset=UTF-8" {
-		http.Error(w, "content type should be application/json", http.StatusUnprocessableEntity)
+	token := req.Header.Get("Authorization")
+	if token != "Bearer good_token" {
+		http.Error(w, "request denied", http.StatusForbidden)
 		return
 	}
 
-	if apiServer.authenticateRequest(req) == false {
-		http.Error(w, "Forbidden", http.StatusForbidden)
+	contentType, ok := req.Header["Content-Type"]
+	if ok == false || contentType[0] != "application/json;charset=UTF-8" {
+		http.Error(w, "content type should be application/json", http.StatusUnprocessableEntity)
 		return
 	}
 
@@ -82,61 +63,6 @@ loop:
 			return false
 		}
 	}
-	return true
-}
-
-func (apiServer *APIServer) handleAuthentication(req *http.Request) (response string, ok bool) {
-	const authResponse = `{
-  		"access_token":"%s",
-  		"token_type":"bearer",
-  		"refresh_token":"%s",
-  		"expires_in":%d,
-  		"scope":"home.user",
-  		"jti":"jti"
-	}`
-
-	grantType := getGrantType(req.Body)
-
-	if grantType == "refresh_token" {
-		if apiServer.failRefresh {
-			return "test server in failRefresh mode", false
-		}
-		apiServer.counter++
-	} else {
-		apiServer.counter = 1
-	}
-
-	apiServer.accessToken = fmt.Sprintf("token_%d", apiServer.counter)
-	apiServer.refreshToken = apiServer.accessToken
-	apiServer.expires = time.Now().Add(20 * time.Second)
-
-	return fmt.Sprintf(authResponse, apiServer.accessToken, apiServer.refreshToken, 20), true
-}
-
-func getGrantType(body io.Reader) string {
-	content, _ := ioutil.ReadAll(body)
-	if params, err := url.ParseQuery(string(content)); err == nil {
-		if tokenType, ok := params["grant_type"]; ok == true {
-			return tokenType[0]
-		}
-	}
-	panic("grant_type not found in body")
-}
-
-func (apiServer *APIServer) authenticateRequest(req *http.Request) (ok bool) {
-	if apiServer.accessToken == "" {
-		return false
-	}
-
-	bearer := req.Header.Get("Authorization")
-	if bearer != "Bearer "+apiServer.accessToken {
-		return false
-	}
-
-	if time.Now().After(apiServer.expires) {
-		return false
-	}
-
 	return true
 }
 
