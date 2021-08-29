@@ -2,14 +2,7 @@
 //
 // Using this package typically involves creating an APIClient as follows:
 //
-// 		client := tado.APIClient{
-//			Authenticator: tado.Authenticator{
-//				HTTPClient: &http.Client{},
-//				Username:   "your-tado-username",
-//				Password:   "your-tado-password",
-// 			},
-//			HTTPClient: &http.Client{},
-//     }
+// 		client := tado.New("your-tado-username", "your-tado-password", "your-tado-secret")
 //
 // Once a client has been created, you can query tado.com for information about your different Tado devices.
 // Currently, the following endpoints are supported:
@@ -67,29 +60,6 @@ type API interface {
 }
 
 // APIClient represents a Tado API client.
-//
-// 		client := tado.APIClient{
-//			Authenticator: tado.Authenticator{
-//				HTTPClient: &http.Client{},
-//				Username:   "your-tado-username",
-//				Password:   "your-tado-password",
-// 			},
-//			HTTPClient: &http.Client{},
-//     }
-//
-// If the default Client Secret does not work, you can provide your own secret:
-// 		client := tado.APIClient{
-//			Authenticator: tado.Authenticator{
-//				HTTPClient: &http.Client{},
-//				Username:   "your-tado-username",
-//				Password:   "your-tado-password",
-//				ClientSecret: "your-client-secret",
-// 			},
-//			HTTPClient: &http.Client{},
-//     }
-//
-// where your-client-secret can be found by visiting https://my.tado.com/webapp/env.js after logging in to https://my.tado.com
-//
 type APIClient struct {
 	// Authenticator handles logging in to the Tado server
 	Authenticator Authenticator
@@ -102,7 +72,9 @@ type APIClient struct {
 	lock   sync.RWMutex
 }
 
-// New creates a new client.
+// New creates a new client
+//
+// clientSecret can typically be left blank.  If the default secret does not work, your client secret can be found by visiting https://my.tado.com/webapp/env.js after logging in to https://my.tado.com
 func New(username, password, clientSecret string) *APIClient {
 	return &APIClient{
 		Authenticator: &authenticator{

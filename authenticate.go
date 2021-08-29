@@ -99,7 +99,7 @@ func (auth *authenticator) doAuthentication(ctx context.Context, grantType, cred
 		form.Add("username", auth.Username)
 	}
 
-	req, _ := http.NewRequestWithContext(ctx, http.MethodPost, auth.authURL()+"/oauth/token", strings.NewReader(form.Encode()))
+	req, _ := http.NewRequestWithContext(ctx, http.MethodPost, auth.AuthURL+"/oauth/token", strings.NewReader(form.Encode()))
 	req.Header.Add("Referer", "https://my.tado.com/")
 	req.Header.Add("content-type", "application/x-www-form-urlencoded")
 
@@ -130,14 +130,4 @@ func (auth *authenticator) doAuthentication(ctx context.Context, grantType, cred
 	log.WithError(err).WithField("expires", auth.Expires).Debug("authenticated")
 
 	return err
-}
-
-// authURL returns the URL of the authentication server
-func (auth *authenticator) authURL() (authURL string) {
-	authURL = baseAuthURL
-	if auth.AuthURL != "" {
-		authURL = auth.AuthURL
-
-	}
-	return
 }
