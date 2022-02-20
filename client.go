@@ -171,7 +171,7 @@ func (client *APIClient) buildRequest(ctx context.Context, method string, path s
 	var authHeaders http.Header
 	authHeaders, err = client.Authenticator.AuthHeaders(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("tado authentication failed: %s", err)
+		return nil, fmt.Errorf("tado authentication failed: %w", err)
 	}
 
 	for key, values := range authHeaders {

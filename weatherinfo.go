@@ -31,7 +31,7 @@ func (client *APIClient) GetWeatherInfo(ctx context.Context) (weatherInfo Weathe
 }
 
 // String converts WeatherInfo to a loggable string
-func (weatherInfo *WeatherInfo) String() string {
+func (weatherInfo WeatherInfo) String() string {
 	return fmt.Sprintf("temp=%.1fºC, solar=%.1f%%, weather=%s",
 		weatherInfo.OutsideTemperature.Celsius,
 		weatherInfo.SolarIntensity.Percentage,

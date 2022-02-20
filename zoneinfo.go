@@ -175,7 +175,7 @@ func (client *APIClient) DeleteZoneOverlay(ctx context.Context, zoneID int) erro
 }
 
 // String serializes a ZoneInfo into a string. Used for logging.
-func (zoneInfo *ZoneInfo) String() string {
+func (zoneInfo ZoneInfo) String() string {
 	return fmt.Sprintf("target=%.1fºC, temp=%.1fºC, humidity=%.1f%%, heating=%.1f%%, power=%s, openwindow=%ds, overlay={%s}",
 		zoneInfo.Setting.Temperature.Celsius,
 		zoneInfo.SensorDataPoints.Temperature.Celsius,
@@ -188,7 +188,7 @@ func (zoneInfo *ZoneInfo) String() string {
 }
 
 // String serializes a ZoneInfoOverlay into a string. Used for logging.
-func (overlay *ZoneInfoOverlay) String() string {
+func (overlay ZoneInfoOverlay) String() string {
 	return fmt.Sprintf(`type=%s, settings={%s}, termination={type="%s", remaining=%d}`,
 		overlay.Type,
 		overlay.Setting.String(),
@@ -198,7 +198,7 @@ func (overlay *ZoneInfoOverlay) String() string {
 }
 
 // String serializes a ZoneInfoOverlaySetting into a string. Used for logging.
-func (setting *ZoneInfoOverlaySetting) String() string {
+func (setting ZoneInfoOverlaySetting) String() string {
 	return fmt.Sprintf("type=%s, power=%s, temp=%.1fºC",
 		setting.Type,
 		setting.Power,
@@ -222,8 +222,8 @@ const (
 // ZoneState is the state of the zone, i.e. heating is off, controlled automatically, or controlled manually
 type ZoneState int
 
-// GetState returns the state of the zone, i.e.
-func (zoneInfo *ZoneInfo) GetState() (state ZoneState) {
+// GetState returns the state of the zone
+func (zoneInfo ZoneInfo) GetState() (state ZoneState) {
 	state = ZoneStateUnknown
 	if zoneInfo.Overlay.Type == "MANUAL" && zoneInfo.Overlay.Setting.Type == "HEATING" {
 		if zoneInfo.Overlay.Setting.Power != "ON" || zoneInfo.Overlay.Setting.Temperature.Celsius <= 5.0 {

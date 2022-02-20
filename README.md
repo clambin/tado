@@ -3,6 +3,7 @@
 ![Codecov](https://img.shields.io/codecov/c/gh/clambin/tado?style=plastic)
 ![Go Report Card](https://goreportcard.com/badge/github.com/clambin/tado)
 ![GitHub](https://img.shields.io/github/license/clambin/tado?style=plastic)
+[![GoDoc](https://pkg.go.dev/badge/github.com/clambin/tado?utm_source=godoc)](http://pkg.go.dev/github.com/clambin/tado)
 
 Basic Go API for Tado thermostats.
 
