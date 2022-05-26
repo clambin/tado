@@ -7,26 +7,7 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        go:
-          - '1.15'
-          - '1.16'
-          - '1.17'
-          - '1.18'
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-go@v3
-        with:
-          go-version: ${{ matrix.go }}
-      - name: test
-        run: |
-          go test ./... -race -coverprofile=coverage.txt -covermode=atomic
-      - uses: codecov/codecov-action@v3
-        with:
-          file: coverage.txt
-          token: ${{ secrets.CODECOV_TOKEN }}
+    uses: clambin/workflows/.github/workflows/test.yaml@main
   publish:
     needs: test
     runs-on: ubuntu-latest
