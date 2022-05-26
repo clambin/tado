@@ -67,7 +67,7 @@ type MobileDeviceLocationState int
 // IsHome returns the location of the MobileDevice
 func (mobileDevice *MobileDevice) IsHome() (state MobileDeviceLocationState) {
 	state = DeviceUnknown
-	if mobileDevice.Settings.GeoTrackingEnabled == true {
+	if mobileDevice.Settings.GeoTrackingEnabled {
 		if mobileDevice.Location.AtHome {
 			state = DeviceHome
 		} else {

@@ -88,7 +88,6 @@ type authServer struct {
 	expires      time.Time
 	fail         bool
 	failRefresh  bool
-	slow         bool
 }
 
 func (server *authServer) authHandler(w http.ResponseWriter, req *http.Request) {
