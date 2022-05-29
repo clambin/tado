@@ -18,11 +18,11 @@
 package tado
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"strconv"
 	"sync"
@@ -112,7 +112,7 @@ func (client *APIClient) getHomeID(ctx context.Context) (err error) {
 		HomeID int `json:"homeId"`
 	}
 
-	if err = client.call(ctx, http.MethodGet, client.APIURL+"/api/v1/me", "", &meResponse); err != nil {
+	if err = client.call(ctx, http.MethodGet, client.APIURL+"/api/v1/me", nil, &meResponse); err != nil {
 		return
 	}
 
@@ -132,7 +132,7 @@ func (client *APIClient) initialize(ctx context.Context) (err error) {
 	return client.getHomeID(ctx)
 }
 
-func (client *APIClient) call(ctx context.Context, method string, url string, payload string, response interface{}) (err error) {
+func (client *APIClient) call(ctx context.Context, method string, url string, payload io.Reader, response interface{}) (err error) {
 	var req *http.Request
 	req, err = client.buildRequest(ctx, method, url, payload)
 	if err != nil {
@@ -165,8 +165,8 @@ func (client *APIClient) call(ctx context.Context, method string, url string, pa
 	return
 }
 
-func (client *APIClient) buildRequest(ctx context.Context, method string, path string, payload string) (req *http.Request, err error) {
-	req, _ = http.NewRequestWithContext(ctx, method, path, bytes.NewBufferString(payload))
+func (client *APIClient) buildRequest(ctx context.Context, method string, path string, payload io.Reader) (req *http.Request, err error) {
+	req, _ = http.NewRequestWithContext(ctx, method, path, payload)
 	req.Header.Add("Content-Type", "application/json;charset=UTF-8")
 
 	var authHeaders http.Header

@@ -33,7 +33,7 @@ func (client *APIClient) GetMobileDevices(ctx context.Context) (tadoMobileDevice
 		return
 	}
 
-	err = client.call(ctx, http.MethodGet, client.apiV2URL("/mobileDevices"), "", &tadoMobileDevices)
+	err = client.call(ctx, http.MethodGet, client.apiV2URL("/mobileDevices"), nil, &tadoMobileDevices)
 	return
 }
 
