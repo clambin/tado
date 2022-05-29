@@ -2,7 +2,6 @@ package tado
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
 )
@@ -21,12 +20,10 @@ type WeatherInfo struct {
 
 // GetWeatherInfo retrieves weather information for the user's Home.
 func (client *APIClient) GetWeatherInfo(ctx context.Context) (weatherInfo WeatherInfo, err error) {
-	if err = client.initialize(ctx); err == nil {
-		var body []byte
-		if body, err = client.call(ctx, http.MethodGet, client.apiV2URL("/weather"), ""); err == nil {
-			err = json.Unmarshal(body, &weatherInfo)
-		}
+	if err = client.initialize(ctx); err != nil {
+		return
 	}
+	err = client.call(ctx, http.MethodGet, client.apiV2URL("/weather"), "", &weatherInfo)
 	return
 }
 

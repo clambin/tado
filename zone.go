@@ -2,7 +2,6 @@ package tado
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"strings"
@@ -31,20 +30,12 @@ type ConnectionState struct {
 }
 
 // GetZones retrieves the different Zones configured for the user's Home ID
-func (client *APIClient) GetZones(ctx context.Context) ([]Zone, error) {
-	var (
-		err  error
-		body []byte
-	)
-	zones := make([]Zone, 0)
-
-	if err = client.initialize(ctx); err == nil {
-		if body, err = client.call(ctx, http.MethodGet, client.apiV2URL("/zones"), ""); err == nil {
-			err = json.Unmarshal(body, &zones)
-		}
+func (client *APIClient) GetZones(ctx context.Context) (zones []Zone, err error) {
+	if err = client.initialize(ctx); err != nil {
+		return
 	}
-
-	return zones, err
+	err = client.call(ctx, http.MethodGet, client.apiV2URL("/zones"), "", &zones)
+	return
 }
 
 // String serializes a Zone into a string. Used for logging

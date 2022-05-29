@@ -77,56 +77,50 @@ type ZoneInfoOverlayTermination struct {
 }
 
 // GetZoneInfo gets the info for the specified ZoneID
-func (client *APIClient) GetZoneInfo(ctx context.Context, zoneID int) (ZoneInfo, error) {
-	var (
-		err          error
-		body         []byte
-		tadoZoneInfo ZoneInfo
-	)
-	if err = client.initialize(ctx); err == nil {
-		if body, err = client.call(ctx, http.MethodGet, client.apiV2URL("/zones/"+strconv.Itoa(zoneID)+"/state"), ""); err == nil {
-			err = json.Unmarshal(body, &tadoZoneInfo)
-		}
+func (client *APIClient) GetZoneInfo(ctx context.Context, zoneID int) (tadoZoneInfo ZoneInfo, err error) {
+	if err = client.initialize(ctx); err != nil {
+		return
 	}
-	return tadoZoneInfo, err
+	err = client.call(ctx, http.MethodGet, client.apiV2URL("/zones/"+strconv.Itoa(zoneID)+"/state"), "", &tadoZoneInfo)
+	return
 }
 
 // SetZoneOverlay sets an overlay (manual temperature setting) for the specified ZoneID
-func (client *APIClient) SetZoneOverlay(ctx context.Context, zoneID int, temperature float64) error {
+func (client *APIClient) SetZoneOverlay(ctx context.Context, zoneID int, temperature float64) (err error) {
 	if temperature < 5 {
 		temperature = 5
 	}
 
 	var (
-		err     error
 		payload []byte
 	)
 
-	if err = client.initialize(ctx); err == nil {
-		request := ZoneInfoOverlay{
-			Type: "MANUAL",
-			Setting: ZoneInfoOverlaySetting{
-				Type:  "HEATING",
-				Power: "ON",
-				Temperature: Temperature{
-					Celsius: temperature,
-				},
-			},
-			Termination: ZoneInfoOverlayTermination{
-				Type: "MANUAL",
-			},
-		}
-
-		payload, _ = json.Marshal(request)
-		_, err = client.call(ctx, http.MethodPut, client.apiV2URL("/zones/"+strconv.Itoa(zoneID)+"/overlay"), string(payload))
+	if err = client.initialize(ctx); err != nil {
+		return
 	}
 
-	return err
+	request := ZoneInfoOverlay{
+		Type: "MANUAL",
+		Setting: ZoneInfoOverlaySetting{
+			Type:  "HEATING",
+			Power: "ON",
+			Temperature: Temperature{
+				Celsius: temperature,
+			},
+		},
+		Termination: ZoneInfoOverlayTermination{
+			Type: "MANUAL",
+		},
+	}
+
+	payload, _ = json.Marshal(request)
+	err = client.call(ctx, http.MethodPut, client.apiV2URL("/zones/"+strconv.Itoa(zoneID)+"/overlay"), string(payload), nil)
+	return
 }
 
 // SetZoneOverlayWithDuration sets an overlay (manual temperature setting) for the specified ZoneID for a specified amount of time.
 // If duration is zero, it calls SetZoneOverlay.
-func (client *APIClient) SetZoneOverlayWithDuration(ctx context.Context, zoneID int, temperature float64, duration time.Duration) error {
+func (client *APIClient) SetZoneOverlayWithDuration(ctx context.Context, zoneID int, temperature float64, duration time.Duration) (err error) {
 	if duration == 0 {
 		return client.SetZoneOverlay(ctx, zoneID, temperature)
 	}
@@ -136,42 +130,41 @@ func (client *APIClient) SetZoneOverlayWithDuration(ctx context.Context, zoneID 
 	}
 
 	var (
-		err     error
 		payload []byte
 	)
 
-	if err = client.initialize(ctx); err == nil {
-		request := ZoneInfoOverlay{
-			Type: "MANUAL",
-			Setting: ZoneInfoOverlaySetting{
-				Type:  "HEATING",
-				Power: "ON",
-				Temperature: Temperature{
-					Celsius: temperature,
-				},
-			},
-			Termination: ZoneInfoOverlayTermination{
-				Type:              "TIMER",
-				DurationInSeconds: int(duration.Seconds()),
-			},
-		}
-
-		payload, _ = json.Marshal(request)
-
-		_, err = client.call(ctx, http.MethodPut, client.apiV2URL("/zones/"+strconv.Itoa(zoneID)+"/overlay"), string(payload))
+	if err = client.initialize(ctx); err != nil {
+		return
 	}
+	request := ZoneInfoOverlay{
+		Type: "MANUAL",
+		Setting: ZoneInfoOverlaySetting{
+			Type:  "HEATING",
+			Power: "ON",
+			Temperature: Temperature{
+				Celsius: temperature,
+			},
+		},
+		Termination: ZoneInfoOverlayTermination{
+			Type:              "TIMER",
+			DurationInSeconds: int(duration.Seconds()),
+		},
+	}
+
+	payload, _ = json.Marshal(request)
+
+	err = client.call(ctx, http.MethodPut, client.apiV2URL("/zones/"+strconv.Itoa(zoneID)+"/overlay"), string(payload), nil)
 
 	return err
 }
 
 // DeleteZoneOverlay deletes the overlay (manual temperature setting) for the specified ZoneID
-func (client *APIClient) DeleteZoneOverlay(ctx context.Context, zoneID int) error {
-	var err error
-	if err = client.initialize(ctx); err == nil {
-		_, err = client.call(ctx, http.MethodDelete, client.apiV2URL("/zones/"+strconv.Itoa(zoneID)+"/overlay"), "")
+func (client *APIClient) DeleteZoneOverlay(ctx context.Context, zoneID int) (err error) {
+	if err = client.initialize(ctx); err != nil {
+		return
 	}
 
-	return err
+	return client.call(ctx, http.MethodDelete, client.apiV2URL("/zones/"+strconv.Itoa(zoneID)+"/overlay"), "", nil)
 }
 
 // String serializes a ZoneInfo into a string. Used for logging.

@@ -23,7 +23,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"strconv"
 	"sync"
@@ -100,7 +99,7 @@ func (client *APIClient) apiV2URL(endpoint string) string {
 // getHomeID gets the user's Home ID
 //
 // Called by Initialize, so doesn't need to be called by the calling application.
-func (client *APIClient) getHomeID(ctx context.Context) error {
+func (client *APIClient) getHomeID(ctx context.Context) (err error) {
 	client.lock.Lock()
 	homeID := client.HomeID
 	client.lock.Unlock()
@@ -109,18 +108,18 @@ func (client *APIClient) getHomeID(ctx context.Context) error {
 		return nil
 	}
 
-	body, err := client.call(ctx, http.MethodGet, client.APIURL+"/api/v1/me", "")
-
-	if err == nil {
-		var resp interface{}
-		if err = json.Unmarshal(body, &resp); err == nil {
-			m := resp.(map[string]interface{})
-			client.lock.Lock()
-			client.HomeID = int(m["homeId"].(float64))
-			client.lock.Unlock()
-		}
+	var meResponse struct {
+		HomeID int `json:"homeId"`
 	}
-	return err
+
+	if err = client.call(ctx, http.MethodGet, client.APIURL+"/api/v1/me", "", &meResponse); err != nil {
+		return
+	}
+
+	client.lock.Lock()
+	client.HomeID = meResponse.HomeID
+	client.lock.Unlock()
+	return
 }
 
 // Initialize sets up the client to call the various APIs, i.e. authenticates with tado.com,
@@ -133,9 +132,9 @@ func (client *APIClient) initialize(ctx context.Context) (err error) {
 	return client.getHomeID(ctx)
 }
 
-func (client *APIClient) call(ctx context.Context, method string, apiURL string, payload string) (response []byte, err error) {
+func (client *APIClient) call(ctx context.Context, method string, url string, payload string, response interface{}) (err error) {
 	var req *http.Request
-	req, err = client.buildRequest(ctx, method, apiURL, payload)
+	req, err = client.buildRequest(ctx, method, url, payload)
 	if err != nil {
 		return
 	}
@@ -148,7 +147,9 @@ func (client *APIClient) call(ctx context.Context, method string, apiURL string,
 
 	switch resp.StatusCode {
 	case http.StatusOK:
-		response, err = ioutil.ReadAll(resp.Body)
+		if resp.ContentLength > 0 {
+			err = json.NewDecoder(resp.Body).Decode(response)
+		}
 	case http.StatusNoContent:
 		err = nil
 	case http.StatusForbidden, http.StatusUnauthorized:

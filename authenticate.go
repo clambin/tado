@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	log "github.com/sirupsen/logrus"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strings"
@@ -103,31 +102,42 @@ func (auth *authenticator) doAuthentication(ctx context.Context, grantType, cred
 	req.Header.Add("Referer", "https://my.tado.com/")
 	req.Header.Add("content-type", "application/x-www-form-urlencoded")
 
+	defer func() {
+		if err != nil && grantType == "refresh_token" {
+			// failed during refresh. reset refresh_token to force a password login
+			auth.refreshToken = ""
+		}
+	}()
+
 	var resp *http.Response
 	resp, err = auth.HTTPClient.Do(req)
 
+	if err != nil {
+		return
+	}
+
+	defer func() {
+		_ = resp.Body.Close()
+	}()
+
+	if resp.StatusCode != http.StatusOK {
+		err = errors.New(resp.Status)
+		return
+	}
+
+	var response struct {
+		AccessToken  string  `json:"access_token"`
+		RefreshToken string  `json:"refresh_token"`
+		ExpiresIn    float64 `json:"expires_in"`
+	}
+	err = json.NewDecoder(resp.Body).Decode(&response)
+
 	if err == nil {
-		if resp.StatusCode == http.StatusOK {
-			body, _ := ioutil.ReadAll(resp.Body)
-
-			var response interface{}
-			if err = json.Unmarshal(body, &response); err == nil {
-				m := response.(map[string]interface{})
-				auth.accessToken = m["access_token"].(string)
-				auth.refreshToken = m["refresh_token"].(string)
-				auth.Expires = time.Now().Add(time.Second * time.Duration(m["expires_in"].(float64)))
-			}
-		} else {
-			err = errors.New(resp.Status)
-		}
-		_ = req.Body.Close()
+		auth.accessToken = response.AccessToken
+		auth.refreshToken = response.RefreshToken
+		auth.Expires = time.Now().Add(time.Second * time.Duration(response.ExpiresIn))
 	}
 
-	if err != nil && grantType == "refresh_token" {
-		// failed during refresh. reset refresh_token to force a password login
-		auth.refreshToken = ""
-	}
 	log.WithError(err).WithField("expires", auth.Expires).Debug("authenticated")
-
 	return err
 }
