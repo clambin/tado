@@ -7,7 +7,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -141,7 +140,7 @@ func (server *authServer) handleAuthentication(req *http.Request) (response stri
 }
 
 func getGrantType(body io.Reader) string {
-	content, _ := ioutil.ReadAll(body)
+	content, _ := io.ReadAll(body)
 	if params, err := url.ParseQuery(string(content)); err == nil {
 		if tokenType, ok := params["grant_type"]; ok == true {
 			return tokenType[0]
