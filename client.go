@@ -2,19 +2,18 @@
 //
 // Using this package typically involves creating an APIClient as follows:
 //
-// 		client := tado.New("your-tado-username", "your-tado-password", "your-tado-secret")
+//	client := tado.New("your-tado-username", "your-tado-password", "your-tado-secret")
 //
 // Once a client has been created, you can query tado.com for information about your different Tado devices.
 // Currently, the following endpoints are supported:
 //
-//   GetZones:                   get the different zones (rooms) defined in your home
-//   GetZoneInfo:                get metrics for a specified zone in your home
-//   GetWeatherInfo:             get overall weather information
-//   GetMobileDevices:           get status of each registered mobile device
-//   SetZoneOverlay              set a permanent overlay for a zone
-//   SetZoneOverlayWithDuration  set a temporary overlay for a zone
-//   DeleteZoneOverlay           delete the overlay for a zone
-//
+//	GetZones:                   get the different zones (rooms) defined in your home
+//	GetZoneInfo:                get metrics for a specified zone in your home
+//	GetWeatherInfo:             get overall weather information
+//	GetMobileDevices:           get status of each registered mobile device
+//	SetZoneOverlay              set a permanent overlay for a zone
+//	SetZoneOverlayWithDuration  set a temporary overlay for a zone
+//	DeleteZoneOverlay           delete the overlay for a zone
 package tado
 
 import (
@@ -47,6 +46,7 @@ type Value struct {
 }
 
 // API for the Tado APIClient.
+//
 //go:generate mockery --name API
 type API interface {
 	GetZones(context.Context) ([]Zone, error)
@@ -132,26 +132,23 @@ func (client *APIClient) initialize(ctx context.Context) (err error) {
 	return client.getHomeID(ctx)
 }
 
-func (client *APIClient) call(ctx context.Context, method string, url string, payload io.Reader, response interface{}) (err error) {
+func (client *APIClient) call(ctx context.Context, method string, url string, payload io.Reader, response any) (err error) {
 	var req *http.Request
-	req, err = client.buildRequest(ctx, method, url, payload)
-	if err != nil {
+	if req, err = client.buildRequest(ctx, method, url, payload); err != nil {
 		return
 	}
 
 	var resp *http.Response
-	resp, err = client.HTTPClient.Do(req)
-	if err != nil {
+	if resp, err = client.HTTPClient.Do(req); err != nil {
 		return
 	}
 
 	switch resp.StatusCode {
 	case http.StatusOK:
-		if resp.ContentLength > 0 {
+		if resp.ContentLength > 0 && response != nil {
 			err = json.NewDecoder(resp.Body).Decode(response)
 		}
 	case http.StatusNoContent:
-		err = nil
 	case http.StatusForbidden, http.StatusUnauthorized:
 		// we're authenticated, but still got forbidden.
 		// force password login to get a new token.
