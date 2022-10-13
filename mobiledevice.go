@@ -29,11 +29,9 @@ type MobileDeviceLocation struct {
 
 // GetMobileDevices retrieves the status of all registered mobile devices.
 func (client *APIClient) GetMobileDevices(ctx context.Context) (tadoMobileDevices MobileDevices, err error) {
-	if err = client.initialize(ctx); err != nil {
-		return
+	if err = client.initialize(ctx); err == nil {
+		err = client.call(ctx, http.MethodGet, client.apiV2URL("/mobileDevices"), nil, &tadoMobileDevices)
 	}
-
-	err = client.call(ctx, http.MethodGet, client.apiV2URL("/mobileDevices"), nil, &tadoMobileDevices)
 	return
 }
 
