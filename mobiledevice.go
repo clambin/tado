@@ -14,7 +14,7 @@ type MobileDevice struct {
 	Location MobileDeviceLocation `json:"location"`
 }
 
-type MobileDevices []MobileDevice
+//type MobileDevices []MobileDevice
 
 // MobileDeviceSettings is a sub-structure of MobileDevice
 type MobileDeviceSettings struct {
@@ -28,7 +28,7 @@ type MobileDeviceLocation struct {
 }
 
 // GetMobileDevices retrieves the status of all registered mobile devices.
-func (client *APIClient) GetMobileDevices(ctx context.Context) (tadoMobileDevices MobileDevices, err error) {
+func (client *APIClient) GetMobileDevices(ctx context.Context) (tadoMobileDevices []MobileDevice, err error) {
 	if err = client.initialize(ctx); err == nil {
 		err = client.call(ctx, http.MethodGet, client.apiV2URL("/mobileDevices"), nil, &tadoMobileDevices)
 	}
