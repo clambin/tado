@@ -17,6 +17,7 @@
 package tado
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -112,7 +113,7 @@ func (client *APIClient) getHomeID(ctx context.Context) (err error) {
 		HomeID int `json:"homeId"`
 	}
 
-	if err = client.call(ctx, http.MethodGet, client.APIURL+"/api/v1/me", nil, &meResponse); err != nil {
+	if err = client.call(ctx, http.MethodGet, client.APIURL+"/api/v1/me", bytes.NewBufferString(""), &meResponse); err != nil {
 		return
 	}
 
@@ -145,7 +146,7 @@ func (client *APIClient) call(ctx context.Context, method string, url string, pa
 
 	switch resp.StatusCode {
 	case http.StatusOK:
-		if resp.ContentLength > 0 && response != nil {
+		if resp.ContentLength != 0 && response != nil {
 			err = json.NewDecoder(resp.Body).Decode(response)
 		}
 	case http.StatusNoContent:
