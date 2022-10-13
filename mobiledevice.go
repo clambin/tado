@@ -2,7 +2,6 @@ package tado
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
 )
@@ -14,6 +13,8 @@ type MobileDevice struct {
 	Settings MobileDeviceSettings `json:"settings"`
 	Location MobileDeviceLocation `json:"location"`
 }
+
+type MobileDevices []MobileDevice
 
 // MobileDeviceSettings is a sub-structure of MobileDevice
 type MobileDeviceSettings struct {
@@ -27,19 +28,11 @@ type MobileDeviceLocation struct {
 }
 
 // GetMobileDevices retrieves the status of all registered mobile devices.
-func (client *APIClient) GetMobileDevices(ctx context.Context) ([]MobileDevice, error) {
-	var (
-		err               error
-		tadoMobileDevices []MobileDevice
-		body              []byte
-	)
+func (client *APIClient) GetMobileDevices(ctx context.Context) (tadoMobileDevices MobileDevices, err error) {
 	if err = client.initialize(ctx); err == nil {
-		if body, err = client.call(ctx, http.MethodGet, client.apiV2URL("/mobileDevices"), ""); err == nil {
-			err = json.Unmarshal(body, &tadoMobileDevices)
-		}
+		err = client.call(ctx, http.MethodGet, client.apiV2URL("/mobileDevices"), nil, &tadoMobileDevices)
 	}
-
-	return tadoMobileDevices, err
+	return
 }
 
 // String serializes a MobileDevice into a string. Used for logging.

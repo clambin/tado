@@ -2,28 +2,26 @@
 //
 // Using this package typically involves creating an APIClient as follows:
 //
-// 		client := tado.New("your-tado-username", "your-tado-password", "your-tado-secret")
+//	client := tado.New("your-tado-username", "your-tado-password", "your-tado-secret")
 //
 // Once a client has been created, you can query tado.com for information about your different Tado devices.
 // Currently, the following endpoints are supported:
 //
-//   GetZones:                   get the different zones (rooms) defined in your home
-//   GetZoneInfo:                get metrics for a specified zone in your home
-//   GetWeatherInfo:             get overall weather information
-//   GetMobileDevices:           get status of each registered mobile device
-//   SetZoneOverlay              set a permanent overlay for a zone
-//   SetZoneOverlayWithDuration  set a temporary overlay for a zone
-//   DeleteZoneOverlay           delete the overlay for a zone
-//
+//	GetZones:                   get the different zones (rooms) defined in your home
+//	GetZoneInfo:                get metrics for a specified zone in your home
+//	GetWeatherInfo:             get overall weather information
+//	GetMobileDevices:           get status of each registered mobile device
+//	SetZoneOverlay              set a permanent overlay for a zone
+//	SetZoneOverlayWithDuration  set a temporary overlay for a zone
+//	DeleteZoneOverlay           delete the overlay for a zone
 package tado
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strconv"
 	"sync"
@@ -48,6 +46,7 @@ type Value struct {
 }
 
 // API for the Tado APIClient.
+//
 //go:generate mockery --name API
 type API interface {
 	GetZones(context.Context) ([]Zone, error)
@@ -100,7 +99,7 @@ func (client *APIClient) apiV2URL(endpoint string) string {
 // getHomeID gets the user's Home ID
 //
 // Called by Initialize, so doesn't need to be called by the calling application.
-func (client *APIClient) getHomeID(ctx context.Context) error {
+func (client *APIClient) getHomeID(ctx context.Context) (err error) {
 	client.lock.Lock()
 	homeID := client.HomeID
 	client.lock.Unlock()
@@ -109,18 +108,18 @@ func (client *APIClient) getHomeID(ctx context.Context) error {
 		return nil
 	}
 
-	body, err := client.call(ctx, http.MethodGet, client.APIURL+"/api/v1/me", "")
-
-	if err == nil {
-		var resp interface{}
-		if err = json.Unmarshal(body, &resp); err == nil {
-			m := resp.(map[string]interface{})
-			client.lock.Lock()
-			client.HomeID = int(m["homeId"].(float64))
-			client.lock.Unlock()
-		}
+	var meResponse struct {
+		HomeID int `json:"homeId"`
 	}
-	return err
+
+	if err = client.call(ctx, http.MethodGet, client.APIURL+"/api/v1/me", nil, &meResponse); err != nil {
+		return
+	}
+
+	client.lock.Lock()
+	client.HomeID = meResponse.HomeID
+	client.lock.Unlock()
+	return
 }
 
 // Initialize sets up the client to call the various APIs, i.e. authenticates with tado.com,
@@ -133,24 +132,23 @@ func (client *APIClient) initialize(ctx context.Context) (err error) {
 	return client.getHomeID(ctx)
 }
 
-func (client *APIClient) call(ctx context.Context, method string, apiURL string, payload string) (response []byte, err error) {
+func (client *APIClient) call(ctx context.Context, method string, url string, payload io.Reader, response any) (err error) {
 	var req *http.Request
-	req, err = client.buildRequest(ctx, method, apiURL, payload)
-	if err != nil {
+	if req, err = client.buildRequest(ctx, method, url, payload); err != nil {
 		return
 	}
 
 	var resp *http.Response
-	resp, err = client.HTTPClient.Do(req)
-	if err != nil {
+	if resp, err = client.HTTPClient.Do(req); err != nil {
 		return
 	}
 
 	switch resp.StatusCode {
 	case http.StatusOK:
-		response, err = ioutil.ReadAll(resp.Body)
+		if resp.ContentLength > 0 && response != nil {
+			err = json.NewDecoder(resp.Body).Decode(response)
+		}
 	case http.StatusNoContent:
-		err = nil
 	case http.StatusForbidden, http.StatusUnauthorized:
 		// we're authenticated, but still got forbidden.
 		// force password login to get a new token.
@@ -164,8 +162,8 @@ func (client *APIClient) call(ctx context.Context, method string, apiURL string,
 	return
 }
 
-func (client *APIClient) buildRequest(ctx context.Context, method string, path string, payload string) (req *http.Request, err error) {
-	req, _ = http.NewRequestWithContext(ctx, method, path, bytes.NewBufferString(payload))
+func (client *APIClient) buildRequest(ctx context.Context, method string, path string, payload io.Reader) (req *http.Request, err error) {
+	req, _ = http.NewRequestWithContext(ctx, method, path, payload)
 	req.Header.Add("Content-Type", "application/json;charset=UTF-8")
 
 	var authHeaders http.Header
