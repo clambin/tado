@@ -14,8 +14,6 @@ type MobileDevice struct {
 	Location MobileDeviceLocation `json:"location"`
 }
 
-//type MobileDevices []MobileDevice
-
 // MobileDeviceSettings is a sub-structure of MobileDevice
 type MobileDeviceSettings struct {
 	GeoTrackingEnabled bool `json:"geoTrackingEnabled"`
@@ -45,17 +43,17 @@ func (mobileDevice *MobileDevice) String() string {
 	)
 }
 
+// MobileDeviceLocationState is the state of the user's device (mobile phone), i.e. home or away
+type MobileDeviceLocationState int
+
 const (
 	// DeviceUnknown means the device state is not initialized yet
-	DeviceUnknown = iota
+	DeviceUnknown MobileDeviceLocationState = iota
 	// DeviceHome means the user's device is home
 	DeviceHome
 	// DeviceAway means the user's device is not home
 	DeviceAway
 )
-
-// MobileDeviceLocationState is the state of the user's device (mobile phone), i.e. home or away
-type MobileDeviceLocationState int
 
 // IsHome returns the location of the MobileDevice
 func (mobileDevice *MobileDevice) IsHome() (state MobileDeviceLocationState) {

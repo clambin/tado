@@ -3,7 +3,6 @@ package tado
 import (
 	"context"
 	"fmt"
-	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"io"
@@ -90,8 +89,6 @@ type authServer struct {
 }
 
 func (server *authServer) authHandler(w http.ResponseWriter, req *http.Request) {
-	log.Debug("authHandler: " + req.URL.Path)
-
 	if server.fail {
 		http.Error(w, "server is having issues", http.StatusInternalServerError)
 		return

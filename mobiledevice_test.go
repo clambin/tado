@@ -18,11 +18,11 @@ func TestMobileDevice_IsHome(t *testing.T) {
 		},
 	}
 
-	assert.Equal(t, tado.DeviceUnknown, int(device.IsHome()))
+	assert.Equal(t, tado.DeviceUnknown, device.IsHome())
 
 	device.Settings.GeoTrackingEnabled = true
-	assert.Equal(t, tado.DeviceAway, int(device.IsHome()))
+	assert.Equal(t, tado.DeviceAway, device.IsHome())
 
 	device.Location.AtHome = true
-	assert.Equal(t, tado.DeviceHome, int(device.IsHome()))
+	assert.Equal(t, tado.DeviceHome, device.IsHome())
 }

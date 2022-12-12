@@ -2,8 +2,6 @@ package tado_test
 
 import (
 	"context"
-	log "github.com/sirupsen/logrus"
-	"html"
 	"net/http"
 	"time"
 )
@@ -15,8 +13,6 @@ type APIServer struct {
 }
 
 func (apiServer *APIServer) apiHandler(w http.ResponseWriter, req *http.Request) {
-	log.Debug("apiHandler: " + html.EscapeString(req.URL.Path))
-
 	if apiServer.fail {
 		http.Error(w, "server is having issues", http.StatusInternalServerError)
 		return

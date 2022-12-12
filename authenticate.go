@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	log "github.com/sirupsen/logrus"
 	"net/http"
 	"net/url"
 	"strings"
@@ -13,6 +12,7 @@ import (
 )
 
 // Authenticator provides authentication services for tado.com
+//
 //go:generate mockery --name Authenticator
 type Authenticator interface {
 	AuthHeaders(ctx context.Context) (header http.Header, err error)
@@ -52,13 +52,10 @@ func (auth *authenticator) AuthHeaders(ctx context.Context) (header http.Header,
 	auth.lock.Lock()
 	defer auth.lock.Unlock()
 
-	err = auth.authenticate(ctx)
-	if err != nil {
-		return
+	if err = auth.authenticate(ctx); err == nil {
+		header = make(http.Header)
+		header.Add("Authorization", "Bearer "+auth.accessToken)
 	}
-
-	header = http.Header{}
-	header.Add("Authorization", "Bearer "+auth.accessToken)
 	return
 }
 
@@ -69,7 +66,7 @@ func (auth *authenticator) Reset() {
 	auth.refreshToken = ""
 }
 
-func (auth *authenticator) authenticate(ctx context.Context) (err error) {
+func (auth *authenticator) authenticate(ctx context.Context) error {
 	if auth.ClientSecret == "" {
 		auth.ClientSecret = "wZaRN7rpjn3FoNyF5IFuxg9uMzYJcvOoQ8QWiIqS3hfk6gLhVlG57j5YNoZL2Rtc"
 	}
@@ -79,15 +76,18 @@ func (auth *authenticator) authenticate(ctx context.Context) (err error) {
 	}
 
 	if time.Now().After(auth.Expires) {
-		return auth.doAuthentication(ctx, "refresh_token", auth.refreshToken)
+		err := auth.doAuthentication(ctx, "refresh_token", auth.refreshToken)
+		if err != nil {
+			// failed during refresh. reset refresh_token to force a password login
+			auth.refreshToken = ""
+		}
+		return err
 	}
 
-	return
+	return nil
 }
 
-func (auth *authenticator) doAuthentication(ctx context.Context, grantType, credential string) (err error) {
-	log.WithField("grant_type", grantType).Debug("authenticating")
-
+func (auth *authenticator) doAuthentication(ctx context.Context, grantType, credential string) error {
 	form := url.Values{}
 	form.Add("client_id", "tado-web-app")
 	form.Add("client_secret", auth.ClientSecret)
@@ -102,18 +102,9 @@ func (auth *authenticator) doAuthentication(ctx context.Context, grantType, cred
 	req.Header.Add("Referer", "https://my.tado.com/")
 	req.Header.Add("content-type", "application/x-www-form-urlencoded")
 
-	defer func() {
-		if err != nil && grantType == "refresh_token" {
-			// failed during refresh. reset refresh_token to force a password login
-			auth.refreshToken = ""
-		}
-	}()
-
-	var resp *http.Response
-	resp, err = auth.HTTPClient.Do(req)
-
+	resp, err := auth.HTTPClient.Do(req)
 	if err != nil {
-		return
+		return err
 	}
 
 	defer func() {
@@ -121,8 +112,7 @@ func (auth *authenticator) doAuthentication(ctx context.Context, grantType, cred
 	}()
 
 	if resp.StatusCode != http.StatusOK {
-		err = errors.New(resp.Status)
-		return
+		return errors.New(resp.Status)
 	}
 
 	var response struct {
@@ -130,14 +120,11 @@ func (auth *authenticator) doAuthentication(ctx context.Context, grantType, cred
 		RefreshToken string  `json:"refresh_token"`
 		ExpiresIn    float64 `json:"expires_in"`
 	}
-	err = json.NewDecoder(resp.Body).Decode(&response)
 
-	if err == nil {
+	if err = json.NewDecoder(resp.Body).Decode(&response); err == nil {
 		auth.accessToken = response.AccessToken
 		auth.refreshToken = response.RefreshToken
 		auth.Expires = time.Now().Add(time.Second * time.Duration(response.ExpiresIn))
 	}
-
-	log.WithError(err).WithField("expires", auth.Expires).Debug("authenticated")
 	return err
 }
