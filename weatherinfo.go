@@ -2,16 +2,16 @@ package tado
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 )
 
 // WeatherInfo contains the response to /api/v2/homes/<HomeID>/weather
 //
 // This structure provides the following key information:
-//   OutsideTemperature.Celsius:  outside temperate, in degrees Celsius
-//   SolarIntensity.Percentage:   solar intensity (0-100%)
-//   WeatherState.Value:          string describing current weather (list TBD)
+//
+//	OutsideTemperature.Celsius:  outside temperate, in degrees Celsius
+//	SolarIntensity.Percentage:   solar intensity (0-100%)
+//	WeatherState.Value:          string describing current weather (list TBD)
 type WeatherInfo struct {
 	OutsideTemperature Temperature `json:"outsideTemperature"`
 	SolarIntensity     Percentage  `json:"solarIntensity"`
@@ -25,13 +25,4 @@ func (client *APIClient) GetWeatherInfo(ctx context.Context) (weatherInfo Weathe
 	}
 	err = client.call(ctx, http.MethodGet, client.apiV2URL("/weather"), nil, &weatherInfo)
 	return
-}
-
-// String converts WeatherInfo to a loggable string
-func (weatherInfo WeatherInfo) String() string {
-	return fmt.Sprintf("temp=%.1fºC, solar=%.1f%%, weather=%s",
-		weatherInfo.OutsideTemperature.Celsius,
-		weatherInfo.SolarIntensity.Percentage,
-		weatherInfo.WeatherState.Value,
-	)
 }

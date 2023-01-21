@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"strconv"
 	"time"
@@ -162,41 +161,12 @@ func (client *APIClient) DeleteZoneOverlay(ctx context.Context, zoneID int) (err
 	return
 }
 
-// String serializes a ZoneInfo into a string. Used for logging.
-func (zoneInfo ZoneInfo) String() string {
-	return fmt.Sprintf("target=%.1fºC, temp=%.1fºC, humidity=%.1f%%, heating=%.1f%%, power=%s, openwindow=%ds, overlay={%s}",
-		zoneInfo.Setting.Temperature.Celsius,
-		zoneInfo.SensorDataPoints.Temperature.Celsius,
-		zoneInfo.SensorDataPoints.Humidity.Percentage,
-		zoneInfo.ActivityDataPoints.HeatingPower.Percentage,
-		zoneInfo.Setting.Power,
-		zoneInfo.OpenWindow.DurationInSeconds-zoneInfo.OpenWindow.RemainingTimeInSeconds,
-		zoneInfo.Overlay.String(),
-	)
-}
-
-// String serializes a ZoneInfoOverlay into a string. Used for logging.
-func (overlay ZoneInfoOverlay) String() string {
-	return fmt.Sprintf(`type=%s, settings={%s}, termination={type="%s", remaining=%d}`,
-		overlay.Type,
-		overlay.Setting.String(),
-		overlay.Termination.Type,
-		overlay.Termination.RemainingTime,
-	)
-}
-
-// String serializes a ZoneInfoOverlaySetting into a string. Used for logging.
-func (setting ZoneInfoOverlaySetting) String() string {
-	return fmt.Sprintf("type=%s, power=%s, temp=%.1fºC",
-		setting.Type,
-		setting.Power,
-		setting.Temperature.Celsius,
-	)
-}
+// ZoneState is the state of the zone, i.e. heating is off, controlled automatically, or controlled manually
+type ZoneState int
 
 const (
 	// ZoneStateUnknown indicates the zone's state is not initialized yet
-	ZoneStateUnknown = iota
+	ZoneStateUnknown ZoneState = iota
 	// ZoneStateOff indicates the zone's heating is switched off
 	ZoneStateOff
 	// ZoneStateAuto indicates the zone's heating is controlled manually (e.g. as per schedule)
@@ -206,9 +176,6 @@ const (
 	// ZoneStateManual indicates the zone's target temperature is set manually
 	ZoneStateManual
 )
-
-// ZoneState is the state of the zone, i.e. heating is off, controlled automatically, or controlled manually
-type ZoneState int
 
 // GetState returns the state of the zone
 func (zoneInfo ZoneInfo) GetState() (state ZoneState) {

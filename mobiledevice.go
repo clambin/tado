@@ -2,7 +2,6 @@ package tado
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 )
 
@@ -34,14 +33,14 @@ func (client *APIClient) GetMobileDevices(ctx context.Context) (tadoMobileDevice
 }
 
 // String serializes a MobileDevice into a string. Used for logging.
-func (mobileDevice *MobileDevice) String() string {
-	return fmt.Sprintf("name=%s, geotrack=%v, stale=%v, athome=%v",
-		mobileDevice.Name,
-		mobileDevice.Settings.GeoTrackingEnabled,
-		mobileDevice.Location.Stale,
-		mobileDevice.Location.AtHome,
-	)
-}
+//func (mobileDevice *MobileDevice) String() string {
+//	return fmt.Sprintf("name=%s, geotrack=%v, stale=%v, athome=%v",
+//		mobileDevice.Name,
+//		mobileDevice.Settings.GeoTrackingEnabled,
+//		mobileDevice.Location.Stale,
+//		mobileDevice.Location.AtHome,
+//	)
+//}
 
 // MobileDeviceLocationState is the state of the user's device (mobile phone), i.e. home or away
 type MobileDeviceLocationState int

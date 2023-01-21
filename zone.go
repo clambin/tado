@@ -2,9 +2,7 @@ package tado
 
 import (
 	"context"
-	"fmt"
 	"net/http"
-	"strings"
 	"time"
 )
 
@@ -36,29 +34,4 @@ func (client *APIClient) GetZones(ctx context.Context) (zones []Zone, err error)
 	}
 	err = client.call(ctx, http.MethodGet, client.apiV2URL("/zones"), nil, &zones)
 	return
-}
-
-// String serializes a Zone into a string. Used for logging
-func (zone Zone) String() string {
-	devicesAsStr := make([]string, len(zone.Devices))
-	for i, device := range zone.Devices {
-		devicesAsStr[i] = device.String()
-	}
-	devicesStr := strings.Join(devicesAsStr, ", ")
-
-	return fmt.Sprintf("id=%d name=%s devices={%s}",
-		zone.ID,
-		zone.Name,
-		devicesStr,
-	)
-}
-
-// String serializes a Device into a string. Used for logging
-func (device *Device) String() string {
-	return fmt.Sprintf("type=%s firmware=%s connection=%v battery=%s",
-		device.DeviceType,
-		device.Firmware,
-		device.ConnectionState.Value,
-		device.BatteryState,
-	)
 }
