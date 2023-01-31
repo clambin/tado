@@ -133,21 +133,28 @@ func (client *APIClient) initialize(ctx context.Context) (err error) {
 	return client.getHomeID(ctx)
 }
 
-func (client *APIClient) call(ctx context.Context, method string, url string, payload io.Reader, response any) (err error) {
-	var req *http.Request
-	if req, err = client.buildRequest(ctx, method, url, payload); err != nil {
-		return
+func (client *APIClient) call(ctx context.Context, method string, url string, payload io.Reader, response any) error {
+	req, err := client.buildRequest(ctx, method, url, payload)
+	if err != nil {
+		return err
 	}
 
-	var resp *http.Response
-	if resp, err = client.HTTPClient.Do(req); err != nil {
-		return
+	resp, err := client.HTTPClient.Do(req)
+	if err != nil {
+		return err
+	}
+
+	defer func() { _ = resp.Body.Close() }()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return fmt.Errorf("parse: %w", err)
 	}
 
 	switch resp.StatusCode {
 	case http.StatusOK:
 		if resp.ContentLength != 0 && response != nil {
-			err = json.NewDecoder(resp.Body).Decode(response)
+			err = json.Unmarshal(body, response)
 		}
 	case http.StatusNoContent:
 	case http.StatusForbidden, http.StatusUnauthorized:
@@ -158,9 +165,8 @@ func (client *APIClient) call(ctx context.Context, method string, url string, pa
 	default:
 		err = errors.New(resp.Status)
 	}
-	_ = resp.Body.Close()
 
-	return
+	return err
 }
 
 func (client *APIClient) buildRequest(ctx context.Context, method string, path string, payload io.Reader) (req *http.Request, err error) {
