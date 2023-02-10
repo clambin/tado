@@ -4,7 +4,6 @@ package mocks
 
 import (
 	context "context"
-	http "net/http"
 
 	mock "github.com/stretchr/testify/mock"
 )
@@ -14,17 +13,15 @@ type Authenticator struct {
 	mock.Mock
 }
 
-// AuthHeaders provides a mock function with given fields: ctx
-func (_m *Authenticator) AuthHeaders(ctx context.Context) (http.Header, error) {
+// GetAuthToken provides a mock function with given fields: ctx
+func (_m *Authenticator) GetAuthToken(ctx context.Context) (string, error) {
 	ret := _m.Called(ctx)
 
-	var r0 http.Header
-	if rf, ok := ret.Get(0).(func(context.Context) http.Header); ok {
+	var r0 string
+	if rf, ok := ret.Get(0).(func(context.Context) string); ok {
 		r0 = rf(ctx)
 	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(http.Header)
-		}
+		r0 = ret.Get(0).(string)
 	}
 
 	var r1 error

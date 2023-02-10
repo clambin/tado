@@ -22,6 +22,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/clambin/tado/auth"
 	"io"
 	"net/http"
 	"strconv"
@@ -62,7 +63,7 @@ type API interface {
 // APIClient represents a Tado API client.
 type APIClient struct {
 	// Authenticator handles logging in to the Tado server
-	Authenticator Authenticator
+	Authenticator
 	// HTTPClient is used to perform HTTP requests
 	HTTPClient *http.Client
 	// APIURL can be left blank. Only exposed for unit tests.
@@ -72,12 +73,20 @@ type APIClient struct {
 	lock   sync.RWMutex
 }
 
+// Authenticator provides authentication services for tado.com
+//
+//go:generate mockery --name Authenticator
+type Authenticator interface {
+	GetAuthToken(ctx context.Context) (token string, err error)
+	Reset()
+}
+
 // New creates a new client
 //
 // clientSecret can typically be left blank.  If the default secret does not work, your client secret can be found by visiting https://my.tado.com/webapp/env.js after logging in to https://my.tado.com
 func New(username, password, clientSecret string) *APIClient {
 	return &APIClient{
-		Authenticator: &authenticator{
+		Authenticator: &auth.Authenticator{
 			HTTPClient:   &http.Client{},
 			Username:     username,
 			Password:     password,
@@ -169,21 +178,14 @@ func (client *APIClient) call(ctx context.Context, method string, url string, pa
 	return err
 }
 
-func (client *APIClient) buildRequest(ctx context.Context, method string, path string, payload io.Reader) (req *http.Request, err error) {
-	req, _ = http.NewRequestWithContext(ctx, method, path, payload)
-	req.Header.Add("Content-Type", "application/json;charset=UTF-8")
-
-	var authHeaders http.Header
-	authHeaders, err = client.Authenticator.AuthHeaders(ctx)
+func (client *APIClient) buildRequest(ctx context.Context, method string, path string, payload io.Reader) (*http.Request, error) {
+	token, err := client.Authenticator.GetAuthToken(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("tado authentication failed: %w", err)
+		return nil, fmt.Errorf("auth: %w", err)
 	}
+	req, _ := http.NewRequestWithContext(ctx, method, path, payload)
+	req.Header.Set("Content-Type", "application/json;charset=UTF-8")
+	req.Header.Set("Authorization", "Bearer "+token)
 
-	for key, values := range authHeaders {
-		for _, value := range values {
-			req.Header.Add(key, value)
-		}
-	}
-
-	return
+	return req, nil
 }

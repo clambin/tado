@@ -212,7 +212,6 @@ func TestAPIClient_ZoneOverlay(t *testing.T) {
 			s.Close()
 			err = tt.action(ctx, c)
 			assert.Error(t, err)
-
 		})
 	}
 }
