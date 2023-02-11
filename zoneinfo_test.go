@@ -1,9 +1,8 @@
-package tado_test
+package tado
 
 import (
 	"context"
 	"encoding/json"
-	"github.com/clambin/tado"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"net/http"
@@ -15,91 +14,91 @@ import (
 func TestZoneInfo_GetState(t *testing.T) {
 	tests := []struct {
 		name     string
-		zoneInfo tado.ZoneInfo
-		state    tado.ZoneState
+		zoneInfo ZoneInfo
+		state    ZoneState
 	}{
 		{
 			name: "auto",
-			zoneInfo: tado.ZoneInfo{
-				Setting: tado.ZoneInfoSetting{
+			zoneInfo: ZoneInfo{
+				Setting: ZoneInfoSetting{
 					Power:       "ON",
-					Temperature: tado.Temperature{Celsius: 17.0},
+					Temperature: Temperature{Celsius: 17.0},
 				},
 			},
-			state: tado.ZoneStateAuto,
+			state: ZoneStateAuto,
 		},
 		{
 			name: "manual",
-			zoneInfo: tado.ZoneInfo{
-				Setting: tado.ZoneInfoSetting{
+			zoneInfo: ZoneInfo{
+				Setting: ZoneInfoSetting{
 					Power:       "ON",
-					Temperature: tado.Temperature{Celsius: 17.0},
+					Temperature: Temperature{Celsius: 17.0},
 				},
-				Overlay: tado.ZoneInfoOverlay{
+				Overlay: ZoneInfoOverlay{
 					Type: "MANUAL",
-					Setting: tado.ZoneInfoOverlaySetting{
+					Setting: ZoneInfoOverlaySetting{
 						Type:        "HEATING",
 						Power:       "ON",
-						Temperature: tado.Temperature{Celsius: 22.0},
+						Temperature: Temperature{Celsius: 22.0},
 					},
-					Termination: tado.ZoneInfoOverlayTermination{
+					Termination: ZoneInfoOverlayTermination{
 						Type: "MANUAL",
 					},
 				},
 			},
-			state: tado.ZoneStateManual,
+			state: ZoneStateManual,
 		},
 		{
 			name: "manual w/ termination",
-			zoneInfo: tado.ZoneInfo{
-				Setting: tado.ZoneInfoSetting{
+			zoneInfo: ZoneInfo{
+				Setting: ZoneInfoSetting{
 					Power:       "ON",
-					Temperature: tado.Temperature{Celsius: 17.0},
+					Temperature: Temperature{Celsius: 17.0},
 				},
-				Overlay: tado.ZoneInfoOverlay{
+				Overlay: ZoneInfoOverlay{
 					Type: "MANUAL",
-					Setting: tado.ZoneInfoOverlaySetting{
+					Setting: ZoneInfoOverlaySetting{
 						Type:        "HEATING",
 						Power:       "ON",
-						Temperature: tado.Temperature{Celsius: 22.0},
+						Temperature: Temperature{Celsius: 22.0},
 					},
-					Termination: tado.ZoneInfoOverlayTermination{
+					Termination: ZoneInfoOverlayTermination{
 						Type: "AUTO",
 					},
 				},
 			},
-			state: tado.ZoneStateTemporaryManual,
+			state: ZoneStateTemporaryManual,
 		},
 		{
 			name: "off",
-			zoneInfo: tado.ZoneInfo{
-				Setting: tado.ZoneInfoSetting{
+			zoneInfo: ZoneInfo{
+				Setting: ZoneInfoSetting{
 					Power:       "OFF",
-					Temperature: tado.Temperature{Celsius: 5.0},
+					Temperature: Temperature{Celsius: 5.0},
 				},
 			},
-			state: tado.ZoneStateOff,
+			state: ZoneStateOff,
 		},
 		{
 			name: "manual off",
-			zoneInfo: tado.ZoneInfo{
-				Setting: tado.ZoneInfoSetting{
+			zoneInfo: ZoneInfo{
+				Setting: ZoneInfoSetting{
 					Power:       "ON",
-					Temperature: tado.Temperature{Celsius: 17.0},
+					Temperature: Temperature{Celsius: 17.0},
 				},
-				Overlay: tado.ZoneInfoOverlay{
+				Overlay: ZoneInfoOverlay{
 					Type: "MANUAL",
-					Setting: tado.ZoneInfoOverlaySetting{
+					Setting: ZoneInfoOverlaySetting{
 						Type:        "HEATING",
 						Power:       "ON",
-						Temperature: tado.Temperature{Celsius: 5.0},
+						Temperature: Temperature{Celsius: 5.0},
 					},
-					Termination: tado.ZoneInfoOverlayTermination{
+					Termination: ZoneInfoOverlayTermination{
 						Type: "AUTO",
 					},
 				},
 			},
-			state: tado.ZoneStateOff,
+			state: ZoneStateOff,
 		},
 	}
 
@@ -111,18 +110,18 @@ func TestZoneInfo_GetState(t *testing.T) {
 }
 
 func TestAPIClient_GetZoneInfo(t *testing.T) {
-	response := tado.ZoneInfo{
-		Setting: tado.ZoneInfoSetting{
+	response := ZoneInfo{
+		Setting: ZoneInfoSetting{
 			Power:       "ON",
-			Temperature: tado.Temperature{Celsius: 19.0},
+			Temperature: Temperature{Celsius: 19.0},
 		},
-		ActivityDataPoints: tado.ZoneInfoActivityDataPoints{HeatingPower: tado.Percentage{Percentage: 75.0}},
-		SensorDataPoints: tado.ZoneInfoSensorDataPoints{
-			Temperature: tado.Temperature{Celsius: 20.0},
-			Humidity:    tado.Percentage{Percentage: 10.5},
+		ActivityDataPoints: ZoneInfoActivityDataPoints{HeatingPower: Percentage{Percentage: 75.0}},
+		SensorDataPoints: ZoneInfoSensorDataPoints{
+			Temperature: Temperature{Celsius: 20.0},
+			Humidity:    Percentage{Percentage: 10.5},
 		},
-		OpenWindow: tado.ZoneInfoOpenWindow{},
-		Overlay:    tado.ZoneInfoOverlay{},
+		OpenWindow: ZoneInfoOpenWindow{},
+		Overlay:    ZoneInfoOverlay{},
 	}
 
 	c, s := makeTestServer(response)
@@ -140,43 +139,43 @@ func TestAPIClient_GetZoneInfo(t *testing.T) {
 func TestAPIClient_ZoneOverlay(t *testing.T) {
 	tests := []struct {
 		name          string
-		action        func(ctx context.Context, client *tado.APIClient) error
-		expectedState tado.ZoneState
+		action        func(ctx context.Context, client *APIClient) error
+		expectedState ZoneState
 	}{
 		{
 			name: "manual",
-			action: func(ctx context.Context, client *tado.APIClient) error {
+			action: func(ctx context.Context, client *APIClient) error {
 				return client.SetZoneOverlay(ctx, 1, 18.0)
 			},
-			expectedState: tado.ZoneStateManual,
+			expectedState: ZoneStateManual,
 		},
 		{
 			name: "off",
-			action: func(ctx context.Context, client *tado.APIClient) error {
+			action: func(ctx context.Context, client *APIClient) error {
 				return client.SetZoneOverlay(ctx, 1, 1.0)
 			},
-			expectedState: tado.ZoneStateOff,
+			expectedState: ZoneStateOff,
 		},
 		{
 			name: "temp manual",
-			action: func(ctx context.Context, client *tado.APIClient) error {
+			action: func(ctx context.Context, client *APIClient) error {
 				return client.SetZoneOverlayWithDuration(ctx, 1, 18.0, time.Hour)
 			},
-			expectedState: tado.ZoneStateTemporaryManual,
+			expectedState: ZoneStateTemporaryManual,
 		},
 		{
 			name: "temp off",
-			action: func(ctx context.Context, client *tado.APIClient) error {
+			action: func(ctx context.Context, client *APIClient) error {
 				return client.SetZoneOverlayWithDuration(ctx, 1, 1.0, time.Hour)
 			},
-			expectedState: tado.ZoneStateOff,
+			expectedState: ZoneStateOff,
 		},
 		{
 			name: "temp not temp",
-			action: func(ctx context.Context, client *tado.APIClient) error {
+			action: func(ctx context.Context, client *APIClient) error {
 				return client.SetZoneOverlayWithDuration(ctx, 1, 18.0, 0)
 			},
-			expectedState: tado.ZoneStateManual,
+			expectedState: ZoneStateManual,
 		},
 	}
 
@@ -185,15 +184,15 @@ func TestAPIClient_ZoneOverlay(t *testing.T) {
 			mgr := newOverlayManager()
 			s := httptest.NewServer(mgr)
 
-			c := tado.New("", "", "")
-			c.APIURL = s.URL
-			c.Authenticator = &fakeAuthenticator{Token: "1234"}
+			c := New("", "", "")
+			c.apiURL = s.URL
+			c.authenticator = &fakeAuthenticator{Token: "1234"}
 
 			ctx := context.TODO()
 
 			zoneInfo, err := c.GetZoneInfo(ctx, 1)
 			require.NoError(t, err)
-			assert.Equal(t, tado.ZoneStateAuto, zoneInfo.GetState())
+			assert.Equal(t, ZoneStateAuto, zoneInfo.GetState())
 
 			err = tt.action(ctx, c)
 			require.NoError(t, err)
@@ -207,7 +206,7 @@ func TestAPIClient_ZoneOverlay(t *testing.T) {
 
 			zoneInfo, err = c.GetZoneInfo(ctx, 1)
 			require.NoError(t, err)
-			assert.Equal(t, tado.ZoneStateAuto, zoneInfo.GetState())
+			assert.Equal(t, ZoneStateAuto, zoneInfo.GetState())
 
 			s.Close()
 			err = tt.action(ctx, c)
@@ -217,15 +216,15 @@ func TestAPIClient_ZoneOverlay(t *testing.T) {
 }
 
 type overlayManager struct {
-	zoneInfo tado.ZoneInfo
+	zoneInfo ZoneInfo
 }
 
 func newOverlayManager() *overlayManager {
 	return &overlayManager{
-		zoneInfo: tado.ZoneInfo{
-			Setting:            tado.ZoneInfoSetting{Power: "ON", Temperature: tado.Temperature{Celsius: 22.5}},
-			ActivityDataPoints: tado.ZoneInfoActivityDataPoints{HeatingPower: tado.Percentage{Percentage: 80.0}},
-			SensorDataPoints:   tado.ZoneInfoSensorDataPoints{Temperature: tado.Temperature{Celsius: 20.0}, Humidity: tado.Percentage{Percentage: 75.0}},
+		zoneInfo: ZoneInfo{
+			Setting:            ZoneInfoSetting{Power: "ON", Temperature: Temperature{Celsius: 22.5}},
+			ActivityDataPoints: ZoneInfoActivityDataPoints{HeatingPower: Percentage{Percentage: 80.0}},
+			SensorDataPoints:   ZoneInfoSensorDataPoints{Temperature: Temperature{Celsius: 20.0}, Humidity: Percentage{Percentage: 75.0}},
 		},
 	}
 }
@@ -243,7 +242,7 @@ func (o *overlayManager) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 			return
 		}
 	case http.MethodDelete:
-		o.zoneInfo.Overlay = tado.ZoneInfoOverlay{}
+		o.zoneInfo.Overlay = ZoneInfoOverlay{}
 		w.WriteHeader(http.StatusNoContent)
 	default:
 		http.Error(w, "invalid method", http.StatusMethodNotAllowed)
@@ -253,15 +252,15 @@ func (o *overlayManager) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 func TestZoneState_String(t *testing.T) {
 	tests := []struct {
 		name string
-		s    tado.ZoneState
+		s    ZoneState
 		want string
 	}{
-		{name: "ZoneStateUnknown", s: tado.ZoneStateUnknown, want: "unknown"},
-		{name: "ZoneStateOff", s: tado.ZoneStateOff, want: "off"},
-		{name: "ZoneStateAuto", s: tado.ZoneStateAuto, want: "auto"},
-		{name: "ZoneStateTemporaryManual", s: tado.ZoneStateTemporaryManual, want: "manual (temp)"},
-		{name: "ZoneStateManual", s: tado.ZoneStateManual, want: "manual"},
-		{name: "invalid", s: tado.ZoneState(-1), want: "(invalid)"},
+		{name: "ZoneStateUnknown", s: ZoneStateUnknown, want: "unknown"},
+		{name: "ZoneStateOff", s: ZoneStateOff, want: "off"},
+		{name: "ZoneStateAuto", s: ZoneStateAuto, want: "auto"},
+		{name: "ZoneStateTemporaryManual", s: ZoneStateTemporaryManual, want: "manual (temp)"},
+		{name: "ZoneStateManual", s: ZoneStateManual, want: "manual"},
+		{name: "invalid", s: ZoneState(-1), want: "(invalid)"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

@@ -193,8 +193,8 @@ func (s ZoneState) String() string {
 }
 
 // GetState returns the state of the zone
-func (zoneInfo ZoneInfo) GetState() (state ZoneState) {
-	state = ZoneStateUnknown
+func (zoneInfo ZoneInfo) GetState() ZoneState {
+	var state ZoneState
 	if zoneInfo.Overlay.Type == "MANUAL" && zoneInfo.Overlay.Setting.Type == "HEATING" {
 		if zoneInfo.Overlay.Setting.Power != "ON" || zoneInfo.Overlay.Setting.Temperature.Celsius <= 5.0 {
 			state = ZoneStateOff
@@ -208,5 +208,5 @@ func (zoneInfo ZoneInfo) GetState() (state ZoneState) {
 	} else {
 		state = ZoneStateAuto
 	}
-	return
+	return state
 }

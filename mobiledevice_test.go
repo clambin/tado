@@ -1,30 +1,29 @@
-package tado_test
+package tado
 
 import (
 	"context"
-	"github.com/clambin/tado"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"testing"
 )
 
 func TestAPIClient_GetMobileDevices(t *testing.T) {
-	info := []tado.MobileDevice{
+	info := []MobileDevice{
 		{
 			ID:   1,
 			Name: "foo",
-			Settings: tado.MobileDeviceSettings{
+			Settings: MobileDeviceSettings{
 				GeoTrackingEnabled: false,
 			},
-			Location: tado.MobileDeviceLocation{},
+			Location: MobileDeviceLocation{},
 		},
 		{
 			ID:   2,
 			Name: "bar",
-			Settings: tado.MobileDeviceSettings{
+			Settings: MobileDeviceSettings{
 				GeoTrackingEnabled: true,
 			},
-			Location: tado.MobileDeviceLocation{
+			Location: MobileDeviceLocation{
 				Stale:  false,
 				AtHome: true,
 			},
@@ -44,38 +43,38 @@ func TestAPIClient_GetMobileDevices(t *testing.T) {
 func TestMobileDevice_IsHome(t *testing.T) {
 	tests := []struct {
 		name   string
-		device tado.MobileDevice
-		state  tado.MobileDeviceLocationState
+		device MobileDevice
+		state  MobileDeviceLocationState
 	}{
 		{
 			name: "home",
-			device: tado.MobileDevice{
+			device: MobileDevice{
 				ID:       1,
 				Name:     "foo",
-				Settings: tado.MobileDeviceSettings{GeoTrackingEnabled: true},
-				Location: tado.MobileDeviceLocation{AtHome: true},
+				Settings: MobileDeviceSettings{GeoTrackingEnabled: true},
+				Location: MobileDeviceLocation{AtHome: true},
 			},
-			state: tado.DeviceHome,
+			state: DeviceHome,
 		},
 		{
 			name: "home",
-			device: tado.MobileDevice{
+			device: MobileDevice{
 				ID:       1,
 				Name:     "foo",
-				Settings: tado.MobileDeviceSettings{GeoTrackingEnabled: true},
-				Location: tado.MobileDeviceLocation{AtHome: false},
+				Settings: MobileDeviceSettings{GeoTrackingEnabled: true},
+				Location: MobileDeviceLocation{AtHome: false},
 			},
-			state: tado.DeviceAway,
+			state: DeviceAway,
 		},
 		{
 			name: "no geotracking",
-			device: tado.MobileDevice{
+			device: MobileDevice{
 				ID:       1,
 				Name:     "foo",
-				Settings: tado.MobileDeviceSettings{GeoTrackingEnabled: false},
-				Location: tado.MobileDeviceLocation{AtHome: false},
+				Settings: MobileDeviceSettings{GeoTrackingEnabled: false},
+				Location: MobileDeviceLocation{AtHome: false},
 			},
-			state: tado.DeviceUnknown,
+			state: DeviceUnknown,
 		},
 	}
 

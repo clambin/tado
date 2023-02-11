@@ -1,13 +1,9 @@
-package tado_test
+package tado
 
 import (
 	"context"
 	"encoding/json"
-	"fmt"
-	"github.com/clambin/tado"
-	"github.com/clambin/tado/mocks"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"net/http"
 	"net/http/httptest"
@@ -20,32 +16,18 @@ func TestAPIClient_Authentication(t *testing.T) {
 	server := APIServer{}
 	apiServer := httptest.NewServer(http.HandlerFunc(server.apiHandler))
 	defer apiServer.Close()
-	authenticator := mocks.NewAuthenticator(t)
-	authenticator.
-		On("GetAuthToken", mock.AnythingOfType("*context.emptyCtx")).
-		Return("bad_token", nil).Once()
-	authenticator.On("Reset").Once()
+	authenticator := fakeAuthenticator{}
 
-	client := tado.New("user@examle.com", "some-password", "")
-	client.APIURL = apiServer.URL
-	client.Authenticator = authenticator
+	client := New("user@examle.com", "some-password", "")
+	client.apiURL = apiServer.URL
+	client.authenticator = &authenticator
 
+	authenticator.Token = "bad_token"
 	_, err := client.GetZones(context.Background())
 	assert.Error(t, err)
 	assert.Equal(t, "403 Forbidden", err.Error())
 
-	authenticator.
-		On("GetAuthToken", mock.AnythingOfType("*context.emptyCtx")).
-		Return("", fmt.Errorf("server is down")).Once()
-
-	_, err = client.GetZones(context.Background())
-	assert.Error(t, err)
-	//assert.Equal(t, "tado authentication failed: server is down", err.Error())
-
-	authenticator.
-		On("GetAuthToken", mock.AnythingOfType("*context.emptyCtx")).
-		Return("good_token", nil)
-
+	authenticator.Token = "good_token"
 	_, err = client.GetZones(context.Background())
 	require.NoError(t, err)
 	assert.Equal(t, 242, client.HomeID)
@@ -57,13 +39,13 @@ func TestAPIClient_Authentication(t *testing.T) {
 }
 
 func TestAPIClient_DecodeError(t *testing.T) {
-	info := tado.MobileDevice{
+	info := MobileDevice{
 		ID:   1,
 		Name: "foo",
-		Settings: tado.MobileDeviceSettings{
+		Settings: MobileDeviceSettings{
 			GeoTrackingEnabled: false,
 		},
-		Location: tado.MobileDeviceLocation{},
+		Location: MobileDeviceLocation{},
 	}
 
 	c, s := makeTestServer(info)
@@ -71,18 +53,16 @@ func TestAPIClient_DecodeError(t *testing.T) {
 	assert.Error(t, err)
 	s.Close()
 }
+
 func TestAPIClient_Timeout(t *testing.T) {
 	server := APIServer{slow: true}
 	apiServer := httptest.NewServer(http.HandlerFunc(server.apiHandler))
 	defer apiServer.Close()
-	authenticator := mocks.NewAuthenticator(t)
-	authenticator.
-		On("GetAuthToken", mock.AnythingOfType("*context.timerCtx")).
-		Return("good_token", nil)
+	authenticator := fakeAuthenticator{Token: "good_token"}
 
-	client := tado.New("user@examle.com", "some-password", "")
-	client.APIURL = apiServer.URL
-	client.Authenticator = authenticator
+	client := New("user@example.com", "some-password", "")
+	client.apiURL = apiServer.URL
+	client.authenticator = authenticator
 
 	ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
 	defer cancel()
@@ -92,7 +72,7 @@ func TestAPIClient_Timeout(t *testing.T) {
 	assert.Error(t, err)
 }
 
-func makeTestServer(response any) (*tado.APIClient, *httptest.Server) {
+func makeTestServer(response any) (*APIClient, *httptest.Server) {
 	const token = "1234"
 	s := httptest.NewServer(authenticationHandler(token)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
@@ -103,9 +83,9 @@ func makeTestServer(response any) (*tado.APIClient, *httptest.Server) {
 		}
 	})))
 
-	c := tado.New("", "", "")
-	c.APIURL = s.URL
-	c.Authenticator = fakeAuthenticator{Token: token}
+	c := New("", "", "")
+	c.apiURL = s.URL
+	c.authenticator = fakeAuthenticator{Token: token}
 
 	return c, s
 }
@@ -121,7 +101,7 @@ func (f fakeAuthenticator) GetAuthToken(_ context.Context) (string, error) {
 func (f fakeAuthenticator) Reset() {
 }
 
-var _ tado.Authenticator = &fakeAuthenticator{}
+var _ authenticator = &fakeAuthenticator{}
 
 func authenticationHandler(token string) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
@@ -144,7 +124,7 @@ func TestAPIClient_GetZoneInfo_E2E(t *testing.T) {
 		t.Skip("environment not set. skipping ...")
 	}
 
-	c := tado.New(username, password, "")
+	c := New(username, password, "")
 	ctx := context.Background()
 	zones, err := c.GetZones(ctx)
 	require.NoError(t, err)

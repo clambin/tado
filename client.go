@@ -62,21 +62,17 @@ type API interface {
 
 // APIClient represents a Tado API client.
 type APIClient struct {
-	// Authenticator handles logging in to the Tado server
-	Authenticator
+	// authenticator handles logging in to the Tado server
+	authenticator
 	// HTTPClient is used to perform HTTP requests
 	HTTPClient *http.Client
-	// APIURL can be left blank. Only exposed for unit tests.
-	APIURL string
 
-	HomeID int
 	lock   sync.RWMutex
+	apiURL string
+	HomeID int
 }
 
-// Authenticator provides authentication services for tado.com
-//
-//go:generate mockery --name Authenticator
-type Authenticator interface {
+type authenticator interface {
 	GetAuthToken(ctx context.Context) (token string, err error)
 	Reset()
 }
@@ -90,7 +86,7 @@ func New(username, password, clientSecret string) *APIClient {
 	}
 
 	return &APIClient{
-		Authenticator: &auth.Authenticator{
+		authenticator: &auth.Authenticator{
 			HTTPClient:   http.DefaultClient,
 			ClientID:     "tado-web-app",
 			ClientSecret: clientSecret,
@@ -99,13 +95,13 @@ func New(username, password, clientSecret string) *APIClient {
 			AuthURL:      "https://auth.tado.com/oauth/token",
 		},
 		HTTPClient: &http.Client{},
-		APIURL:     "https://my.tado.com",
+		apiURL:     "https://my.tado.com",
 	}
 }
 
 // apiV2URL returns a API v2 URL
 func (client *APIClient) apiV2URL(endpoint string) string {
-	return client.APIURL + "/api/v2/homes/" + strconv.Itoa(client.HomeID) + endpoint
+	return client.apiURL + "/api/v2/homes/" + strconv.Itoa(client.HomeID) + endpoint
 }
 
 // getHomeID gets the user's Home ID
@@ -124,7 +120,7 @@ func (client *APIClient) getHomeID(ctx context.Context) (err error) {
 		HomeID int `json:"homeId"`
 	}
 
-	if err = client.call(ctx, http.MethodGet, client.APIURL+"/api/v1/me", bytes.NewBufferString(""), &meResponse); err != nil {
+	if err = client.call(ctx, http.MethodGet, client.apiURL+"/api/v1/me", bytes.NewBufferString(""), &meResponse); err != nil {
 		return
 	}
 
@@ -171,7 +167,7 @@ func (client *APIClient) call(ctx context.Context, method string, url string, pa
 	case http.StatusForbidden, http.StatusUnauthorized:
 		// we're authenticated, but still got forbidden.
 		// force password login to get a new token.
-		client.Authenticator.Reset()
+		client.authenticator.Reset()
 		err = errors.New(resp.Status)
 	default:
 		err = errors.New(resp.Status)
@@ -181,7 +177,7 @@ func (client *APIClient) call(ctx context.Context, method string, url string, pa
 }
 
 func (client *APIClient) buildRequest(ctx context.Context, method string, path string, payload io.Reader) (*http.Request, error) {
-	token, err := client.Authenticator.GetAuthToken(ctx)
+	token, err := client.authenticator.GetAuthToken(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("auth: %w", err)
 	}

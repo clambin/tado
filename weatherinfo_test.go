@@ -1,18 +1,17 @@
-package tado_test
+package tado
 
 import (
 	"context"
-	"github.com/clambin/tado"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"testing"
 )
 
 func TestAPIClient_GetWeatherInfo(t *testing.T) {
-	info := tado.WeatherInfo{
-		OutsideTemperature: tado.Temperature{Celsius: 18.5},
-		SolarIntensity:     tado.Percentage{Percentage: 64.0},
-		WeatherState:       tado.Value{Value: "SUN"},
+	info := WeatherInfo{
+		OutsideTemperature: Temperature{Celsius: 18.5},
+		SolarIntensity:     Percentage{Percentage: 64.0},
+		WeatherState:       Value{Value: "SUN"},
 	}
 
 	c, s := makeTestServer(info)

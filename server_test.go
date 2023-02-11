@@ -1,4 +1,4 @@
-package tado_test
+package tado
 
 import (
 	"context"
