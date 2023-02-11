@@ -30,7 +30,7 @@ func TestAPIClient_GetMobileDevices(t *testing.T) {
 		},
 	}
 
-	c, s := makeTestServer(info)
+	c, s := makeTestServer(info, nil)
 	rcvd, err := c.GetMobileDevices(context.Background())
 	require.NoError(t, err)
 	assert.Equal(t, info, rcvd)

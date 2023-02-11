@@ -13,7 +13,7 @@ func TestAPIClient_GetZones(t *testing.T) {
 		{ID: 2, Name: "bar", Devices: []Device{{DeviceType: "bar", Firmware: "v1.0", ConnectionState: ConnectionState{Value: false}, BatteryState: "OK"}}},
 	}
 
-	c, s := makeTestServer(response)
+	c, s := makeTestServer(response, nil)
 	ctx := context.Background()
 	zones, err := c.GetZones(ctx)
 	require.NoError(t, err)

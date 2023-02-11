@@ -94,7 +94,7 @@ func New(username, password, clientSecret string) *APIClient {
 			Password:     password,
 			AuthURL:      "https://auth.tado.com/oauth/token",
 		},
-		HTTPClient: &http.Client{},
+		HTTPClient: http.DefaultClient,
 		apiURL:     "https://my.tado.com",
 	}
 }

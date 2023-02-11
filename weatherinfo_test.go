@@ -14,7 +14,7 @@ func TestAPIClient_GetWeatherInfo(t *testing.T) {
 		WeatherState:       Value{Value: "SUN"},
 	}
 
-	c, s := makeTestServer(info)
+	c, s := makeTestServer(info, nil)
 	rcvd, err := c.GetWeatherInfo(context.Background())
 	require.NoError(t, err)
 	assert.Equal(t, info, rcvd)

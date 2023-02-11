@@ -124,7 +124,7 @@ func TestAPIClient_GetZoneInfo(t *testing.T) {
 		Overlay:    ZoneInfoOverlay{},
 	}
 
-	c, s := makeTestServer(response)
+	c, s := makeTestServer(response, nil)
 	ctx := context.Background()
 	zoneInfo, err := c.GetZoneInfo(ctx, 1)
 	require.NoError(t, err)
