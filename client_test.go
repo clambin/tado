@@ -1,125 +1,144 @@
-package tado_test
+package tado
 
 import (
 	"context"
 	"encoding/json"
-	"fmt"
-	"github.com/clambin/tado"
-	"github.com/clambin/tado/mocks"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 	"time"
 )
 
+func TestAPIClient_GetZoneInfo_E2E(t *testing.T) {
+	username := os.Getenv("TADO_USERNAME")
+	password := os.Getenv("TADO_PASSWORD")
+
+	if username == "" || password == "" {
+		t.Skip("environment not set. skipping ...")
+	}
+
+	c := New(username, password, "")
+	ctx := context.Background()
+	zones, err := c.GetZones(ctx)
+	require.NoError(t, err)
+
+	for _, zone := range zones {
+		zoneInfo, err := c.GetZoneInfo(ctx, zone.ID)
+		require.NoError(t, err)
+		t.Logf("%s: %s", zone.Name, zoneInfo.GetState())
+	}
+}
+
 func TestAPIClient_Authentication(t *testing.T) {
-	server := APIServer{}
-	apiServer := httptest.NewServer(http.HandlerFunc(server.apiHandler))
-	defer apiServer.Close()
-	authenticator := mocks.NewAuthenticator(t)
-	authenticator.
-		On("AuthHeaders", mock.AnythingOfType("*context.emptyCtx")).
-		Return(http.Header{"Authorization": []string{"Bearer bad_token"}}, nil).Once()
-	authenticator.On("Reset").Once()
+	response := []Zone{
+		{ID: 1, Name: "foo", Devices: []Device{{DeviceType: "foo", Firmware: "v1.0", ConnectionState: ConnectionState{Value: true}, BatteryState: "OK"}}},
+		{ID: 2, Name: "bar", Devices: []Device{{DeviceType: "bar", Firmware: "v1.0", ConnectionState: ConnectionState{Value: false}, BatteryState: "OK"}}},
+	}
 
-	client := tado.New("user@examle.com", "some-password", "")
-	client.APIURL = apiServer.URL
-	client.Authenticator = authenticator
+	c, s := makeTestServer(response, nil)
 
-	_, err := client.GetZones(context.Background())
+	auth := fakeAuthenticator{}
+	c.authenticator = &auth
+
+	auth.Token = "4321"
+	_, err := c.GetZones(context.Background())
 	assert.Error(t, err)
 	assert.Equal(t, "403 Forbidden", err.Error())
 
-	authenticator.
-		On("AuthHeaders", mock.AnythingOfType("*context.emptyCtx")).
-		Return(http.Header{}, fmt.Errorf("server is down")).Once()
+	auth.Token = "1234"
+	_, err = c.GetZones(context.Background())
+	require.NoError(t, err)
+	assert.Equal(t, 242, c.HomeID)
 
-	_, err = client.GetZones(context.Background())
+	s.Close()
+	_, err = c.GetZones(context.Background())
 	assert.Error(t, err)
-	assert.Equal(t, "tado authentication failed: server is down", err.Error())
-
-	authenticator.
-		On("AuthHeaders", mock.AnythingOfType("*context.emptyCtx")).
-		Return(http.Header{"Authorization": []string{"Bearer good_token"}}, nil)
-
-	_, err = client.GetZones(context.Background())
-	assert.NoError(t, err)
-	assert.Equal(t, 242, client.HomeID)
-
-	server.fail = true
-	_, err = client.GetZones(context.Background())
-	assert.Error(t, err)
-	assert.Equal(t, "500 Internal Server Error", err.Error())
 }
 
 func TestAPIClient_DecodeError(t *testing.T) {
-	info := tado.MobileDevice{
+	info := MobileDevice{
 		ID:   1,
 		Name: "foo",
-		Settings: tado.MobileDeviceSettings{
+		Settings: MobileDeviceSettings{
 			GeoTrackingEnabled: false,
 		},
-		Location: tado.MobileDeviceLocation{},
+		Location: MobileDeviceLocation{},
 	}
 
-	c, s := makeTestServer(info)
+	c, s := makeTestServer(info, nil)
+	defer s.Close()
+
 	_, err := c.GetMobileDevices(context.Background())
 	assert.Error(t, err)
-	s.Close()
 }
-func TestAPIClient_Timeout(t *testing.T) {
-	server := APIServer{slow: true}
-	apiServer := httptest.NewServer(http.HandlerFunc(server.apiHandler))
-	defer apiServer.Close()
-	authenticator := mocks.NewAuthenticator(t)
-	authenticator.
-		On("AuthHeaders", mock.AnythingOfType("*context.timerCtx")).
-		Return(http.Header{"Authorization": []string{"Bearer good_token"}}, nil)
 
-	client := tado.New("user@examle.com", "some-password", "")
-	client.APIURL = apiServer.URL
-	client.Authenticator = authenticator
+func TestAPIClient_Timeout(t *testing.T) {
+	c, s := makeTestServer(nil, func(ctx context.Context) bool { return wait(ctx, 5*time.Second) })
+	defer s.Close()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
 	defer cancel()
 
-	_, err := client.GetWeatherInfo(ctx)
-
+	_, err := c.GetWeatherInfo(ctx)
 	assert.Error(t, err)
 }
 
-func makeTestServer(response any) (*tado.APIClient, *httptest.Server) {
+func wait(ctx context.Context, duration time.Duration) (passed bool) {
+	timer := time.NewTimer(duration)
+loop:
+	for {
+		select {
+		case <-timer.C:
+			break loop
+		case <-ctx.Done():
+			return false
+		}
+	}
+	return true
+}
+
+func makeTestServer(response any, middleware func(ctx context.Context) bool) (*APIClient, *httptest.Server) {
 	const token = "1234"
-	s := httptest.NewServer(authenticationHandler(token)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	s := httptest.NewServer(authenticationHandler(token)(responder(response, middleware)))
+
+	c := New("", "", "")
+	c.apiURL = s.URL
+	c.authenticator = fakeAuthenticator{Token: token}
+
+	return c, s
+}
+
+func responder(response any, middleware func(ctx context.Context) bool) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+		if middleware != nil && !middleware(ctx) {
+			http.Error(w, "error", http.StatusInternalServerError)
+			return
+		}
 		switch r.URL.Path {
 		case "/api/v1/me":
-			_, _ = w.Write([]byte(`{ "homeId": 1 }`))
+			_, _ = w.Write([]byte(`{ "homeId": 242 }`))
 		default:
 			_ = json.NewEncoder(w).Encode(response)
 		}
-	})))
-
-	c := tado.New("", "", "")
-	c.APIURL = s.URL
-	c.Authenticator = fakeAuthenticator{Token: token}
-
-	return c, s
+	}
 }
 
 type fakeAuthenticator struct {
 	Token string
 }
 
-func (f fakeAuthenticator) AuthHeaders(_ context.Context) (header http.Header, err error) {
-	return http.Header{"Authorization": []string{"Bearer " + f.Token}}, nil
+func (f fakeAuthenticator) GetAuthToken(_ context.Context) (string, error) {
+	return f.Token, nil
 }
 
 func (f fakeAuthenticator) Reset() {
 }
 
-var _ tado.Authenticator = &fakeAuthenticator{}
+var _ authenticator = &fakeAuthenticator{}
 
 func authenticationHandler(token string) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {

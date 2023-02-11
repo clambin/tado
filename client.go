@@ -22,6 +22,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/clambin/tado/auth"
 	"io"
 	"net/http"
 	"strconv"
@@ -61,40 +62,46 @@ type API interface {
 
 // APIClient represents a Tado API client.
 type APIClient struct {
-	// Authenticator handles logging in to the Tado server
-	Authenticator Authenticator
+	// authenticator handles logging in to the Tado server
+	authenticator
 	// HTTPClient is used to perform HTTP requests
 	HTTPClient *http.Client
-	// APIURL can be left blank. Only exposed for unit tests.
-	APIURL string
 
-	HomeID int
 	lock   sync.RWMutex
+	apiURL string
+	HomeID int
+}
+
+type authenticator interface {
+	GetAuthToken(ctx context.Context) (token string, err error)
+	Reset()
 }
 
 // New creates a new client
 //
 // clientSecret can typically be left blank.  If the default secret does not work, your client secret can be found by visiting https://my.tado.com/webapp/env.js after logging in to https://my.tado.com
 func New(username, password, clientSecret string) *APIClient {
+	if clientSecret == "" {
+		clientSecret = "wZaRN7rpjn3FoNyF5IFuxg9uMzYJcvOoQ8QWiIqS3hfk6gLhVlG57j5YNoZL2Rtc"
+	}
+
 	return &APIClient{
-		Authenticator: &authenticator{
-			HTTPClient:   &http.Client{},
+		authenticator: &auth.Authenticator{
+			HTTPClient:   http.DefaultClient,
+			ClientID:     "tado-web-app",
+			ClientSecret: clientSecret,
 			Username:     username,
 			Password:     password,
-			ClientSecret: clientSecret,
-			AuthURL:      baseAuthURL,
+			AuthURL:      "https://auth.tado.com/oauth/token",
 		},
-		HTTPClient: &http.Client{},
-		APIURL:     baseAPIURL,
+		HTTPClient: http.DefaultClient,
+		apiURL:     "https://my.tado.com",
 	}
 }
 
-const baseAPIURL = "https://my.tado.com"
-const baseAuthURL = "https://auth.tado.com"
-
 // apiV2URL returns a API v2 URL
 func (client *APIClient) apiV2URL(endpoint string) string {
-	return client.APIURL + "/api/v2/homes/" + strconv.Itoa(client.HomeID) + endpoint
+	return client.apiURL + "/api/v2/homes/" + strconv.Itoa(client.HomeID) + endpoint
 }
 
 // getHomeID gets the user's Home ID
@@ -113,7 +120,7 @@ func (client *APIClient) getHomeID(ctx context.Context) (err error) {
 		HomeID int `json:"homeId"`
 	}
 
-	if err = client.call(ctx, http.MethodGet, client.APIURL+"/api/v1/me", bytes.NewBufferString(""), &meResponse); err != nil {
+	if err = client.call(ctx, http.MethodGet, client.apiURL+"/api/v1/me", bytes.NewBufferString(""), &meResponse); err != nil {
 		return
 	}
 
@@ -148,7 +155,7 @@ func (client *APIClient) call(ctx context.Context, method string, url string, pa
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return fmt.Errorf("parse: %w", err)
+		return fmt.Errorf("read: %w", err)
 	}
 
 	switch resp.StatusCode {
@@ -160,7 +167,7 @@ func (client *APIClient) call(ctx context.Context, method string, url string, pa
 	case http.StatusForbidden, http.StatusUnauthorized:
 		// we're authenticated, but still got forbidden.
 		// force password login to get a new token.
-		client.Authenticator.Reset()
+		client.authenticator.Reset()
 		err = errors.New(resp.Status)
 	default:
 		err = errors.New(resp.Status)
@@ -169,21 +176,14 @@ func (client *APIClient) call(ctx context.Context, method string, url string, pa
 	return err
 }
 
-func (client *APIClient) buildRequest(ctx context.Context, method string, path string, payload io.Reader) (req *http.Request, err error) {
-	req, _ = http.NewRequestWithContext(ctx, method, path, payload)
-	req.Header.Add("Content-Type", "application/json;charset=UTF-8")
-
-	var authHeaders http.Header
-	authHeaders, err = client.Authenticator.AuthHeaders(ctx)
+func (client *APIClient) buildRequest(ctx context.Context, method string, path string, payload io.Reader) (*http.Request, error) {
+	token, err := client.authenticator.GetAuthToken(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("tado authentication failed: %w", err)
+		return nil, fmt.Errorf("auth: %w", err)
 	}
+	req, _ := http.NewRequestWithContext(ctx, method, path, payload)
+	req.Header.Set("Content-Type", "application/json;charset=UTF-8")
+	req.Header.Set("Authorization", "Bearer "+token)
 
-	for key, values := range authHeaders {
-		for _, value := range values {
-			req.Header.Add(key, value)
-		}
-	}
-
-	return
+	return req, nil
 }

@@ -1,4 +1,4 @@
-package tado
+package auth
 
 import (
 	"context"
@@ -9,73 +9,85 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"os"
 	"testing"
 	"time"
 )
 
-func TestAuthenticator_AuthHeaders(t *testing.T) {
+func TestAuthenticator_GetAuthToken(t *testing.T) {
 	server := authServer{}
 	testServer := httptest.NewServer(http.HandlerFunc(server.authHandler))
 
-	auth := authenticator{
+	auth := Authenticator{
 		HTTPClient: &http.Client{},
 		Username:   "user@examle.com",
 		Password:   "some-password",
-		AuthURL:    testServer.URL,
+		AuthURL:    testServer.URL + "/oauth/token",
 	}
 
-	headers, err := auth.AuthHeaders(context.Background())
+	token, err := auth.GetAuthToken(context.Background())
 	require.NoError(t, err)
-	token := headers.Get("Authorization")
 	assert.NotZero(t, token)
 
 	// if already authenticated, we should re-use the token
-	headers, err = auth.AuthHeaders(context.Background())
+	newToken, err := auth.GetAuthToken(context.Background())
 	require.NoError(t, err)
-	newToken := headers.Get("Authorization")
 	assert.NotZero(t, newToken)
 	assert.Equal(t, token, newToken)
 
 	// expire token on client side. we should get a new token.
-	auth.Expires = time.Date(1970, 1, 1, 0, 0, 0, 0, time.UTC)
-	headers, err = auth.AuthHeaders(context.Background())
+	auth.expires = time.Date(1970, 1, 1, 0, 0, 0, 0, time.UTC)
+	newToken, err = auth.GetAuthToken(context.Background())
 	require.NoError(t, err)
-	newToken = headers.Get("Authorization")
 	assert.NotZero(t, newToken)
 	assert.NotEqual(t, token, newToken)
 
+	// reset forces a new password-based login
+	auth.Reset()
+	assert.Zero(t, auth.refreshToken)
+	newToken, err = auth.GetAuthToken(context.Background())
+	require.NoError(t, err)
+	assert.NotZero(t, newToken)
+	assert.Equal(t, token, newToken)
+
 	// auth server is failing
 	server.fail = true
-	auth.Expires = time.Date(1970, 1, 1, 0, 0, 0, 0, time.UTC)
-	_, err = auth.AuthHeaders(context.Background())
+	auth.expires = time.Date(1970, 1, 1, 0, 0, 0, 0, time.UTC)
+	_, err = auth.GetAuthToken(context.Background())
 	require.Error(t, err)
 
 	// auth server is down
 	testServer.Close()
-	auth.Expires = time.Date(1970, 1, 1, 0, 0, 0, 0, time.UTC)
-	_, err = auth.AuthHeaders(context.Background())
+	_, err = auth.GetAuthToken(context.Background())
 	assert.Error(t, err)
 }
 
-func TestAuthenticator_Reset(t *testing.T) {
-	server := authServer{}
-	testServer := httptest.NewServer(http.HandlerFunc(server.authHandler))
-
-	auth := authenticator{
-		HTTPClient: &http.Client{},
-		Username:   "user@examle.com",
-		Password:   "some-password",
-		AuthURL:    testServer.URL,
+func TestAuthenticator_buildForm(t *testing.T) {
+	tests := []struct {
+		name       string
+		grantType  string
+		credential string
+		want       string
+	}{
+		{
+			name:       "password",
+			grantType:  "password",
+			credential: "my-password",
+			want:       "client_id=foo&client_secret=123&grant_type=password&password=my-password&scope=home.user&username=bar%40example.com",
+		},
+		{
+			name:       "refresh_token",
+			grantType:  "refresh_token",
+			credential: "my-token",
+			want:       "client_id=foo&client_secret=123&grant_type=refresh_token&refresh_token=my-token&scope=home.user",
+		},
 	}
-
-	headers, err := auth.AuthHeaders(context.Background())
-	require.NoError(t, err)
-	token := headers.Get("Authorization")
-	assert.NotZero(t, token)
-
-	auth.Reset()
-
-	assert.Zero(t, auth.refreshToken)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			auth := Authenticator{ClientID: "foo", ClientSecret: "123", Username: "bar@example.com", Password: "my-password2"}
+			assert.Equal(t, tt.want, auth.buildForm(tt.grantType, tt.credential).Encode())
+		})
+	}
 }
 
 // authServer implements an authentication server
@@ -144,4 +156,31 @@ func getGrantType(body io.Reader) string {
 		}
 	}
 	panic("grant_type not found in body")
+}
+
+func TestAuthenticator_GetAuthToken_E2E(t *testing.T) {
+	username := os.Getenv("TADO_USERNAME")
+	password := os.Getenv("TADO_PASSWORD")
+
+	if username == "" || password == "" {
+		t.Skip("environment not set. skipping ...")
+	}
+
+	a := Authenticator{
+		HTTPClient:   http.DefaultClient,
+		ClientID:     "tado-web-app",
+		ClientSecret: "wZaRN7rpjn3FoNyF5IFuxg9uMzYJcvOoQ8QWiIqS3hfk6gLhVlG57j5YNoZL2Rtc",
+		Username:     username,
+		Password:     password,
+		AuthURL:      "https://auth.tado.com/oauth/token",
+	}
+
+	ctx := context.Background()
+	token, err := a.GetAuthToken(ctx)
+	require.NoError(t, err)
+
+	token2, err := a.GetAuthToken(ctx)
+	require.NoError(t, err)
+
+	assert.Equal(t, token, token2)
 }

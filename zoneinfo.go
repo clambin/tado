@@ -177,9 +177,24 @@ const (
 	ZoneStateManual
 )
 
+func (s ZoneState) String() string {
+	names := map[ZoneState]string{
+		ZoneStateUnknown:         "unknown",
+		ZoneStateOff:             "off",
+		ZoneStateAuto:            "auto",
+		ZoneStateTemporaryManual: "manual (temp)",
+		ZoneStateManual:          "manual",
+	}
+	name, ok := names[s]
+	if !ok {
+		name = "(invalid)"
+	}
+	return name
+}
+
 // GetState returns the state of the zone
-func (zoneInfo ZoneInfo) GetState() (state ZoneState) {
-	state = ZoneStateUnknown
+func (zoneInfo ZoneInfo) GetState() ZoneState {
+	var state ZoneState
 	if zoneInfo.Overlay.Type == "MANUAL" && zoneInfo.Overlay.Setting.Type == "HEATING" {
 		if zoneInfo.Overlay.Setting.Power != "ON" || zoneInfo.Overlay.Setting.Temperature.Celsius <= 5.0 {
 			state = ZoneStateOff
@@ -193,5 +208,5 @@ func (zoneInfo ZoneInfo) GetState() (state ZoneState) {
 	} else {
 		state = ZoneStateAuto
 	}
-	return
+	return state
 }
