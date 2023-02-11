@@ -85,21 +85,23 @@ type Authenticator interface {
 //
 // clientSecret can typically be left blank.  If the default secret does not work, your client secret can be found by visiting https://my.tado.com/webapp/env.js after logging in to https://my.tado.com
 func New(username, password, clientSecret string) *APIClient {
+	if clientSecret == "" {
+		clientSecret = "wZaRN7rpjn3FoNyF5IFuxg9uMzYJcvOoQ8QWiIqS3hfk6gLhVlG57j5YNoZL2Rtc"
+	}
+
 	return &APIClient{
 		Authenticator: &auth.Authenticator{
-			HTTPClient:   &http.Client{},
+			HTTPClient:   http.DefaultClient,
+			ClientID:     "tado-web-app",
+			ClientSecret: clientSecret,
 			Username:     username,
 			Password:     password,
-			ClientSecret: clientSecret,
-			AuthURL:      baseAuthURL,
+			AuthURL:      "https://auth.tado.com/oauth/token",
 		},
 		HTTPClient: &http.Client{},
-		APIURL:     baseAPIURL,
+		APIURL:     "https://my.tado.com",
 	}
 }
-
-const baseAPIURL = "https://my.tado.com"
-const baseAuthURL = "https://auth.tado.com"
 
 // apiV2URL returns a API v2 URL
 func (client *APIClient) apiV2URL(endpoint string) string {
@@ -157,7 +159,7 @@ func (client *APIClient) call(ctx context.Context, method string, url string, pa
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return fmt.Errorf("parse: %w", err)
+		return fmt.Errorf("read: %w", err)
 	}
 
 	switch resp.StatusCode {

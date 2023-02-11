@@ -249,3 +249,23 @@ func (o *overlayManager) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		http.Error(w, "invalid method", http.StatusMethodNotAllowed)
 	}
 }
+
+func TestZoneState_String(t *testing.T) {
+	tests := []struct {
+		name string
+		s    tado.ZoneState
+		want string
+	}{
+		{name: "ZoneStateUnknown", s: tado.ZoneStateUnknown, want: "unknown"},
+		{name: "ZoneStateOff", s: tado.ZoneStateOff, want: "off"},
+		{name: "ZoneStateAuto", s: tado.ZoneStateAuto, want: "auto"},
+		{name: "ZoneStateTemporaryManual", s: tado.ZoneStateTemporaryManual, want: "manual (temp)"},
+		{name: "ZoneStateManual", s: tado.ZoneStateManual, want: "manual"},
+		{name: "invalid", s: tado.ZoneState(-1), want: "(invalid)"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equalf(t, tt.want, tt.s.String(), "String()")
+		})
+	}
+}

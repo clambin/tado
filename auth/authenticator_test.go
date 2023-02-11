@@ -168,7 +168,7 @@ func TestAuthenticator_GetAuthToken_E2E(t *testing.T) {
 
 	a := Authenticator{
 		HTTPClient:   http.DefaultClient,
-		ClientID:     "foo",
+		ClientID:     "tado-web-app",
 		ClientSecret: "wZaRN7rpjn3FoNyF5IFuxg9uMzYJcvOoQ8QWiIqS3hfk6gLhVlG57j5YNoZL2Rtc",
 		Username:     username,
 		Password:     password,
@@ -178,5 +178,9 @@ func TestAuthenticator_GetAuthToken_E2E(t *testing.T) {
 	ctx := context.Background()
 	token, err := a.GetAuthToken(ctx)
 	require.NoError(t, err)
-	t.Log(token)
+
+	token2, err := a.GetAuthToken(ctx)
+	require.NoError(t, err)
+
+	assert.Equal(t, token, token2)
 }

@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 	"time"
 )
@@ -132,5 +133,25 @@ func authenticationHandler(token string) func(next http.Handler) http.Handler {
 			}
 			next.ServeHTTP(w, r)
 		})
+	}
+}
+
+func TestAPIClient_GetZoneInfo_E2E(t *testing.T) {
+	username := os.Getenv("TADO_USERNAME")
+	password := os.Getenv("TADO_PASSWORD")
+
+	if username == "" || password == "" {
+		t.Skip("environment not set. skipping ...")
+	}
+
+	c := tado.New(username, password, "")
+	ctx := context.Background()
+	zones, err := c.GetZones(ctx)
+	require.NoError(t, err)
+
+	for _, zone := range zones {
+		zoneInfo, err := c.GetZoneInfo(ctx, zone.ID)
+		require.NoError(t, err)
+		t.Logf("%s: %s", zone.Name, zoneInfo.GetState())
 	}
 }

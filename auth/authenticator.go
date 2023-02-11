@@ -43,7 +43,7 @@ func (a *Authenticator) GetAuthToken(ctx context.Context) (string, error) {
 	return a.accessToken, err
 }
 
-// Reset forces a password-based re-authentication on the next call to AuthHeaders
+// Reset forces a password-based re-authentication on the next call to GetAuthToken
 func (a *Authenticator) Reset() {
 	a.lock.Lock()
 	defer a.lock.Unlock()

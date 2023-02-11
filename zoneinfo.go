@@ -177,6 +177,21 @@ const (
 	ZoneStateManual
 )
 
+func (s ZoneState) String() string {
+	names := map[ZoneState]string{
+		ZoneStateUnknown:         "unknown",
+		ZoneStateOff:             "off",
+		ZoneStateAuto:            "auto",
+		ZoneStateTemporaryManual: "manual (temp)",
+		ZoneStateManual:          "manual",
+	}
+	name, ok := names[s]
+	if !ok {
+		name = "(invalid)"
+	}
+	return name
+}
+
 // GetState returns the state of the zone
 func (zoneInfo ZoneInfo) GetState() (state ZoneState) {
 	state = ZoneStateUnknown
