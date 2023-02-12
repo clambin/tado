@@ -27,20 +27,10 @@ type MobileDeviceLocation struct {
 // GetMobileDevices retrieves the status of all registered mobile devices.
 func (client *APIClient) GetMobileDevices(ctx context.Context) (tadoMobileDevices []MobileDevice, err error) {
 	if err = client.initialize(ctx); err == nil {
-		err = client.call(ctx, http.MethodGet, client.apiV2URL("/mobileDevices"), nil, &tadoMobileDevices)
+		err = client.call(ctx, http.MethodGet, "myTado", "/mobileDevices", nil, &tadoMobileDevices)
 	}
 	return
 }
-
-// String serializes a MobileDevice into a string. Used for logging.
-//func (mobileDevice *MobileDevice) String() string {
-//	return fmt.Sprintf("name=%s, geotrack=%v, stale=%v, athome=%v",
-//		mobileDevice.Name,
-//		mobileDevice.Settings.GeoTrackingEnabled,
-//		mobileDevice.Location.Stale,
-//		mobileDevice.Location.AtHome,
-//	)
-//}
 
 // MobileDeviceLocationState is the state of the user's device (mobile phone), i.e. home or away
 type MobileDeviceLocationState int
