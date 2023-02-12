@@ -17,17 +17,16 @@
 package tado
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/clambin/tado/auth"
 	"io"
 	"net/http"
-	"strconv"
 	"sync"
 	"time"
+
+	"github.com/clambin/tado/auth"
 )
 
 // Common Tado data structures
@@ -67,9 +66,10 @@ type APIClient struct {
 	// HTTPClient is used to perform HTTP requests
 	HTTPClient *http.Client
 
-	lock   sync.RWMutex
-	apiURL string
-	HomeID int
+	lock         sync.RWMutex
+	apiURL       map[string]string
+	account      *Account
+	activeHomeID int
 }
 
 type authenticator interface {
@@ -95,58 +95,54 @@ func New(username, password, clientSecret string) *APIClient {
 			AuthURL:      "https://auth.tado.com/oauth/token",
 		},
 		HTTPClient: http.DefaultClient,
-		apiURL:     "https://my.tado.com",
+		apiURL:     buildURLMap(""),
 	}
 }
 
-// apiV2URL returns a API v2 URL
-func (client *APIClient) apiV2URL(endpoint string) string {
-	return client.apiURL + "/api/v2/homes/" + strconv.Itoa(client.HomeID) + endpoint
+func buildURLMap(override string) map[string]string {
+	myTado := "https://my.tado.com/api/v2"
+	bob := "https://energy-bob.tado.com"
+	insights := "https://energy-insights.tado.com/api"
+
+	if override != "" {
+		myTado = override
+		bob = override
+		insights = override
+	}
+
+	return map[string]string{
+		"me":       myTado + "/me",
+		"myTado":   myTado + "/homes/%d",
+		"bob":      bob + "/%d",
+		"insights": insights + "/homes/%d",
+	}
 }
 
-// getHomeID gets the user's Home ID
-//
-// Called by Initialize, so doesn't need to be called by the calling application.
-func (client *APIClient) getHomeID(ctx context.Context) (err error) {
-	client.lock.Lock()
-	homeID := client.HomeID
-	client.lock.Unlock()
-
-	if homeID > 0 {
-		return nil
-	}
-
-	var meResponse struct {
-		HomeID int `json:"homeId"`
-	}
-
-	if err = client.call(ctx, http.MethodGet, client.apiURL+"/api/v1/me", bytes.NewBufferString(""), &meResponse); err != nil {
+func (c *APIClient) initialize(ctx context.Context) (err error) {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+	if c.activeHomeID > 0 {
 		return
 	}
-
-	client.lock.Lock()
-	client.HomeID = meResponse.HomeID
-	client.lock.Unlock()
-	return
+	account, err := c.GetAccount(ctx)
+	if err != nil {
+		return err
+	}
+	c.account = &account
+	if len(c.account.Homes) == 0 {
+		return fmt.Errorf("no homes detected")
+	}
+	c.activeHomeID = c.account.Homes[0].Id
+	return nil
 }
 
-// Initialize sets up the client to call the various APIs, i.e. authenticates with tado.com,
-// retrieving/updating the Access Token required for the API functions, and retrieving the
-// user's Home ID.
-//
-// Each API function calls this before invoking the API, so normally this doesn't need to be
-// called by the calling application.
-func (client *APIClient) initialize(ctx context.Context) (err error) {
-	return client.getHomeID(ctx)
-}
-
-func (client *APIClient) call(ctx context.Context, method string, url string, payload io.Reader, response any) error {
-	req, err := client.buildRequest(ctx, method, url, payload)
+func (c *APIClient) call(ctx context.Context, method string, apiClass, endpoint string, payload io.Reader, response any) error {
+	req, err := c.buildRequest(ctx, method, c.makeAPIURL(apiClass, endpoint), payload)
 	if err != nil {
 		return err
 	}
 
-	resp, err := client.HTTPClient.Do(req)
+	resp, err := c.HTTPClient.Do(req)
 	if err != nil {
 		return err
 	}
@@ -167,13 +163,26 @@ func (client *APIClient) call(ctx context.Context, method string, url string, pa
 	case http.StatusForbidden, http.StatusUnauthorized:
 		// we're authenticated, but still got forbidden.
 		// force password login to get a new token.
-		client.authenticator.Reset()
+		c.authenticator.Reset()
 		err = errors.New(resp.Status)
 	default:
 		err = errors.New(resp.Status)
 	}
 
 	return err
+}
+
+func (c *APIClient) makeAPIURL(apiClass string, endpoint string) string {
+	base, ok := c.apiURL[apiClass]
+	if !ok {
+		panic("invalid api selector: " + base)
+	}
+	if apiClass == "me" {
+		return base
+	}
+	c.lock.RLock()
+	defer c.lock.RUnlock()
+	return fmt.Sprintf(base, c.activeHomeID) + endpoint
 }
 
 func (client *APIClient) buildRequest(ctx context.Context, method string, path string, payload io.Reader) (*http.Request, error) {

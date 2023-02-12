@@ -80,7 +80,7 @@ type ZoneInfoOverlayTermination struct {
 // GetZoneInfo gets the info for the specified ZoneID
 func (client *APIClient) GetZoneInfo(ctx context.Context, zoneID int) (tadoZoneInfo ZoneInfo, err error) {
 	if err = client.initialize(ctx); err == nil {
-		err = client.call(ctx, http.MethodGet, client.apiV2URL("/zones/"+strconv.Itoa(zoneID)+"/state"), nil, &tadoZoneInfo)
+		err = client.call(ctx, http.MethodGet, "myTado", "/zones/"+strconv.Itoa(zoneID)+"/state", nil, &tadoZoneInfo)
 	}
 	return
 }
@@ -109,7 +109,7 @@ func (client *APIClient) SetZoneOverlay(ctx context.Context, zoneID int, tempera
 	}
 	var payload bytes.Buffer
 	if err = json.NewEncoder(&payload).Encode(request); err == nil {
-		err = client.call(ctx, http.MethodPut, client.apiV2URL("/zones/"+strconv.Itoa(zoneID)+"/overlay"), &payload, nil)
+		err = client.call(ctx, http.MethodPut, "myTado", "/zones/"+strconv.Itoa(zoneID)+"/overlay", &payload, nil)
 	}
 	return
 
@@ -146,7 +146,7 @@ func (client *APIClient) SetZoneOverlayWithDuration(ctx context.Context, zoneID 
 	}
 	var payload bytes.Buffer
 	if err = json.NewEncoder(&payload).Encode(request); err == nil {
-		err = client.call(ctx, http.MethodPut, client.apiV2URL("/zones/"+strconv.Itoa(zoneID)+"/overlay"), &payload, nil)
+		err = client.call(ctx, http.MethodPut, "myTado", "/zones/"+strconv.Itoa(zoneID)+"/overlay", &payload, nil)
 	}
 
 	return
@@ -155,7 +155,7 @@ func (client *APIClient) SetZoneOverlayWithDuration(ctx context.Context, zoneID 
 // DeleteZoneOverlay deletes the overlay (manual temperature setting) for the specified ZoneID
 func (client *APIClient) DeleteZoneOverlay(ctx context.Context, zoneID int) (err error) {
 	if err = client.initialize(ctx); err == nil {
-		err = client.call(ctx, http.MethodDelete, client.apiV2URL("/zones/"+strconv.Itoa(zoneID)+"/overlay"), nil, nil)
+		err = client.call(ctx, http.MethodDelete, "myTado", "/zones/"+strconv.Itoa(zoneID)+"/overlay", nil, nil)
 	}
 
 	return

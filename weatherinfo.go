@@ -23,6 +23,6 @@ func (client *APIClient) GetWeatherInfo(ctx context.Context) (weatherInfo Weathe
 	if err = client.initialize(ctx); err != nil {
 		return
 	}
-	err = client.call(ctx, http.MethodGet, client.apiV2URL("/weather"), nil, &weatherInfo)
+	err = client.call(ctx, http.MethodGet, "myTado", "/weather", nil, &weatherInfo)
 	return
 }

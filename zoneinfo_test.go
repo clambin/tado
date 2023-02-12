@@ -3,12 +3,13 @@ package tado
 import (
 	"context"
 	"encoding/json"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestZoneInfo_GetState(t *testing.T) {
@@ -185,7 +186,7 @@ func TestAPIClient_ZoneOverlay(t *testing.T) {
 			s := httptest.NewServer(mgr)
 
 			c := New("", "", "")
-			c.apiURL = s.URL
+			c.apiURL = buildURLMap(s.URL)
 			c.authenticator = &fakeAuthenticator{Token: "1234"}
 
 			ctx := context.TODO()
@@ -232,9 +233,10 @@ func newOverlayManager() *overlayManager {
 func (o *overlayManager) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	switch req.Method {
 	case http.MethodGet:
-		if err := json.NewEncoder(w).Encode(o.zoneInfo); err != nil {
+		if req.URL.Path == "/me" {
+			_, _ = w.Write([]byte(`{ "homes": [ { "id" : 1 } ] }`))
+		} else if err := json.NewEncoder(w).Encode(o.zoneInfo); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
 		}
 	case http.MethodPut:
 		if err := json.NewDecoder(req.Body).Decode(&o.zoneInfo.Overlay); err != nil {

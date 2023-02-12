@@ -32,6 +32,6 @@ func (client *APIClient) GetZones(ctx context.Context) (zones []Zone, err error)
 	if err = client.initialize(ctx); err != nil {
 		return
 	}
-	err = client.call(ctx, http.MethodGet, client.apiV2URL("/zones"), nil, &zones)
+	err = client.call(ctx, http.MethodGet, "myTado", "/zones", nil, &zones)
 	return
 }

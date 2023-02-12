@@ -3,13 +3,14 @@ package tado
 import (
 	"context"
 	"encoding/json"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestAPIClient_GetZoneInfo_E2E(t *testing.T) {
@@ -51,7 +52,7 @@ func TestAPIClient_Authentication(t *testing.T) {
 	auth.Token = "1234"
 	_, err = c.GetZones(context.Background())
 	require.NoError(t, err)
-	assert.Equal(t, 242, c.HomeID)
+	assert.Equal(t, 242, c.activeHomeID)
 
 	s.Close()
 	_, err = c.GetZones(context.Background())
@@ -100,12 +101,27 @@ loop:
 	return true
 }
 
+func TestAPIClient_NoHomes(t *testing.T) {
+	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte(`{ "homes": [ ] }`))
+	}))
+	defer s.Close()
+
+	c := New("", "", "")
+	c.apiURL = buildURLMap(s.URL)
+	c.authenticator = fakeAuthenticator{Token: "1234"}
+
+	_, err := c.GetZones(context.Background())
+	assert.Error(t, err)
+	assert.Equal(t, "no homes detected", err.Error())
+}
+
 func makeTestServer(response any, middleware func(ctx context.Context) bool) (*APIClient, *httptest.Server) {
 	const token = "1234"
 	s := httptest.NewServer(authenticationHandler(token)(responder(response, middleware)))
 
 	c := New("", "", "")
-	c.apiURL = s.URL
+	c.apiURL = buildURLMap(s.URL)
 	c.authenticator = fakeAuthenticator{Token: token}
 
 	return c, s
@@ -119,8 +135,8 @@ func responder(response any, middleware func(ctx context.Context) bool) http.Han
 			return
 		}
 		switch r.URL.Path {
-		case "/api/v1/me":
-			_, _ = w.Write([]byte(`{ "homeId": 242 }`))
+		case "/me":
+			_, _ = w.Write([]byte(`{ "homes": [ { "id" : 242, "name": "home" } ] }`))
 		default:
 			_ = json.NewEncoder(w).Encode(response)
 		}
