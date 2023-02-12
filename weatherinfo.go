@@ -19,10 +19,10 @@ type WeatherInfo struct {
 }
 
 // GetWeatherInfo retrieves weather information for the user's Home.
-func (client *APIClient) GetWeatherInfo(ctx context.Context) (weatherInfo WeatherInfo, err error) {
-	if err = client.initialize(ctx); err != nil {
+func (c *APIClient) GetWeatherInfo(ctx context.Context) (weatherInfo WeatherInfo, err error) {
+	if err = c.initialize(ctx); err != nil {
 		return
 	}
-	err = client.call(ctx, http.MethodGet, "myTado", "/weather", nil, &weatherInfo)
+	err = c.call(ctx, http.MethodGet, "myTado", "/weather", nil, &weatherInfo)
 	return
 }

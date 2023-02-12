@@ -132,8 +132,8 @@ func (_m *API) SetZoneOverlay(_a0 context.Context, _a1 int, _a2 float64) error {
 	return r0
 }
 
-// SetZoneOverlayWithDuration provides a mock function with given fields: _a0, _a1, _a2, _a3
-func (_m *API) SetZoneOverlayWithDuration(_a0 context.Context, _a1 int, _a2 float64, _a3 time.Duration) error {
+// SetZoneTemporaryOverlay provides a mock function with given fields: _a0, _a1, _a2, _a3
+func (_m *API) SetZoneTemporaryOverlay(_a0 context.Context, _a1 int, _a2 float64, _a3 time.Duration) error {
 	ret := _m.Called(_a0, _a1, _a2, _a3)
 
 	var r0 error

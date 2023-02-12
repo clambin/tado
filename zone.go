@@ -28,10 +28,10 @@ type ConnectionState struct {
 }
 
 // GetZones retrieves the different Zones configured for the user's Home ID
-func (client *APIClient) GetZones(ctx context.Context) (zones []Zone, err error) {
-	if err = client.initialize(ctx); err != nil {
+func (c *APIClient) GetZones(ctx context.Context) (zones []Zone, err error) {
+	if err = c.initialize(ctx); err != nil {
 		return
 	}
-	err = client.call(ctx, http.MethodGet, "myTado", "/zones", nil, &zones)
+	err = c.call(ctx, http.MethodGet, "myTado", "/zones", nil, &zones)
 	return
 }

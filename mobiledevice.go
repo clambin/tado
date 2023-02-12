@@ -25,9 +25,9 @@ type MobileDeviceLocation struct {
 }
 
 // GetMobileDevices retrieves the status of all registered mobile devices.
-func (client *APIClient) GetMobileDevices(ctx context.Context) (tadoMobileDevices []MobileDevice, err error) {
-	if err = client.initialize(ctx); err == nil {
-		err = client.call(ctx, http.MethodGet, "myTado", "/mobileDevices", nil, &tadoMobileDevices)
+func (c *APIClient) GetMobileDevices(ctx context.Context) (tadoMobileDevices []MobileDevice, err error) {
+	if err = c.initialize(ctx); err == nil {
+		err = c.call(ctx, http.MethodGet, "myTado", "/mobileDevices", nil, &tadoMobileDevices)
 	}
 	return
 }

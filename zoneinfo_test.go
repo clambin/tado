@@ -160,21 +160,21 @@ func TestAPIClient_ZoneOverlay(t *testing.T) {
 		{
 			name: "temp manual",
 			action: func(ctx context.Context, client *APIClient) error {
-				return client.SetZoneOverlayWithDuration(ctx, 1, 18.0, time.Hour)
+				return client.SetZoneTemporaryOverlay(ctx, 1, 18.0, time.Hour)
 			},
 			expectedState: ZoneStateTemporaryManual,
 		},
 		{
 			name: "temp off",
 			action: func(ctx context.Context, client *APIClient) error {
-				return client.SetZoneOverlayWithDuration(ctx, 1, 1.0, time.Hour)
+				return client.SetZoneTemporaryOverlay(ctx, 1, 1.0, time.Hour)
 			},
 			expectedState: ZoneStateOff,
 		},
 		{
 			name: "temp not temp",
 			action: func(ctx context.Context, client *APIClient) error {
-				return client.SetZoneOverlayWithDuration(ctx, 1, 18.0, 0)
+				return client.SetZoneTemporaryOverlay(ctx, 1, 18.0, 0)
 			},
 			expectedState: ZoneStateManual,
 		},

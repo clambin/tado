@@ -12,7 +12,7 @@
 //	GetWeatherInfo:             get overall weather information
 //	GetMobileDevices:           get status of each registered mobile device
 //	SetZoneOverlay              set a permanent overlay for a zone
-//	SetZoneOverlayWithDuration  set a temporary overlay for a zone
+//	SetZoneTemporaryOverlay  set a temporary overlay for a zone
 //	DeleteZoneOverlay           delete the overlay for a zone
 package tado
 
@@ -55,7 +55,7 @@ type API interface {
 	GetWeatherInfo(context.Context) (WeatherInfo, error)
 	GetMobileDevices(context.Context) ([]MobileDevice, error)
 	SetZoneOverlay(context.Context, int, float64) error
-	SetZoneOverlayWithDuration(context.Context, int, float64, time.Duration) error
+	SetZoneTemporaryOverlay(context.Context, int, float64, time.Duration) error
 	DeleteZoneOverlay(context.Context, int) error
 }
 
@@ -185,8 +185,8 @@ func (c *APIClient) makeAPIURL(apiClass string, endpoint string) string {
 	return fmt.Sprintf(base, c.activeHomeID) + endpoint
 }
 
-func (client *APIClient) buildRequest(ctx context.Context, method string, path string, payload io.Reader) (*http.Request, error) {
-	token, err := client.authenticator.GetAuthToken(ctx)
+func (c *APIClient) buildRequest(ctx context.Context, method string, path string, payload io.Reader) (*http.Request, error) {
+	token, err := c.authenticator.GetAuthToken(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("auth: %w", err)
 	}
