@@ -183,6 +183,27 @@ func (_m *API) GetWeatherInfo(_a0 context.Context) (tado.WeatherInfo, error) {
 	return r0, r1
 }
 
+// GetZoneAutoConfiguration provides a mock function with given fields: _a0, _a1
+func (_m *API) GetZoneAutoConfiguration(_a0 context.Context, _a1 int) (tado.ZoneAwayConfiguration, error) {
+	ret := _m.Called(_a0, _a1)
+
+	var r0 tado.ZoneAwayConfiguration
+	if rf, ok := ret.Get(0).(func(context.Context, int) tado.ZoneAwayConfiguration); ok {
+		r0 = rf(_a0, _a1)
+	} else {
+		r0 = ret.Get(0).(tado.ZoneAwayConfiguration)
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context, int) error); ok {
+		r1 = rf(_a0, _a1)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // GetZoneCapabilities provides a mock function with given fields: _a0, _a1
 func (_m *API) GetZoneCapabilities(_a0 context.Context, _a1 int) (tado.ZoneCapabilities, error) {
 	ret := _m.Called(_a0, _a1)
@@ -276,6 +297,20 @@ func (_m *API) SetActiveHome(ctx context.Context, name string) error {
 	var r0 error
 	if rf, ok := ret.Get(0).(func(context.Context, string) error); ok {
 		r0 = rf(ctx, name)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// SetZoneAutoConfiguration provides a mock function with given fields: _a0, _a1, _a2
+func (_m *API) SetZoneAutoConfiguration(_a0 context.Context, _a1 int, _a2 tado.ZoneAwayConfiguration) error {
+	ret := _m.Called(_a0, _a1, _a2)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, int, tado.ZoneAwayConfiguration) error); ok {
+		r0 = rf(_a0, _a1, _a2)
 	} else {
 		r0 = ret.Error(0)
 	}

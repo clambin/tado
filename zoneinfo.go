@@ -150,52 +150,57 @@ func (c *APIClient) SetZoneEarlyStart(ctx context.Context, zoneID int, earlyAcce
 	return c.call(ctx, http.MethodPut, "myTado", "/zones/"+strconv.Itoa(zoneID)+"/earlyStart", &buf, nil)
 }
 
-// ZoneState is the state of the zone, i.e. heating is off, controlled automatically, or controlled manually
-type ZoneState int
-
-const (
-	// ZoneStateUnknown indicates the zone's state is not initialized yet
-	ZoneStateUnknown ZoneState = iota
-	// ZoneStateOff indicates the zone's heating is switched off
-	ZoneStateOff
-	// ZoneStateAuto indicates the zone's heating is controlled manually (e.g. as per schedule)
-	ZoneStateAuto
-	// ZoneStateTemporaryManual indicates the zone's target temperature is set manually, for a period of time
-	ZoneStateTemporaryManual
-	// ZoneStateManual indicates the zone's target temperature is set manually
-	ZoneStateManual
-)
-
-func (s ZoneState) String() string {
-	names := map[ZoneState]string{
-		ZoneStateUnknown:         "unknown",
-		ZoneStateOff:             "off",
-		ZoneStateAuto:            "auto",
-		ZoneStateTemporaryManual: "manual (temp)",
-		ZoneStateManual:          "manual",
-	}
-	name, ok := names[s]
-	if !ok {
-		name = "(invalid)"
-	}
-	return name
+// ZoneAwayConfiguration determines how a Zone will be heated when all users are away and the home is in "away" mode.
+// If AdjustType is true, the zone's heating will be switched off. When the heating is switched back on is determined by ComfortLevel (Eco, Balance, Comfort).
+// If AdjustType is false, the zone will be heated as per the Settings field.  E.g. using the following ZoneAwayConfigutation will heat the room at 16ºC:
+//
+//	{
+//	 "type": "HEATING",
+//	 "autoAdjust": false,
+//	 "setting": {
+//	   "type": "HEATING",
+//	   "power": "ON",
+//	   "temperature": {
+//	     "celsius": 16,
+//	   }
+//	 }
+//	}
+type ZoneAwayConfiguration struct {
+	Type         string                         `json:"type"`
+	AutoAdjust   bool                           `json:"autoAdjust"`
+	ComfortLevel AutoAdjustMode                 `json:"comfortLevel"`
+	Setting      *ZoneAwayConfigurationSettings `json:"setting"`
 }
 
-// GetState returns the state of the zone
-func (zoneInfo ZoneInfo) GetState() ZoneState {
-	var state ZoneState
-	if zoneInfo.Overlay.Type == "MANUAL" && zoneInfo.Overlay.Setting.Type == "HEATING" {
-		if zoneInfo.Overlay.Setting.Power != "ON" || zoneInfo.Overlay.Setting.Temperature.Celsius <= 5.0 {
-			state = ZoneStateOff
-		} else if zoneInfo.Overlay.Termination.Type != "MANUAL" {
-			state = ZoneStateTemporaryManual
-		} else {
-			state = ZoneStateManual
-		}
-	} else if zoneInfo.Setting.Power != "ON" {
-		state = ZoneStateOff
-	} else {
-		state = ZoneStateAuto
+// ZoneAwayConfigurationSettings specifies how a zone should be heated when all users are away, and the zone is not in autoAdjust mode.
+type ZoneAwayConfigurationSettings struct {
+	Type        string      `json:"type"`
+	Power       string      `json:"power"`
+	Temperature Temperature `json:"temperature"`
+}
+
+// AutoAdjustMode determines how the heating should be switched back on when one or more users return home.
+type AutoAdjustMode int
+
+const (
+	Eco     AutoAdjustMode = 0
+	Balance AutoAdjustMode = 50
+	Comfort AutoAdjustMode = 100
+)
+
+func (c *APIClient) GetZoneAutoConfiguration(ctx context.Context, zoneID int) (configuration ZoneAwayConfiguration, err error) {
+	if err = c.initialize(ctx); err == nil {
+		err = c.call(ctx, http.MethodGet, "myTado", "/zones/"+strconv.Itoa(zoneID)+"/schedule/awayConfiguration", nil, &configuration)
 	}
-	return state
+	return
+}
+
+func (c *APIClient) SetZoneAutoConfiguration(ctx context.Context, zoneID int, configuration ZoneAwayConfiguration) (err error) {
+	if err = c.initialize(ctx); err == nil {
+		payload := &bytes.Buffer{}
+		if err = json.NewEncoder(payload).Encode(configuration); err == nil {
+			err = c.call(ctx, http.MethodPut, "myTado", "/zones/"+strconv.Itoa(zoneID)+"/schedule/awayConfiguration", payload, nil)
+		}
+	}
+	return
 }

@@ -181,22 +181,26 @@ func TestAPIClient_SetZoneEarlyStart(t *testing.T) {
 	assert.Error(t, err)
 }
 
-func TestZoneState_String(t *testing.T) {
-	tests := []struct {
-		name string
-		s    ZoneState
-		want string
-	}{
-		{name: "ZoneStateUnknown", s: ZoneStateUnknown, want: "unknown"},
-		{name: "ZoneStateOff", s: ZoneStateOff, want: "off"},
-		{name: "ZoneStateAuto", s: ZoneStateAuto, want: "auto"},
-		{name: "ZoneStateTemporaryManual", s: ZoneStateTemporaryManual, want: "manual (temp)"},
-		{name: "ZoneStateManual", s: ZoneStateManual, want: "manual"},
-		{name: "invalid", s: ZoneState(-1), want: "(invalid)"},
+func TestAPIClient_GetZoneAutoConfiguration(t *testing.T) {
+	configs := []ZoneAwayConfiguration{
+		{Type: "HEATING", AutoAdjust: true, ComfortLevel: Eco},
+		{Type: "HEATING", Setting: &ZoneAwayConfigurationSettings{Type: "HEATING", Power: "ON", Temperature: Temperature{Celsius: 15.0}}},
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			assert.Equalf(t, tt.want, tt.s.String(), "String()")
-		})
+
+	ctx := context.Background()
+	for _, config := range configs {
+		c, s := makeTestServer(config, nil)
+		output, err := c.GetZoneAutoConfiguration(ctx, 1)
+		require.NoError(t, err)
+		assert.Equal(t, config, output)
+
+		err = c.SetZoneAutoConfiguration(ctx, 1, config)
+		assert.NoError(t, err)
+
+		s.Close()
+		_, err = c.GetZoneAutoConfiguration(ctx, 1)
+		require.Error(t, err)
+		err = c.SetZoneAutoConfiguration(ctx, 1, config)
+		assert.Error(t, err)
 	}
 }
