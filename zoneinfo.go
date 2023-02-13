@@ -1,7 +1,9 @@
 package tado
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"net/http"
 	"strconv"
 	"time"
@@ -118,6 +120,34 @@ func (c *APIClient) GetZoneCapabilities(ctx context.Context, zoneID int) (tadoZo
 		err = c.call(ctx, http.MethodGet, "myTado", "/zones/"+strconv.Itoa(zoneID)+"/capabilities", nil, &tadoZoneCapabilities)
 	}
 	return
+}
+
+func (c *APIClient) GetZoneEarlyStart(ctx context.Context, zoneID int) (earlyStart bool, err error) {
+	if err = c.initialize(ctx); err == nil {
+		var result struct {
+			Enabled bool
+		}
+		err = c.call(ctx, http.MethodGet, "myTado", "/zones/"+strconv.Itoa(zoneID)+"/earlyStart", nil, &result)
+		earlyStart = result.Enabled
+
+	}
+	return
+}
+
+func (c *APIClient) SetZoneEarlyStart(ctx context.Context, zoneID int, earlyAccess bool) error {
+	if err := c.initialize(ctx); err != nil {
+		return err
+	}
+	input := struct {
+		Enabled bool `json:"enabled"`
+	}{Enabled: earlyAccess}
+
+	var buf bytes.Buffer
+	err := json.NewEncoder(&buf).Encode(input)
+	if err != nil {
+		return err
+	}
+	return c.call(ctx, http.MethodPut, "myTado", "/zones/"+strconv.Itoa(zoneID)+"/earlyStart", &buf, nil)
 }
 
 // ZoneState is the state of the zone, i.e. heating is off, controlled automatically, or controlled manually

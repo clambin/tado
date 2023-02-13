@@ -204,6 +204,27 @@ func (_m *API) GetZoneCapabilities(_a0 context.Context, _a1 int) (tado.ZoneCapab
 	return r0, r1
 }
 
+// GetZoneEarlyStart provides a mock function with given fields: _a0, _a1
+func (_m *API) GetZoneEarlyStart(_a0 context.Context, _a1 int) (bool, error) {
+	ret := _m.Called(_a0, _a1)
+
+	var r0 bool
+	if rf, ok := ret.Get(0).(func(context.Context, int) bool); ok {
+		r0 = rf(_a0, _a1)
+	} else {
+		r0 = ret.Get(0).(bool)
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context, int) error); ok {
+		r1 = rf(_a0, _a1)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // GetZoneInfo provides a mock function with given fields: _a0, _a1
 func (_m *API) GetZoneInfo(_a0 context.Context, _a1 int) (tado.ZoneInfo, error) {
 	ret := _m.Called(_a0, _a1)
@@ -255,6 +276,20 @@ func (_m *API) SetActiveHome(ctx context.Context, name string) error {
 	var r0 error
 	if rf, ok := ret.Get(0).(func(context.Context, string) error); ok {
 		r0 = rf(ctx, name)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// SetZoneEarlyStart provides a mock function with given fields: _a0, _a1, _a2
+func (_m *API) SetZoneEarlyStart(_a0 context.Context, _a1 int, _a2 bool) error {
+	ret := _m.Called(_a0, _a1, _a2)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, int, bool) error); ok {
+		r0 = rf(_a0, _a1, _a2)
 	} else {
 		r0 = ret.Error(0)
 	}

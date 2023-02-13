@@ -146,7 +146,39 @@ func TestAPIClient_GetZoneCapabilities(t *testing.T) {
 	s.Close()
 	_, err = c.GetZoneCapabilities(ctx, 1)
 	assert.Error(t, err)
+}
 
+func TestAPIClient_GetZoneEarlyStart(t *testing.T) {
+	info := struct {
+		Enabled bool
+	}{Enabled: true}
+
+	c, s := makeTestServer(info, nil)
+	ctx := context.Background()
+	earlyStart, err := c.GetZoneEarlyStart(ctx, 1)
+	require.NoError(t, err)
+	assert.Equal(t, info.Enabled, earlyStart)
+
+	s.Close()
+	_, err = c.GetZoneEarlyStart(ctx, 1)
+	assert.Error(t, err)
+}
+
+func TestAPIClient_SetZoneEarlyStart(t *testing.T) {
+	info := struct {
+		Enabled bool
+	}{Enabled: true}
+
+	c, s := makeTestServer(info, nil)
+	ctx := context.Background()
+	err := c.SetZoneEarlyStart(ctx, 1, true)
+	require.NoError(t, err)
+	err = c.SetZoneEarlyStart(ctx, 1, false)
+	require.NoError(t, err)
+
+	s.Close()
+	err = c.SetZoneEarlyStart(ctx, 1, true)
+	assert.Error(t, err)
 }
 
 func TestZoneState_String(t *testing.T) {

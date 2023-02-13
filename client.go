@@ -54,6 +54,8 @@ type API interface {
 	GetZones(context.Context) ([]Zone, error)
 	GetZoneInfo(context.Context, int) (ZoneInfo, error)
 	GetZoneCapabilities(context.Context, int) (ZoneCapabilities, error)
+	GetZoneEarlyStart(context.Context, int) (bool, error)
+	SetZoneEarlyStart(context.Context, int, bool) error
 	SetZoneOverlay(context.Context, int, float64) error
 	SetZoneTemporaryOverlay(context.Context, int, float64, time.Duration) error
 	DeleteZoneOverlay(context.Context, int) error
