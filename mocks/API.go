@@ -183,6 +183,27 @@ func (_m *API) GetWeatherInfo(_a0 context.Context) (tado.WeatherInfo, error) {
 	return r0, r1
 }
 
+// GetZoneCapabilities provides a mock function with given fields: _a0, _a1
+func (_m *API) GetZoneCapabilities(_a0 context.Context, _a1 int) (tado.ZoneCapabilities, error) {
+	ret := _m.Called(_a0, _a1)
+
+	var r0 tado.ZoneCapabilities
+	if rf, ok := ret.Get(0).(func(context.Context, int) tado.ZoneCapabilities); ok {
+		r0 = rf(_a0, _a1)
+	} else {
+		r0 = ret.Get(0).(tado.ZoneCapabilities)
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context, int) error); ok {
+		r1 = rf(_a0, _a1)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // GetZoneInfo provides a mock function with given fields: _a0, _a1
 func (_m *API) GetZoneInfo(_a0 context.Context, _a1 int) (tado.ZoneInfo, error) {
 	ret := _m.Called(_a0, _a1)

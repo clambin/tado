@@ -5,15 +5,6 @@
 //	client := tado.New("your-tado-username", "your-tado-password", "your-tado-secret")
 //
 // Once a client has been created, you can query tado.com for information about your different Tado devices.
-// Currently, the following endpoints are supported:
-//
-//	GetZones:                   get the different zones (rooms) defined in your home
-//	GetZoneInfo:                get metrics for a specified zone in your home
-//	GetWeatherInfo:             get overall weather information
-//	GetMobileDevices:           get status of each registered mobile device
-//	SetZoneOverlay              set a permanent overlay for a zone
-//	SetZoneTemporaryOverlay  set a temporary overlay for a zone
-//	DeleteZoneOverlay           delete the overlay for a zone
 package tado
 
 import (
@@ -48,6 +39,8 @@ type Value struct {
 
 // API for the Tado APIClient.
 //
+// Deprecated: will be removed in a future version. Clients should make their own, tailor-made, mocks if needed.
+//
 //go:generate mockery --name API
 type API interface {
 	GetAccount(ctx context.Context) (Account, error)
@@ -60,6 +53,7 @@ type API interface {
 	GetWeatherInfo(context.Context) (WeatherInfo, error)
 	GetZones(context.Context) ([]Zone, error)
 	GetZoneInfo(context.Context, int) (ZoneInfo, error)
+	GetZoneCapabilities(context.Context, int) (ZoneCapabilities, error)
 	SetZoneOverlay(context.Context, int, float64) error
 	SetZoneTemporaryOverlay(context.Context, int, float64, time.Duration) error
 	DeleteZoneOverlay(context.Context, int) error
