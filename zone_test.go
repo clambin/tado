@@ -9,8 +9,8 @@ import (
 
 func TestAPIClient_GetZones(t *testing.T) {
 	response := []Zone{
-		{ID: 1, Name: "foo", Devices: []Device{{DeviceType: "foo", Firmware: "v1.0", ConnectionState: ConnectionState{Value: true}, BatteryState: "OK"}}},
-		{ID: 2, Name: "bar", Devices: []Device{{DeviceType: "bar", Firmware: "v1.0", ConnectionState: ConnectionState{Value: false}, BatteryState: "OK"}}},
+		{ID: 1, Name: "foo", Devices: []Device{{DeviceType: "foo", CurrentFwVersion: "v1.0", ConnectionState: ConnectionState{Value: true}, BatteryState: "OK"}}},
+		{ID: 2, Name: "bar", Devices: []Device{{DeviceType: "bar", CurrentFwVersion: "v1.0", ConnectionState: ConnectionState{Value: false}, BatteryState: "OK"}}},
 	}
 
 	c, s := makeTestServer(response, nil)

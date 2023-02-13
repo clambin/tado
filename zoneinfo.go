@@ -10,21 +10,34 @@ import (
 )
 
 // ZoneInfo contains the response to /api/v2/homes/<HomeID>/zones/<zoneID>/state
-//
-// This structure provides the following key information:
-//
-//	Setting.Power:                              power state of the specified zone (0-1)
-//	Temperature.Celsius:                        target temperature for the zone, in degrees Celsius
-//	OpenWindow.DurationInSeconds:               how long an open window has been detected in seconds
-//	ActivityDataPoints.HeatingPower.Percentage: heating power for the zone (0-100%)
-//	SensorDataPoints.Temperature.Celsius:       current temperature, in degrees Celsius
-//	SensorDataPoints.Humidity.Percentage:       humidity (0-100%)
 type ZoneInfo struct {
+	TadoMode            string `json:"tadoMode"`
+	GeolocationOverride bool   `json:"geolocationOverride"`
+	// TODO
+	GeolocationOverrideDisableTime interface{} `json:"geolocationOverrideDisableTime"`
+	// TODO
+	Preparation        interface{}                `json:"preparation"`
 	Setting            ZoneInfoSetting            `json:"setting"`
 	ActivityDataPoints ZoneInfoActivityDataPoints `json:"activityDataPoints"`
 	SensorDataPoints   ZoneInfoSensorDataPoints   `json:"sensorDataPoints"`
-	OpenWindow         ZoneInfoOpenWindow         `json:"openwindow,omitempty"`
-	Overlay            ZoneInfoOverlay            `json:"overlay,omitempty"`
+	// TODO
+	OverlayType        interface{}        `json:"overlayType"`
+	Overlay            ZoneInfoOverlay    `json:"overlay,omitempty"`
+	OpenWindow         ZoneInfoOpenWindow `json:"openwindow,omitempty"`
+	NextScheduleChange struct {
+		Start   time.Time `json:"start"`
+		Setting struct {
+			Type        string      `json:"type"`
+			Power       string      `json:"power"`
+			Temperature Temperature `json:"temperature"`
+		} `json:"setting"`
+	} `json:"nextScheduleChange"`
+	NextTimeBlock struct {
+		Start time.Time `json:"start"`
+	} `json:"nextTimeBlock"`
+	Link struct {
+		State string `json:"state"`
+	} `json:"link"`
 }
 
 // ZoneInfoSetting contains the zone's current power & target temperature

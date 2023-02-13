@@ -7,48 +7,18 @@ import (
 )
 
 type Account struct {
-	Name     string `json:"name"`
-	Email    string `json:"email"`
-	Username string `json:"username"`
-	Id       string `json:"id"`
-	Homes    []struct {
-		Id   int    `json:"id"`
-		Name string `json:"name"`
-	} `json:"homes"`
-	Locale        string `json:"locale"`
-	MobileDevices []struct {
-		Name     string `json:"name"`
-		Id       int    `json:"id"`
-		Settings struct {
-			GeoTrackingEnabled          bool `json:"geoTrackingEnabled"`
-			SpecialOffersEnabled        bool `json:"specialOffersEnabled"`
-			OnDemandLogRetrievalEnabled bool `json:"onDemandLogRetrievalEnabled"`
-			PushNotifications           struct {
-				LowBatteryReminder          bool `json:"lowBatteryReminder"`
-				AwayModeReminder            bool `json:"awayModeReminder"`
-				HomeModeReminder            bool `json:"homeModeReminder"`
-				OpenWindowReminder          bool `json:"openWindowReminder"`
-				EnergySavingsReportReminder bool `json:"energySavingsReportReminder"`
-				IncidentDetection           bool `json:"incidentDetection"`
-				EnergyIqReminder            bool `json:"energyIqReminder"`
-			} `json:"pushNotifications"`
-		} `json:"settings"`
-		DeviceMetadata struct {
-			Platform  string `json:"platform"`
-			OsVersion string `json:"osVersion"`
-			Model     string `json:"model"`
-			Locale    string `json:"locale"`
-		} `json:"deviceMetadata"`
-		Location struct {
-			Stale           bool `json:"stale"`
-			AtHome          bool `json:"atHome"`
-			BearingFromHome struct {
-				Degrees float64 `json:"degrees"`
-				Radians float64 `json:"radians"`
-			} `json:"bearingFromHome"`
-			RelativeDistanceFromHomeFence float64 `json:"relativeDistanceFromHomeFence"`
-		} `json:"location,omitempty"`
-	} `json:"mobileDevices"`
+	Name          string         `json:"name"`
+	Email         string         `json:"email"`
+	Username      string         `json:"username"`
+	Id            string         `json:"id"`
+	Homes         []Home         `json:"homes"`
+	Locale        string         `json:"locale"`
+	MobileDevices []MobileDevice `json:"mobileDevices"`
+}
+
+type Home struct {
+	Id   int    `json:"id"`
+	Name string `json:"name"`
 }
 
 func (c *APIClient) GetAccount(ctx context.Context) (Account, error) {
