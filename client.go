@@ -55,10 +55,11 @@ type API interface {
 	SetActiveHome(ctx context.Context, name string) error
 	GetActiveHome() (string, bool)
 	GetHomeInfo(ctx context.Context) (HomeInfo, error)
+	GetUsers(ctx context.Context) ([]User, error)
+	GetMobileDevices(context.Context) ([]MobileDevice, error)
+	GetWeatherInfo(context.Context) (WeatherInfo, error)
 	GetZones(context.Context) ([]Zone, error)
 	GetZoneInfo(context.Context, int) (ZoneInfo, error)
-	GetWeatherInfo(context.Context) (WeatherInfo, error)
-	GetMobileDevices(context.Context) ([]MobileDevice, error)
 	SetZoneOverlay(context.Context, int, float64) error
 	SetZoneTemporaryOverlay(context.Context, int, float64, time.Duration) error
 	DeleteZoneOverlay(context.Context, int) error
