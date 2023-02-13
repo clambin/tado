@@ -50,6 +50,11 @@ type Value struct {
 //
 //go:generate mockery --name API
 type API interface {
+	GetAccount(ctx context.Context) (Account, error)
+	GetHomes(ctx context.Context) ([]string, error)
+	SetActiveHome(ctx context.Context, name string) error
+	GetActiveHome() (string, bool)
+	GetHomeInfo(ctx context.Context) (HomeInfo, error)
 	GetZones(context.Context) ([]Zone, error)
 	GetZoneInfo(context.Context, int) (ZoneInfo, error)
 	GetWeatherInfo(context.Context) (WeatherInfo, error)
