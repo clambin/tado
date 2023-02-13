@@ -42,3 +42,13 @@ func TestAPIClient_SetActiveHome(t *testing.T) {
 	err = c.SetActiveHome(context.Background(), "invalid")
 	assert.Error(t, err)
 }
+
+func TestAPIClient_GetHomeInfo(t *testing.T) {
+	info := HomeInfo{Name: "my home"}
+	c, s := makeTestServer(info, nil)
+	defer s.Close()
+
+	home, err := c.GetHomeInfo(context.Background())
+	require.NoError(t, err)
+	assert.Equal(t, info, home)
+}
