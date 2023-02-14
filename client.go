@@ -51,6 +51,7 @@ type API interface {
 	GetConsumption(context.Context, string, time.Time, time.Time) (Consumption, error)
 	GetEnergySavings(context.Context) ([]EnergySavingsReport, error)
 	GetRunningTimes(context.Context, time.Time, time.Time) ([]RunningTime, error)
+	GetHeatingCircuits(context.Context) ([]HeatingCircuit, error)
 }
 
 // APIClient represents a Tado API client.

@@ -137,6 +137,29 @@ func (_m *API) GetEnergySavings(_a0 context.Context) ([]tado.EnergySavingsReport
 	return r0, r1
 }
 
+// GetHeatingCircuits provides a mock function with given fields: _a0
+func (_m *API) GetHeatingCircuits(_a0 context.Context) ([]tado.HeatingCircuit, error) {
+	ret := _m.Called(_a0)
+
+	var r0 []tado.HeatingCircuit
+	if rf, ok := ret.Get(0).(func(context.Context) []tado.HeatingCircuit); ok {
+		r0 = rf(_a0)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]tado.HeatingCircuit)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context) error); ok {
+		r1 = rf(_a0)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // GetHomeInfo provides a mock function with given fields: _a0
 func (_m *API) GetHomeInfo(_a0 context.Context) (tado.HomeInfo, error) {
 	ret := _m.Called(_a0)
@@ -197,6 +220,29 @@ func (_m *API) GetMobileDevices(_a0 context.Context) ([]tado.MobileDevice, error
 	var r1 error
 	if rf, ok := ret.Get(1).(func(context.Context) error); ok {
 		r1 = rf(_a0)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// GetRunningTimes provides a mock function with given fields: _a0, _a1, _a2
+func (_m *API) GetRunningTimes(_a0 context.Context, _a1 time.Time, _a2 time.Time) ([]tado.RunningTime, error) {
+	ret := _m.Called(_a0, _a1, _a2)
+
+	var r0 []tado.RunningTime
+	if rf, ok := ret.Get(0).(func(context.Context, time.Time, time.Time) []tado.RunningTime); ok {
+		r0 = rf(_a0, _a1, _a2)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]tado.RunningTime)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context, time.Time, time.Time) error); ok {
+		r1 = rf(_a0, _a1, _a2)
 	} else {
 		r1 = ret.Error(1)
 	}

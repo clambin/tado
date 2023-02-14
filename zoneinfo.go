@@ -221,6 +221,7 @@ type Schedule struct {
 
 func (c *APIClient) GetZoneSchedule(ctx context.Context, zoneID int) (schedules []Schedule, err error) {
 	if err = c.initialize(ctx); err == nil {
+		// TODO: 1 is the schedule nr?
 		err = c.call(ctx, http.MethodGet, "myTado", "/zones/"+strconv.Itoa(zoneID)+"/schedule/timetables/1/blocks", nil, &schedules)
 	}
 	return
@@ -228,6 +229,7 @@ func (c *APIClient) GetZoneSchedule(ctx context.Context, zoneID int) (schedules 
 
 func (c *APIClient) GetZoneScheduleForDay(ctx context.Context, zoneID int, day string) (schedules []Schedule, err error) {
 	if err = c.initialize(ctx); err == nil {
+		// TODO: 1 is the schedule nr?
 		err = c.call(ctx, http.MethodGet, "myTado", "/zones/"+strconv.Itoa(zoneID)+"/schedule/timetables/1/blocks/"+day, nil, &schedules)
 	}
 	return
@@ -237,6 +239,7 @@ func (c *APIClient) SetZoneScheduleForDay(ctx context.Context, zoneID int, day s
 	if err = c.initialize(ctx); err == nil {
 		var buf bytes.Buffer
 		if err = json.NewEncoder(&buf).Encode(schedules); err == nil {
+			// TODO: 1 is the schedule nr?
 			err = c.call(ctx, http.MethodPut, "myTado", "/zones/"+strconv.Itoa(zoneID)+"/schedule/timetables/1/blocks/"+day, &buf, nil)
 		}
 	}

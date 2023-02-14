@@ -1,0 +1,13 @@
+APIs to add:
+
+/homes/<home>/incidents (minder)
+/homes/<home>installations
+/homes/<home>/zones/<zone>/openWindowDetection
+/homes/<home>/zones/<zone>/dayReport?date=%s
+/homes/<home>/zones/<zone>/details
+/homes/<home>/zones/<zone>/defaultOverlay
+/homes/<home>/zones/<zone>/measuringDevice
+/homes/<home>/zones/<zone>/schedule/activeTimeTable
+/homes/<home>/invitations
+/homes/<home>/presenceLock
+/homes/<home>/state
