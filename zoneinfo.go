@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
 	"time"
@@ -194,6 +195,12 @@ func (c *APIClient) GetZoneAutoConfiguration(ctx context.Context, zoneID int) (c
 }
 
 func (c *APIClient) SetZoneAutoConfiguration(ctx context.Context, zoneID int, configuration ZoneAwayConfiguration) (err error) {
+	if configuration.AutoAdjust &&
+		configuration.ComfortLevel != Eco &&
+		configuration.ComfortLevel != Balance &&
+		configuration.ComfortLevel != Comfort {
+		return fmt.Errorf("invalid ComfortLevel: %d", configuration.ComfortLevel)
+	}
 	if err = c.initialize(ctx); err == nil {
 		payload := &bytes.Buffer{}
 		if err = json.NewEncoder(payload).Encode(configuration); err == nil {
