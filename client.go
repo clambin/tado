@@ -50,6 +50,7 @@ type API interface {
 	GetAirComfort(context.Context) (AirComfort, error)
 	GetConsumption(context.Context, string, time.Time, time.Time) (Consumption, error)
 	GetEnergySavings(context.Context) ([]EnergySavingsReport, error)
+	GetRunningTimes(context.Context, time.Time, time.Time) ([]RunningTime, error)
 }
 
 // APIClient represents a Tado API client.
@@ -94,11 +95,13 @@ func New(username, password, clientSecret string) *APIClient {
 
 func buildURLMap(override string) map[string]string {
 	myTado := "https://my.tado.com/api/v2"
+	minder := "https://minder.tado.com/v1"
 	bob := "https://energy-bob.tado.com"
 	insights := "https://energy-insights.tado.com/api"
 
 	if override != "" {
 		myTado = override
+		minder = override
 		bob = override
 		insights = override
 	}
@@ -106,6 +109,7 @@ func buildURLMap(override string) map[string]string {
 	return map[string]string{
 		"me":       myTado + "/me",
 		"myTado":   myTado + "/homes/%d",
+		"minder":   minder + "/homes/%d",
 		"bob":      bob + "/%d",
 		"insights": insights + "/homes/%d",
 	}
