@@ -101,6 +101,21 @@ loop:
 	return true
 }
 
+func TestAPIClient_TooManyRequests(t *testing.T) {
+	s := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, _ *http.Request) {
+		http.Error(writer, "slow down", http.StatusTooManyRequests)
+	}))
+	defer s.Close()
+
+	c := New("", "", "")
+	c.apiURL = buildURLMap(s.URL)
+	c.authenticator = fakeAuthenticator{Token: "1234"}
+
+	_, err := c.GetZones(context.Background())
+	require.Error(t, err)
+	assert.Equal(t, "429 Too Many Requests", err.Error())
+}
+
 func TestAPIClient_NoHomes(t *testing.T) {
 	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		_, _ = w.Write([]byte(`{ "homes": [ ] }`))

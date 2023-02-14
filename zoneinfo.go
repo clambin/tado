@@ -134,20 +134,18 @@ func (c *APIClient) GetZoneEarlyStart(ctx context.Context, zoneID int) (earlySta
 	return
 }
 
-func (c *APIClient) SetZoneEarlyStart(ctx context.Context, zoneID int, earlyAccess bool) error {
-	if err := c.initialize(ctx); err != nil {
-		return err
-	}
-	input := struct {
-		Enabled bool `json:"enabled"`
-	}{Enabled: earlyAccess}
+func (c *APIClient) SetZoneEarlyStart(ctx context.Context, zoneID int, earlyAccess bool) (err error) {
+	if err = c.initialize(ctx); err == nil {
+		input := struct {
+			Enabled bool `json:"enabled"`
+		}{Enabled: earlyAccess}
 
-	var buf bytes.Buffer
-	err := json.NewEncoder(&buf).Encode(input)
-	if err != nil {
-		return err
+		var buf bytes.Buffer
+		if err = json.NewEncoder(&buf).Encode(input); err == nil {
+			err = c.call(ctx, http.MethodPut, "myTado", "/zones/"+strconv.Itoa(zoneID)+"/earlyStart", &buf, nil)
+		}
 	}
-	return c.call(ctx, http.MethodPut, "myTado", "/zones/"+strconv.Itoa(zoneID)+"/earlyStart", &buf, nil)
+	return
 }
 
 // ZoneAwayConfiguration determines how a Zone will be heated when all users are away and the home is in "away" mode.

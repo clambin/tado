@@ -23,10 +23,6 @@ func (c *APIClient) SetZoneTemporaryOverlay(ctx context.Context, zoneID int, tem
 		power = "OFF"
 	}
 
-	if err = c.initialize(ctx); err != nil {
-		return
-	}
-
 	var termination ZoneInfoOverlayTermination
 	if duration > 0 {
 		termination.Type = "TIMER"
@@ -38,20 +34,19 @@ func (c *APIClient) SetZoneTemporaryOverlay(ctx context.Context, zoneID int, tem
 	request := ZoneInfoOverlay{
 		Type: "MANUAL",
 		Setting: ZoneInfoOverlaySetting{
-			Type:  "HEATING",
-			Power: power,
-			Temperature: Temperature{
-				Celsius: temperature,
-			},
+			Type:        "HEATING",
+			Power:       power,
+			Temperature: Temperature{Celsius: temperature},
 		},
 		Termination: termination,
 	}
 
-	var payload bytes.Buffer
-	if err = json.NewEncoder(&payload).Encode(request); err == nil {
-		err = c.call(ctx, http.MethodPut, "myTado", "/zones/"+strconv.Itoa(zoneID)+"/overlay", &payload, nil)
+	if err = c.initialize(ctx); err == nil {
+		var payload bytes.Buffer
+		if err = json.NewEncoder(&payload).Encode(request); err == nil {
+			err = c.call(ctx, http.MethodPut, "myTado", "/zones/"+strconv.Itoa(zoneID)+"/overlay", &payload, nil)
+		}
 	}
-
 	return
 }
 

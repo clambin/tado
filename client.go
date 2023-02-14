@@ -20,35 +20,18 @@ import (
 	"github.com/clambin/tado/auth"
 )
 
-// Common Tado data structures
-
-// Temperature contains a temperature in degrees Celsius
-type Temperature struct {
-	Celsius float64 `json:"celsius"`
-}
-
-// Percentage contains a percentage (0-100%)
-type Percentage struct {
-	Percentage float64 `json:"percentage"`
-}
-
-// Value contains a string value
-type Value struct {
-	Value string `json:"value"`
-}
-
 // API for the Tado APIClient.
 //
-// Deprecated: will be removed in a future version. Clients should make their own, tailor-made, mocks if needed.
+// Deprecated: will be removed in a future version. Clients should make their own, tailor-made mocks if needed.
 //
 //go:generate mockery --name API
 type API interface {
-	GetAccount(ctx context.Context) (Account, error)
-	GetHomes(ctx context.Context) ([]string, error)
-	SetActiveHome(ctx context.Context, name string) error
+	GetAccount(context.Context) (Account, error)
+	GetHomes(context.Context) ([]string, error)
+	SetActiveHome(context.Context, string) error
 	GetActiveHome() (string, bool)
-	GetHomeInfo(ctx context.Context) (HomeInfo, error)
-	GetUsers(ctx context.Context) ([]User, error)
+	GetHomeInfo(context.Context) (HomeInfo, error)
+	GetUsers(context.Context) ([]User, error)
 	GetMobileDevices(context.Context) ([]MobileDevice, error)
 	GetWeatherInfo(context.Context) (WeatherInfo, error)
 	GetZones(context.Context) ([]Zone, error)
@@ -61,6 +44,12 @@ type API interface {
 	SetZoneOverlay(context.Context, int, float64) error
 	SetZoneTemporaryOverlay(context.Context, int, float64, time.Duration) error
 	DeleteZoneOverlay(context.Context, int) error
+	GetZoneSchedule(context.Context, int) ([]Schedule, error)
+	GetZoneScheduleForDay(context.Context, int, string) ([]Schedule, error)
+	SetZoneScheduleForDay(context.Context, int, string, []Schedule) error
+	GetAirComfort(context.Context) (AirComfort, error)
+	GetConsumption(context.Context, string, time.Time, time.Time) (Consumption, error)
+	GetEnergySavings(context.Context) ([]EnergySavingsReport, error)
 }
 
 // APIClient represents a Tado API client.
@@ -190,13 +179,15 @@ func (c *APIClient) makeAPIURL(apiClass string, endpoint string) string {
 }
 
 func (c *APIClient) buildRequest(ctx context.Context, method string, path string, payload io.Reader) (*http.Request, error) {
+	var req *http.Request
 	token, err := c.authenticator.GetAuthToken(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("auth: %w", err)
+	if err == nil {
+		req, _ = http.NewRequestWithContext(ctx, method, path, payload)
+		req.Header.Set("Content-Type", "application/json;charset=UTF-8")
+		req.Header.Set("Authorization", "Bearer "+token)
+	} else {
+		err = fmt.Errorf("auth: %w", err)
 	}
-	req, _ := http.NewRequestWithContext(ctx, method, path, payload)
-	req.Header.Set("Content-Type", "application/json;charset=UTF-8")
-	req.Header.Set("Authorization", "Bearer "+token)
 
-	return req, nil
+	return req, err
 }

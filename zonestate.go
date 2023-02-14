@@ -16,6 +16,7 @@ const (
 	ZoneStateManual
 )
 
+// String returns a string representation of a ZoneState
 func (s ZoneState) String() string {
 	names := map[ZoneState]string{
 		ZoneStateUnknown:         "unknown",
