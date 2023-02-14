@@ -166,14 +166,14 @@ func (c *APIClient) SetZoneEarlyStart(ctx context.Context, zoneID int, earlyAcce
 //	 }
 //	}
 type ZoneAwayConfiguration struct {
-	Type         string                         `json:"type"`
-	AutoAdjust   bool                           `json:"autoAdjust"`
-	ComfortLevel AutoAdjustMode                 `json:"comfortLevel"`
-	Setting      *ZoneAwayConfigurationSettings `json:"setting"`
+	Type         string             `json:"type"`
+	AutoAdjust   bool               `json:"autoAdjust"`
+	ComfortLevel AutoAdjustMode     `json:"comfortLevel"`
+	Setting      *ZonePowerSettings `json:"setting"`
 }
 
-// ZoneAwayConfigurationSettings specifies how a zone should be heated when all users are away, and the zone is not in autoAdjust mode.
-type ZoneAwayConfigurationSettings struct {
+// ZonePowerSettings specifies how a zone should be heated when all users are away, and the zone is not in autoAdjust mode.
+type ZonePowerSettings struct {
 	Type        string      `json:"type"`
 	Power       string      `json:"power"`
 	Temperature Temperature `json:"temperature"`
@@ -200,6 +200,39 @@ func (c *APIClient) SetZoneAutoConfiguration(ctx context.Context, zoneID int, co
 		payload := &bytes.Buffer{}
 		if err = json.NewEncoder(payload).Encode(configuration); err == nil {
 			err = c.call(ctx, http.MethodPut, "myTado", "/zones/"+strconv.Itoa(zoneID)+"/schedule/awayConfiguration", payload, nil)
+		}
+	}
+	return
+}
+
+type Schedule struct {
+	DayType             string            `json:"dayType"`
+	Start               string            `json:"start"`
+	End                 string            `json:"end"`
+	GeolocationOverride bool              `json:"geolocationOverride"`
+	ModeId              int               `json:"modeId"`
+	Setting             ZonePowerSettings `json:"setting"`
+}
+
+func (c *APIClient) GetZoneSchedule(ctx context.Context, zoneID int) (schedules []Schedule, err error) {
+	if err = c.initialize(ctx); err == nil {
+		err = c.call(ctx, http.MethodGet, "myTado", "/zones/"+strconv.Itoa(zoneID)+"/schedule/timetables/1/blocks", nil, &schedules)
+	}
+	return
+}
+
+func (c *APIClient) GetZoneScheduleForDay(ctx context.Context, zoneID int, day string) (schedules []Schedule, err error) {
+	if err = c.initialize(ctx); err == nil {
+		err = c.call(ctx, http.MethodGet, "myTado", "/zones/"+strconv.Itoa(zoneID)+"/schedule/timetables/1/blocks/"+day, nil, &schedules)
+	}
+	return
+}
+
+func (c *APIClient) SetZoneScheduleForDay(ctx context.Context, zoneID int, day string, schedules []Schedule) (err error) {
+	if err = c.initialize(ctx); err == nil {
+		var buf bytes.Buffer
+		if err = json.NewEncoder(&buf).Encode(schedules); err == nil {
+			err = c.call(ctx, http.MethodPut, "myTado", "/zones/"+strconv.Itoa(zoneID)+"/schedule/timetables/1/blocks/"+day, &buf, nil)
 		}
 	}
 	return

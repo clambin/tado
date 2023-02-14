@@ -13,6 +13,10 @@ See [pkg.go.dev](https://pkg.go.dev/github.com/clambin/tado) for documentation.
 
 * **Christophe Lambin**
 
+## Acknowledgements
+
+* [The Tado API v2](https://blog.scphillips.com/posts/2017/01/the-tado-api-v2/) by Stephen Phillips
+
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details.
