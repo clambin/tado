@@ -32,7 +32,7 @@ func TestZoneInfo_GetState(t *testing.T) {
 				},
 				Overlay: ZoneInfoOverlay{
 					Type: "MANUAL",
-					Setting: ZoneInfoOverlaySetting{
+					Setting: ZonePowerSetting{
 						Type:        "HEATING",
 						Power:       "ON",
 						Temperature: Temperature{Celsius: 22.0},
@@ -53,7 +53,7 @@ func TestZoneInfo_GetState(t *testing.T) {
 				},
 				Overlay: ZoneInfoOverlay{
 					Type: "MANUAL",
-					Setting: ZoneInfoOverlaySetting{
+					Setting: ZonePowerSetting{
 						Type:        "HEATING",
 						Power:       "ON",
 						Temperature: Temperature{Celsius: 22.0},
@@ -84,7 +84,7 @@ func TestZoneInfo_GetState(t *testing.T) {
 				},
 				Overlay: ZoneInfoOverlay{
 					Type: "MANUAL",
-					Setting: ZoneInfoOverlaySetting{
+					Setting: ZonePowerSetting{
 						Type:        "HEATING",
 						Power:       "ON",
 						Temperature: Temperature{Celsius: 5.0},
@@ -194,7 +194,7 @@ func TestAPIClient_GetZoneAutoConfiguration(t *testing.T) {
 		},
 		{
 			name:   "manual",
-			config: ZoneAwayConfiguration{Type: "HEATING", Setting: &ZonePowerSettings{Type: "HEATING", Power: "ON", Temperature: Temperature{Celsius: 15.0}}},
+			config: ZoneAwayConfiguration{Type: "HEATING", Setting: &ZonePowerSetting{Type: "HEATING", Power: "ON", Temperature: Temperature{Celsius: 15.0}}},
 			pass:   true,
 		},
 		{
@@ -220,33 +220,4 @@ func TestAPIClient_GetZoneAutoConfiguration(t *testing.T) {
 			s.Close()
 		})
 	}
-}
-
-func TestAPIClient_GetZoneSchedule(t *testing.T) {
-	schedules := []Schedule{
-		{DayType: "MONDAY_TO_FRIDAY", Start: "00:00", End: "00:00", Setting: ZonePowerSettings{Type: "HEATING", Power: "OFF"}},
-		{DayType: "SATURDAY", Start: "00:00", End: "00:00", Setting: ZonePowerSettings{Type: "HEATING", Power: "OFF"}},
-		{DayType: "SUNDAY", Start: "00:00", End: "00:00", Setting: ZonePowerSettings{Type: "HEATING", Power: "OFF"}},
-	}
-
-	c, s := makeTestServer(schedules, nil)
-	defer s.Close()
-	output, err := c.GetZoneSchedule(context.Background(), 1)
-	require.NoError(t, err)
-	assert.Equal(t, schedules, output)
-}
-
-func TestAPIClient_GetZoneScheduleForDay(t *testing.T) {
-	schedules := []Schedule{
-		{DayType: "MONDAY_TO_FRIDAY", Start: "00:00", End: "00:00", Setting: ZonePowerSettings{Type: "HEATING", Power: "OFF"}},
-	}
-
-	c, s := makeTestServer(schedules, nil)
-	defer s.Close()
-	output, err := c.GetZoneScheduleForDay(context.Background(), 1, "MONDAY_TO_FRIDAY")
-	require.NoError(t, err)
-	assert.Equal(t, schedules, output)
-
-	err = c.SetZoneScheduleForDay(context.Background(), 1, schedules[0].DayType, schedules)
-	assert.NoError(t, err)
 }

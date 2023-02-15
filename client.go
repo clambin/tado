@@ -37,14 +37,17 @@ type API interface {
 	SetZoneOverlay(context.Context, int, float64) error
 	SetZoneTemporaryOverlay(context.Context, int, float64, time.Duration) error
 	DeleteZoneOverlay(context.Context, int) error
-	GetZoneSchedule(context.Context, int) ([]Schedule, error)
-	GetZoneScheduleForDay(context.Context, int, string) ([]Schedule, error)
-	SetZoneScheduleForDay(context.Context, int, string, []Schedule) error
 	GetAirComfort(context.Context) (AirComfort, error)
 	GetConsumption(context.Context, string, time.Time, time.Time) (Consumption, error)
 	GetEnergySavings(context.Context) ([]EnergySavingsReport, error)
 	GetRunningTimes(context.Context, time.Time, time.Time) ([]RunningTime, error)
 	GetHeatingCircuits(context.Context) ([]HeatingCircuit, error)
+	GetTimeTables(context.Context, int) ([]TimeTable, error)
+	GetActiveTimeTable(context.Context, int) (TimeTable, error)
+	SetActiveTimeTable(context.Context, int, TimeTable) error
+	GetTimeTableBlocks(context.Context, int, int) ([]Block, error)
+	GetTimeTableBlocksForDayType(context.Context, int, int, string) ([]Block, error)
+	SetTimeTableBlocksForDayType(context.Context, int, int, string, []Block) error
 }
 
 // APIClient represents a Tado API client.

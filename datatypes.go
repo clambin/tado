@@ -1,10 +1,26 @@
 package tado
 
+import (
+	"encoding/json"
+	"fmt"
+)
+
 // Common Tado data structures
 
 // Temperature contains a temperature in degrees Celsius
 type Temperature struct {
 	Celsius float64 `json:"celsius"`
+}
+
+var _ json.Marshaler = Temperature{}
+
+// MarshalJSON implements json.Marshaler. This is needed to support SetTimeTableBlocksForDayType, since the server expects
+// "null" when the temperature has not been set: {"celsius": 0} throws an error.
+func (t Temperature) MarshalJSON() ([]byte, error) {
+	if t.Celsius == 0 {
+		return []byte(`null`), nil
+	}
+	return []byte(fmt.Sprintf(`{"celsius":%.1f}`, t.Celsius)), nil
 }
 
 // Percentage contains a percentage (0-100%)

@@ -69,12 +69,12 @@ type ZoneInfoOpenWindow struct {
 // ZoneInfoOverlay contains the zone's manual settings
 type ZoneInfoOverlay struct {
 	Type        string                     `json:"type"`
-	Setting     ZoneInfoOverlaySetting     `json:"setting"`
+	Setting     ZonePowerSetting           `json:"setting"`
 	Termination ZoneInfoOverlayTermination `json:"termination"`
 }
 
-// ZoneInfoOverlaySetting contains the zone's overlay settings
-type ZoneInfoOverlaySetting struct {
+// ZonePowerSetting contains the zone's overlay settings
+type ZonePowerSetting struct {
 	Type        string      `json:"type"`
 	Power       string      `json:"power"`
 	Temperature Temperature `json:"temperature"`
@@ -168,17 +168,10 @@ func (c *APIClient) SetZoneEarlyStart(ctx context.Context, zoneID int, earlyAcce
 //	 }
 //	}
 type ZoneAwayConfiguration struct {
-	Type         string             `json:"type"`
-	AutoAdjust   bool               `json:"autoAdjust"`
-	ComfortLevel AutoAdjustMode     `json:"comfortLevel"`
-	Setting      *ZonePowerSettings `json:"setting"`
-}
-
-// ZonePowerSettings specifies how a zone should be heated when all users are away, and the zone is not in autoAdjust mode.
-type ZonePowerSettings struct {
-	Type        string      `json:"type"`
-	Power       string      `json:"power"`
-	Temperature Temperature `json:"temperature"`
+	Type         string            `json:"type"`
+	AutoAdjust   bool              `json:"autoAdjust"`
+	ComfortLevel AutoAdjustMode    `json:"comfortLevel"`
+	Setting      *ZonePowerSetting `json:"setting"`
 }
 
 // AutoAdjustMode determines how the heating should be switched back on when one or more users return home.
@@ -213,46 +206,6 @@ func (c *APIClient) SetZoneAutoConfiguration(ctx context.Context, zoneID int, co
 		payload := &bytes.Buffer{}
 		if err = json.NewEncoder(payload).Encode(configuration); err == nil {
 			err = c.call(ctx, http.MethodPut, "myTado", "/zones/"+strconv.Itoa(zoneID)+"/schedule/awayConfiguration", payload, nil)
-		}
-	}
-	return
-}
-
-// Schedule is the heating schedule for a zone, i.e. the target temperature for the zone between a given start and end time.
-type Schedule struct {
-	DayType             string            `json:"dayType"`
-	Start               string            `json:"start"`
-	End                 string            `json:"end"`
-	GeolocationOverride bool              `json:"geolocationOverride"`
-	ModeID              int               `json:"modeId"`
-	Setting             ZonePowerSettings `json:"setting"`
-}
-
-// GetZoneSchedule returns all Schedule entries for a zone
-func (c *APIClient) GetZoneSchedule(ctx context.Context, zoneID int) (schedules []Schedule, err error) {
-	if err = c.initialize(ctx); err == nil {
-		// TODO: 1 is the schedule nr?
-		err = c.call(ctx, http.MethodGet, "myTado", "/zones/"+strconv.Itoa(zoneID)+"/schedule/timetables/1/blocks", nil, &schedules)
-	}
-	return
-}
-
-// GetZoneScheduleForDay returns all Schedule entries for a zone for a given day
-func (c *APIClient) GetZoneScheduleForDay(ctx context.Context, zoneID int, day string) (schedules []Schedule, err error) {
-	if err = c.initialize(ctx); err == nil {
-		// TODO: 1 is the schedule nr?
-		err = c.call(ctx, http.MethodGet, "myTado", "/zones/"+strconv.Itoa(zoneID)+"/schedule/timetables/1/blocks/"+day, nil, &schedules)
-	}
-	return
-}
-
-// SetZoneScheduleForDay sets the Schedule entries for a zone for a given day
-func (c *APIClient) SetZoneScheduleForDay(ctx context.Context, zoneID int, day string, schedules []Schedule) (err error) {
-	if err = c.initialize(ctx); err == nil {
-		var buf bytes.Buffer
-		if err = json.NewEncoder(&buf).Encode(schedules); err == nil {
-			// TODO: 1 is the schedule nr?
-			err = c.call(ctx, http.MethodPut, "myTado", "/zones/"+strconv.Itoa(zoneID)+"/schedule/timetables/1/blocks/"+day, &buf, nil)
 		}
 	}
 	return

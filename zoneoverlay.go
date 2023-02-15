@@ -33,7 +33,7 @@ func (c *APIClient) SetZoneTemporaryOverlay(ctx context.Context, zoneID int, tem
 
 	request := ZoneInfoOverlay{
 		Type: "MANUAL",
-		Setting: ZoneInfoOverlaySetting{
+		Setting: ZonePowerSetting{
 			Type:        "HEATING",
 			Power:       power,
 			Temperature: Temperature{Celsius: temperature},

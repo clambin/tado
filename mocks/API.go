@@ -72,6 +72,27 @@ func (_m *API) GetActiveHome(_a0 context.Context) (tado.Home, bool) {
 	return r0, r1
 }
 
+// GetActiveTimeTable provides a mock function with given fields: _a0, _a1
+func (_m *API) GetActiveTimeTable(_a0 context.Context, _a1 int) (tado.TimeTable, error) {
+	ret := _m.Called(_a0, _a1)
+
+	var r0 tado.TimeTable
+	if rf, ok := ret.Get(0).(func(context.Context, int) tado.TimeTable); ok {
+		r0 = rf(_a0, _a1)
+	} else {
+		r0 = ret.Get(0).(tado.TimeTable)
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context, int) error); ok {
+		r1 = rf(_a0, _a1)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // GetAirComfort provides a mock function with given fields: _a0
 func (_m *API) GetAirComfort(_a0 context.Context) (tado.AirComfort, error) {
 	ret := _m.Called(_a0)
@@ -250,6 +271,75 @@ func (_m *API) GetRunningTimes(_a0 context.Context, _a1 time.Time, _a2 time.Time
 	return r0, r1
 }
 
+// GetTimeTableBlocks provides a mock function with given fields: _a0, _a1, _a2
+func (_m *API) GetTimeTableBlocks(_a0 context.Context, _a1 int, _a2 int) ([]tado.Block, error) {
+	ret := _m.Called(_a0, _a1, _a2)
+
+	var r0 []tado.Block
+	if rf, ok := ret.Get(0).(func(context.Context, int, int) []tado.Block); ok {
+		r0 = rf(_a0, _a1, _a2)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]tado.Block)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context, int, int) error); ok {
+		r1 = rf(_a0, _a1, _a2)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// GetTimeTableBlocksForDayType provides a mock function with given fields: _a0, _a1, _a2, _a3
+func (_m *API) GetTimeTableBlocksForDayType(_a0 context.Context, _a1 int, _a2 int, _a3 string) ([]tado.Block, error) {
+	ret := _m.Called(_a0, _a1, _a2, _a3)
+
+	var r0 []tado.Block
+	if rf, ok := ret.Get(0).(func(context.Context, int, int, string) []tado.Block); ok {
+		r0 = rf(_a0, _a1, _a2, _a3)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]tado.Block)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context, int, int, string) error); ok {
+		r1 = rf(_a0, _a1, _a2, _a3)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// GetTimeTables provides a mock function with given fields: _a0, _a1
+func (_m *API) GetTimeTables(_a0 context.Context, _a1 int) ([]tado.TimeTable, error) {
+	ret := _m.Called(_a0, _a1)
+
+	var r0 []tado.TimeTable
+	if rf, ok := ret.Get(0).(func(context.Context, int) []tado.TimeTable); ok {
+		r0 = rf(_a0, _a1)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]tado.TimeTable)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context, int) error); ok {
+		r1 = rf(_a0, _a1)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // GetUsers provides a mock function with given fields: _a0
 func (_m *API) GetUsers(_a0 context.Context) ([]tado.User, error) {
 	ret := _m.Called(_a0)
@@ -378,52 +468,6 @@ func (_m *API) GetZoneInfo(_a0 context.Context, _a1 int) (tado.ZoneInfo, error) 
 	return r0, r1
 }
 
-// GetZoneSchedule provides a mock function with given fields: _a0, _a1
-func (_m *API) GetZoneSchedule(_a0 context.Context, _a1 int) ([]tado.Schedule, error) {
-	ret := _m.Called(_a0, _a1)
-
-	var r0 []tado.Schedule
-	if rf, ok := ret.Get(0).(func(context.Context, int) []tado.Schedule); ok {
-		r0 = rf(_a0, _a1)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]tado.Schedule)
-		}
-	}
-
-	var r1 error
-	if rf, ok := ret.Get(1).(func(context.Context, int) error); ok {
-		r1 = rf(_a0, _a1)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
-// GetZoneScheduleForDay provides a mock function with given fields: _a0, _a1, _a2
-func (_m *API) GetZoneScheduleForDay(_a0 context.Context, _a1 int, _a2 string) ([]tado.Schedule, error) {
-	ret := _m.Called(_a0, _a1, _a2)
-
-	var r0 []tado.Schedule
-	if rf, ok := ret.Get(0).(func(context.Context, int, string) []tado.Schedule); ok {
-		r0 = rf(_a0, _a1, _a2)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]tado.Schedule)
-		}
-	}
-
-	var r1 error
-	if rf, ok := ret.Get(1).(func(context.Context, int, string) error); ok {
-		r1 = rf(_a0, _a1, _a2)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
 // GetZones provides a mock function with given fields: _a0
 func (_m *API) GetZones(_a0 context.Context) ([]tado.Zone, error) {
 	ret := _m.Called(_a0)
@@ -454,6 +498,34 @@ func (_m *API) SetActiveHome(_a0 context.Context, _a1 string) error {
 	var r0 error
 	if rf, ok := ret.Get(0).(func(context.Context, string) error); ok {
 		r0 = rf(_a0, _a1)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// SetActiveTimeTable provides a mock function with given fields: _a0, _a1, _a2
+func (_m *API) SetActiveTimeTable(_a0 context.Context, _a1 int, _a2 tado.TimeTable) error {
+	ret := _m.Called(_a0, _a1, _a2)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, int, tado.TimeTable) error); ok {
+		r0 = rf(_a0, _a1, _a2)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// SetTimeTableBlocksForDayType provides a mock function with given fields: _a0, _a1, _a2, _a3, _a4
+func (_m *API) SetTimeTableBlocksForDayType(_a0 context.Context, _a1 int, _a2 int, _a3 string, _a4 []tado.Block) error {
+	ret := _m.Called(_a0, _a1, _a2, _a3, _a4)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, int, int, string, []tado.Block) error); ok {
+		r0 = rf(_a0, _a1, _a2, _a3, _a4)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -496,20 +568,6 @@ func (_m *API) SetZoneOverlay(_a0 context.Context, _a1 int, _a2 float64) error {
 	var r0 error
 	if rf, ok := ret.Get(0).(func(context.Context, int, float64) error); ok {
 		r0 = rf(_a0, _a1, _a2)
-	} else {
-		r0 = ret.Error(0)
-	}
-
-	return r0
-}
-
-// SetZoneScheduleForDay provides a mock function with given fields: _a0, _a1, _a2, _a3
-func (_m *API) SetZoneScheduleForDay(_a0 context.Context, _a1 int, _a2 string, _a3 []tado.Schedule) error {
-	ret := _m.Called(_a0, _a1, _a2, _a3)
-
-	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, int, string, []tado.Schedule) error); ok {
-		r0 = rf(_a0, _a1, _a2, _a3)
 	} else {
 		r0 = ret.Error(0)
 	}
