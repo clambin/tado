@@ -6,6 +6,7 @@ import (
 	"time"
 )
 
+// EnergySavingsReport is the savings report for the specified CoveredInterval
 type EnergySavingsReport struct {
 	CoveredInterval struct {
 		Start time.Time `json:"start"`
@@ -60,6 +61,7 @@ type EnergySavingsReport struct {
 	Home                                    int        `json:"home"`
 }
 
+// GetEnergySavings returns all EnergySavingsReports
 func (c *APIClient) GetEnergySavings(ctx context.Context) (reports []EnergySavingsReport, err error) {
 	var output struct {
 		Reports []EnergySavingsReport `json:"reports"`

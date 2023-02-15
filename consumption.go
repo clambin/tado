@@ -7,6 +7,7 @@ import (
 	"time"
 )
 
+// Consumption contains the consumption for the total period, both in terms of how much was consumed and the associated cost
 type Consumption struct {
 	Currency   string `json:"currency"`
 	Tariff     string `json:"tariff"`
@@ -22,18 +23,21 @@ type Consumption struct {
 	Details               ConsumptionDetails `json:"details"`
 }
 
+// ConsumptionDetails contains the consumption for the total period, both in terms of how much was consumed and the associated cost
 type ConsumptionDetails struct {
 	TotalConsumption float64             `json:"totalConsumption"`
 	TotalCostInCents float64             `json:"totalCostInCents"`
 	PerDay           []ConsumptionPerDay `json:"perDay"`
 }
 
+// ConsumptionPerDay contains the consumption for one day, both in terms of how much was consumed and the associated cost
 type ConsumptionPerDay struct {
 	Date        string  `json:"date"`
 	Consumption float64 `json:"consumption"`
 	CostInCents float64 `json:"costInCents"`
 }
 
+// GetConsumption returns Consumption reports per day for the period between start and end date
 func (c *APIClient) GetConsumption(ctx context.Context, country string, start, end time.Time) (consumption Consumption, err error) {
 	if err = c.initialize(ctx); err == nil {
 		err = c.call(ctx, http.MethodGet, "insights", "/consumption?"+buildConsumptionArgs(country, start, end).Encode(), nil, &consumption)

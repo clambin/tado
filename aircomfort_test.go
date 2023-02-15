@@ -10,7 +10,7 @@ import (
 func TestAPIClient_GetAirComfort(t *testing.T) {
 	info := AirComfort{
 		Comfort: []ZoneAirComfort{
-			{RoomId: 1, TemperatureLevel: "COLD", HumidityLevel: "COMFY"},
+			{RoomID: 1, TemperatureLevel: "COLD", HumidityLevel: "COMFY"},
 		},
 	}
 

@@ -13,6 +13,7 @@ import (
 	"time"
 )
 
+// Authenticator implements OAuth2 for the Tado API servers
 type Authenticator struct {
 	HTTPClient   *http.Client
 	ClientID     string
@@ -27,6 +28,7 @@ type Authenticator struct {
 	expires      time.Time
 }
 
+// GetAuthToken returns a valid token to access the API server
 func (a *Authenticator) GetAuthToken(ctx context.Context) (string, error) {
 	a.lock.Lock()
 	defer a.lock.Unlock()
@@ -90,10 +92,11 @@ func (a *Authenticator) authenticate(ctx context.Context, grantType, credential 
 }
 
 func (a *Authenticator) getURL() string {
-	if a.AuthURL == "" {
-		return "https://auth.tado.com/"
+	authURL := "https://auth.tado.com/"
+	if a.AuthURL != "" {
+		authURL = a.AuthURL
 	}
-	return a.AuthURL
+	return authURL
 }
 
 func (a *Authenticator) buildForm(grantType, credential string) url.Values {

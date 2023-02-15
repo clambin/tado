@@ -56,10 +56,33 @@ type ConnectionState struct {
 }
 
 // GetZones retrieves the different Zones configured for the user's Home ID
-func (c *APIClient) GetZones(ctx context.Context) (zones []Zone, err error) {
+func (c *APIClient) GetZones(ctx context.Context) (zones Zones, err error) {
 	if err = c.initialize(ctx); err != nil {
 		return
 	}
 	err = c.call(ctx, http.MethodGet, "myTado", "/zones", nil, &zones)
 	return
+}
+
+// Zones contains a list of Zone records
+type Zones []Zone
+
+// GetZone retrieves the Zone from a list of Zones by ID. bool is false if the zone could not be found.
+func (z Zones) GetZone(id int) (Zone, bool) {
+	for _, zone := range z {
+		if zone.ID == id {
+			return zone, true
+		}
+	}
+	return Zone{}, false
+}
+
+// GetZoneByName retrieves the Zone from a list of Zones by Name. ok is false if the zone could not be found
+func (z Zones) GetZoneByName(name string) (Zone, bool) {
+	for _, zone := range z {
+		if zone.Name == name {
+			return zone, true
+		}
+	}
+	return Zone{}, false
 }

@@ -99,6 +99,7 @@ func (c *APIClient) GetZoneInfo(ctx context.Context, zoneID int) (tadoZoneInfo Z
 	return
 }
 
+// ZoneCapabilities returns the "capabilities" of a Tado zone
 type ZoneCapabilities struct {
 	Temperatures struct {
 		Celsius struct {
@@ -115,7 +116,7 @@ type ZoneCapabilities struct {
 	Type string `json:"type"`
 }
 
-// GetZoneCapabilities gets the capabilities for the specified ZoneID
+// GetZoneCapabilities gets the capabilities for the specified zone
 func (c *APIClient) GetZoneCapabilities(ctx context.Context, zoneID int) (tadoZoneCapabilities ZoneCapabilities, err error) {
 	if err = c.initialize(ctx); err == nil {
 		err = c.call(ctx, http.MethodGet, "myTado", "/zones/"+strconv.Itoa(zoneID)+"/capabilities", nil, &tadoZoneCapabilities)
@@ -123,6 +124,7 @@ func (c *APIClient) GetZoneCapabilities(ctx context.Context, zoneID int) (tadoZo
 	return
 }
 
+// GetZoneEarlyStart checks if "early start" is enabled for the specified zone
 func (c *APIClient) GetZoneEarlyStart(ctx context.Context, zoneID int) (earlyStart bool, err error) {
 	if err = c.initialize(ctx); err == nil {
 		var result struct {
@@ -135,6 +137,7 @@ func (c *APIClient) GetZoneEarlyStart(ctx context.Context, zoneID int) (earlySta
 	return
 }
 
+// SetZoneEarlyStart enabled or disables earlyStart for the specified zone
 func (c *APIClient) SetZoneEarlyStart(ctx context.Context, zoneID int, earlyAccess bool) (err error) {
 	if err = c.initialize(ctx); err == nil {
 		input := struct {
@@ -182,11 +185,15 @@ type ZonePowerSettings struct {
 type AutoAdjustMode int
 
 const (
-	Eco     AutoAdjustMode = 0
+	// Eco mode
+	Eco AutoAdjustMode = 0
+	// Balance mode
 	Balance AutoAdjustMode = 50
+	// Comfort mode
 	Comfort AutoAdjustMode = 100
 )
 
+// GetZoneAutoConfiguration returns the ZoneAwayConfiguration for the specified zone
 func (c *APIClient) GetZoneAutoConfiguration(ctx context.Context, zoneID int) (configuration ZoneAwayConfiguration, err error) {
 	if err = c.initialize(ctx); err == nil {
 		err = c.call(ctx, http.MethodGet, "myTado", "/zones/"+strconv.Itoa(zoneID)+"/schedule/awayConfiguration", nil, &configuration)
@@ -194,6 +201,7 @@ func (c *APIClient) GetZoneAutoConfiguration(ctx context.Context, zoneID int) (c
 	return
 }
 
+// SetZoneAutoConfiguration sets the ZoneAwayConfiguration for the specified zone
 func (c *APIClient) SetZoneAutoConfiguration(ctx context.Context, zoneID int, configuration ZoneAwayConfiguration) (err error) {
 	if configuration.AutoAdjust &&
 		configuration.ComfortLevel != Eco &&
@@ -210,15 +218,17 @@ func (c *APIClient) SetZoneAutoConfiguration(ctx context.Context, zoneID int, co
 	return
 }
 
+// Schedule is the heating schedule for a zone, i.e. the target temperature for the zone between a given start and end time.
 type Schedule struct {
 	DayType             string            `json:"dayType"`
 	Start               string            `json:"start"`
 	End                 string            `json:"end"`
 	GeolocationOverride bool              `json:"geolocationOverride"`
-	ModeId              int               `json:"modeId"`
+	ModeID              int               `json:"modeId"`
 	Setting             ZonePowerSettings `json:"setting"`
 }
 
+// GetZoneSchedule returns all Schedule entries for a zone
 func (c *APIClient) GetZoneSchedule(ctx context.Context, zoneID int) (schedules []Schedule, err error) {
 	if err = c.initialize(ctx); err == nil {
 		// TODO: 1 is the schedule nr?
@@ -227,6 +237,7 @@ func (c *APIClient) GetZoneSchedule(ctx context.Context, zoneID int) (schedules 
 	return
 }
 
+// GetZoneScheduleForDay returns all Schedule entries for a zone for a given day
 func (c *APIClient) GetZoneScheduleForDay(ctx context.Context, zoneID int, day string) (schedules []Schedule, err error) {
 	if err = c.initialize(ctx); err == nil {
 		// TODO: 1 is the schedule nr?
@@ -235,6 +246,7 @@ func (c *APIClient) GetZoneScheduleForDay(ctx context.Context, zoneID int, day s
 	return
 }
 
+// SetZoneScheduleForDay sets the Schedule entries for a zone for a given day
 func (c *APIClient) SetZoneScheduleForDay(ctx context.Context, zoneID int, day string, schedules []Schedule) (err error) {
 	if err = c.initialize(ctx); err == nil {
 		var buf bytes.Buffer

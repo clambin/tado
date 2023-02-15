@@ -51,20 +51,20 @@ func (_m *API) GetAccount(_a0 context.Context) (tado.Account, error) {
 	return r0, r1
 }
 
-// GetActiveHome provides a mock function with given fields:
-func (_m *API) GetActiveHome() (string, bool) {
-	ret := _m.Called()
+// GetActiveHome provides a mock function with given fields: _a0
+func (_m *API) GetActiveHome(_a0 context.Context) (tado.Home, bool) {
+	ret := _m.Called(_a0)
 
-	var r0 string
-	if rf, ok := ret.Get(0).(func() string); ok {
-		r0 = rf()
+	var r0 tado.Home
+	if rf, ok := ret.Get(0).(func(context.Context) tado.Home); ok {
+		r0 = rf(_a0)
 	} else {
-		r0 = ret.Get(0).(string)
+		r0 = ret.Get(0).(tado.Home)
 	}
 
 	var r1 bool
-	if rf, ok := ret.Get(1).(func() bool); ok {
-		r1 = rf()
+	if rf, ok := ret.Get(1).(func(context.Context) bool); ok {
+		r1 = rf(_a0)
 	} else {
 		r1 = ret.Get(1).(bool)
 	}

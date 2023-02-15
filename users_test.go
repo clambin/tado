@@ -9,8 +9,8 @@ import (
 
 func TestAPIClient_GetUsers(t *testing.T) {
 	info := []User{
-		{Name: "foo", Username: "foo", Homes: []Home{{Id: 1, Name: "snafu"}}, Locale: "", MobileDevices: nil},
-		{Name: "bar", Username: "bar", Homes: []Home{{Id: 1, Name: "snafu"}}, Locale: "", MobileDevices: nil},
+		{Name: "foo", Username: "foo", Homes: []Home{{ID: 1, Name: "snafu"}}, Locale: "", MobileDevices: nil},
+		{Name: "bar", Username: "bar", Homes: []Home{{ID: 1, Name: "snafu"}}, Locale: "", MobileDevices: nil},
 	}
 	c, s := makeTestServer(info, nil)
 	rcvd, err := c.GetUsers(context.Background())

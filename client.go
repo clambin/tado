@@ -1,10 +1,3 @@
-// Package tado provides an API Client for the Tadoº smart thermostat devices
-//
-// Using this package typically involves creating an APIClient as follows:
-//
-//	client := tado.New("your-tado-username", "your-tado-password", "your-tado-secret")
-//
-// Once a client has been created, you can query tado.com for information about your different Tado devices.
 package tado
 
 import (
@@ -29,7 +22,7 @@ type API interface {
 	GetAccount(context.Context) (Account, error)
 	GetHomes(context.Context) ([]string, error)
 	SetActiveHome(context.Context, string) error
-	GetActiveHome() (string, bool)
+	GetActiveHome(context.Context) (Home, bool)
 	GetHomeInfo(context.Context) (HomeInfo, error)
 	GetUsers(context.Context) ([]User, error)
 	GetMobileDevices(context.Context) ([]MobileDevice, error)
@@ -130,7 +123,7 @@ func (c *APIClient) initialize(ctx context.Context) (err error) {
 	if len(c.account.Homes) == 0 {
 		return fmt.Errorf("no homes detected")
 	}
-	c.activeHomeID = c.account.Homes[0].Id
+	c.activeHomeID = c.account.Homes[0].ID
 	return nil
 }
 

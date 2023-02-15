@@ -21,15 +21,10 @@ func TestAPIClient_GetActiveHome(t *testing.T) {
 	c, s := makeTestServer(nil, nil)
 	defer s.Close()
 
-	_, ok := c.GetActiveHome()
-	require.False(t, ok)
-
-	_, err := c.GetHomes(context.Background())
-	require.NoError(t, err)
-
-	home, ok := c.GetActiveHome()
+	ctx := context.Background()
+	home, ok := c.GetActiveHome(ctx)
 	require.True(t, ok)
-	assert.Equal(t, "home", home)
+	assert.Equal(t, "home", home.Name)
 }
 
 func TestAPIClient_SetActiveHome(t *testing.T) {

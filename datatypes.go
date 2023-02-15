@@ -18,11 +18,13 @@ type Value struct {
 	Value string `json:"value"`
 }
 
+// IntValue contains an int value
 type IntValue struct {
 	Value int    `json:"value"`
 	Unit  string `json:"unit"`
 }
 
+// FloatValue contains a float value
 type FloatValue struct {
 	Value float64 `json:"value"`
 	Unit  string  `json:"unit"`
