@@ -8,7 +8,7 @@ import (
 )
 
 func TestAPIClient_GetTimeTables(t *testing.T) {
-	schedules := []TimeTable{
+	schedules := []Timetable{
 		{ID: 0, Type: "ONE_DAY"},
 		{ID: 1, Type: "THREE_DAY"},
 		{ID: 2, Type: "SEVEN_DAY"},
@@ -25,7 +25,7 @@ func TestAPIClient_GetTimeTables(t *testing.T) {
 }
 
 func TestAPIClient_GetActiveTimeTable(t *testing.T) {
-	active := TimeTable{ID: 1, Type: "THREE_DAY"}
+	active := Timetable{ID: 1, Type: "THREE_DAY"}
 	c, s := makeTestServer(active, nil)
 	defer s.Close()
 	output, err := c.GetActiveTimeTable(context.Background(), 1)
@@ -34,7 +34,7 @@ func TestAPIClient_GetActiveTimeTable(t *testing.T) {
 }
 
 func TestAPIClient_SetActiveTimeTable(t *testing.T) {
-	active := TimeTable{ID: 1, Type: "THREE_DAY"}
+	active := Timetable{ID: 1, Type: "THREE_DAY"}
 	c, s := makeTestServer(active, nil)
 	defer s.Close()
 	err := c.SetActiveTimeTable(context.Background(), 1, active)
@@ -74,7 +74,7 @@ func TestAPIClient_GetTimeTableBlocks(t *testing.T) {
 func TestAPIClient_GetTimeTableBlocksForDayType(t *testing.T) {
 	tests := []struct {
 		name        string
-		timeTableID int
+		timeTableID TimetableID
 		dayType     string
 		input       []Block
 		pass        bool
@@ -87,25 +87,25 @@ func TestAPIClient_GetTimeTableBlocksForDayType(t *testing.T) {
 		},
 		{
 			name:        "invalid dayType",
-			timeTableID: 0,
+			timeTableID: OneDay,
 			dayType:     "SATURDAY",
 			pass:        false,
 		},
 		{
 			name:        "invalid dayType",
-			timeTableID: 1,
+			timeTableID: ThreeDay,
 			dayType:     "MONDAY",
 			pass:        false,
 		},
 		{
 			name:        "invalid dayType",
-			timeTableID: 3,
+			timeTableID: SevenDay,
 			dayType:     "foo",
 			pass:        false,
 		},
 		{
 			name:        "valid",
-			timeTableID: 0,
+			timeTableID: OneDay,
 			dayType:     "MONDAY_TO_SUNDAY",
 			input: []Block{
 				{DayType: "MONDAY_TO_SUNDAY", Start: "00:00", End: "07:00"},
@@ -134,7 +134,7 @@ func TestAPIClient_GetTimeTableBlocksForDayType(t *testing.T) {
 func TestAPIClient_SetTimeTableBlocksForDayType(t *testing.T) {
 	tests := []struct {
 		name        string
-		timeTableID int
+		timeTableID TimetableID
 		dayType     string
 		input       []Block
 		pass        bool
@@ -147,25 +147,25 @@ func TestAPIClient_SetTimeTableBlocksForDayType(t *testing.T) {
 		},
 		{
 			name:        "invalid dayType",
-			timeTableID: 0,
+			timeTableID: OneDay,
 			dayType:     "SATURDAY",
 			pass:        false,
 		},
 		{
 			name:        "invalid dayType",
-			timeTableID: 1,
+			timeTableID: ThreeDay,
 			dayType:     "MONDAY",
 			pass:        false,
 		},
 		{
 			name:        "invalid dayType",
-			timeTableID: 3,
+			timeTableID: SevenDay,
 			dayType:     "foo",
 			pass:        false,
 		},
 		{
 			name:        "valid",
-			timeTableID: 0,
+			timeTableID: OneDay,
 			dayType:     "MONDAY_TO_SUNDAY",
 			input: []Block{
 				{DayType: "MONDAY_TO_SUNDAY", Start: "00:00", End: "07:00"},

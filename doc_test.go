@@ -61,3 +61,21 @@ func ExampleAPIClient_GetAirComfort() {
 		}
 	}
 }
+
+func ExampleAPIClient_SetTimeTableBlocksForDayType() {
+	c := tado.New("me@example.com", "password", "")
+	ctx := context.Background()
+	blocks, err := c.GetTimeTableBlocksForDayType(ctx, 1, tado.OneDay, "MONDAY_TO_SUNDAY")
+	if err != nil {
+		panic(err)
+	}
+	for _, block := range blocks {
+		if block.Setting.Temperature.Celsius > 5 {
+			block.Setting.Temperature.Celsius = 21
+		}
+	}
+	err = c.SetTimeTableBlocksForDayType(ctx, 1, tado.OneDay, "MONDAY_TO_SUNDAY", blocks)
+	if err != nil {
+		panic(err)
+	}
+}

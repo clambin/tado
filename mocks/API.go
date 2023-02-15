@@ -73,14 +73,14 @@ func (_m *API) GetActiveHome(_a0 context.Context) (tado.Home, bool) {
 }
 
 // GetActiveTimeTable provides a mock function with given fields: _a0, _a1
-func (_m *API) GetActiveTimeTable(_a0 context.Context, _a1 int) (tado.TimeTable, error) {
+func (_m *API) GetActiveTimeTable(_a0 context.Context, _a1 int) (tado.Timetable, error) {
 	ret := _m.Called(_a0, _a1)
 
-	var r0 tado.TimeTable
-	if rf, ok := ret.Get(0).(func(context.Context, int) tado.TimeTable); ok {
+	var r0 tado.Timetable
+	if rf, ok := ret.Get(0).(func(context.Context, int) tado.Timetable); ok {
 		r0 = rf(_a0, _a1)
 	} else {
-		r0 = ret.Get(0).(tado.TimeTable)
+		r0 = ret.Get(0).(tado.Timetable)
 	}
 
 	var r1 error
@@ -272,11 +272,11 @@ func (_m *API) GetRunningTimes(_a0 context.Context, _a1 time.Time, _a2 time.Time
 }
 
 // GetTimeTableBlocks provides a mock function with given fields: _a0, _a1, _a2
-func (_m *API) GetTimeTableBlocks(_a0 context.Context, _a1 int, _a2 int) ([]tado.Block, error) {
+func (_m *API) GetTimeTableBlocks(_a0 context.Context, _a1 int, _a2 tado.TimetableID) ([]tado.Block, error) {
 	ret := _m.Called(_a0, _a1, _a2)
 
 	var r0 []tado.Block
-	if rf, ok := ret.Get(0).(func(context.Context, int, int) []tado.Block); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, int, tado.TimetableID) []tado.Block); ok {
 		r0 = rf(_a0, _a1, _a2)
 	} else {
 		if ret.Get(0) != nil {
@@ -285,7 +285,7 @@ func (_m *API) GetTimeTableBlocks(_a0 context.Context, _a1 int, _a2 int) ([]tado
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(context.Context, int, int) error); ok {
+	if rf, ok := ret.Get(1).(func(context.Context, int, tado.TimetableID) error); ok {
 		r1 = rf(_a0, _a1, _a2)
 	} else {
 		r1 = ret.Error(1)
@@ -295,11 +295,11 @@ func (_m *API) GetTimeTableBlocks(_a0 context.Context, _a1 int, _a2 int) ([]tado
 }
 
 // GetTimeTableBlocksForDayType provides a mock function with given fields: _a0, _a1, _a2, _a3
-func (_m *API) GetTimeTableBlocksForDayType(_a0 context.Context, _a1 int, _a2 int, _a3 string) ([]tado.Block, error) {
+func (_m *API) GetTimeTableBlocksForDayType(_a0 context.Context, _a1 int, _a2 tado.TimetableID, _a3 string) ([]tado.Block, error) {
 	ret := _m.Called(_a0, _a1, _a2, _a3)
 
 	var r0 []tado.Block
-	if rf, ok := ret.Get(0).(func(context.Context, int, int, string) []tado.Block); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, int, tado.TimetableID, string) []tado.Block); ok {
 		r0 = rf(_a0, _a1, _a2, _a3)
 	} else {
 		if ret.Get(0) != nil {
@@ -308,7 +308,7 @@ func (_m *API) GetTimeTableBlocksForDayType(_a0 context.Context, _a1 int, _a2 in
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(context.Context, int, int, string) error); ok {
+	if rf, ok := ret.Get(1).(func(context.Context, int, tado.TimetableID, string) error); ok {
 		r1 = rf(_a0, _a1, _a2, _a3)
 	} else {
 		r1 = ret.Error(1)
@@ -318,15 +318,15 @@ func (_m *API) GetTimeTableBlocksForDayType(_a0 context.Context, _a1 int, _a2 in
 }
 
 // GetTimeTables provides a mock function with given fields: _a0, _a1
-func (_m *API) GetTimeTables(_a0 context.Context, _a1 int) ([]tado.TimeTable, error) {
+func (_m *API) GetTimeTables(_a0 context.Context, _a1 int) ([]tado.Timetable, error) {
 	ret := _m.Called(_a0, _a1)
 
-	var r0 []tado.TimeTable
-	if rf, ok := ret.Get(0).(func(context.Context, int) []tado.TimeTable); ok {
+	var r0 []tado.Timetable
+	if rf, ok := ret.Get(0).(func(context.Context, int) []tado.Timetable); ok {
 		r0 = rf(_a0, _a1)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]tado.TimeTable)
+			r0 = ret.Get(0).([]tado.Timetable)
 		}
 	}
 
@@ -506,11 +506,11 @@ func (_m *API) SetActiveHome(_a0 context.Context, _a1 string) error {
 }
 
 // SetActiveTimeTable provides a mock function with given fields: _a0, _a1, _a2
-func (_m *API) SetActiveTimeTable(_a0 context.Context, _a1 int, _a2 tado.TimeTable) error {
+func (_m *API) SetActiveTimeTable(_a0 context.Context, _a1 int, _a2 tado.Timetable) error {
 	ret := _m.Called(_a0, _a1, _a2)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, int, tado.TimeTable) error); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, int, tado.Timetable) error); ok {
 		r0 = rf(_a0, _a1, _a2)
 	} else {
 		r0 = ret.Error(0)
@@ -520,11 +520,11 @@ func (_m *API) SetActiveTimeTable(_a0 context.Context, _a1 int, _a2 tado.TimeTab
 }
 
 // SetTimeTableBlocksForDayType provides a mock function with given fields: _a0, _a1, _a2, _a3, _a4
-func (_m *API) SetTimeTableBlocksForDayType(_a0 context.Context, _a1 int, _a2 int, _a3 string, _a4 []tado.Block) error {
+func (_m *API) SetTimeTableBlocksForDayType(_a0 context.Context, _a1 int, _a2 tado.TimetableID, _a3 string, _a4 []tado.Block) error {
 	ret := _m.Called(_a0, _a1, _a2, _a3, _a4)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, int, int, string, []tado.Block) error); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, int, tado.TimetableID, string, []tado.Block) error); ok {
 		r0 = rf(_a0, _a1, _a2, _a3, _a4)
 	} else {
 		r0 = ret.Error(0)

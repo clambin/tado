@@ -42,12 +42,12 @@ type API interface {
 	GetEnergySavings(context.Context) ([]EnergySavingsReport, error)
 	GetRunningTimes(context.Context, time.Time, time.Time) ([]RunningTime, error)
 	GetHeatingCircuits(context.Context) ([]HeatingCircuit, error)
-	GetTimeTables(context.Context, int) ([]TimeTable, error)
-	GetActiveTimeTable(context.Context, int) (TimeTable, error)
-	SetActiveTimeTable(context.Context, int, TimeTable) error
-	GetTimeTableBlocks(context.Context, int, int) ([]Block, error)
-	GetTimeTableBlocksForDayType(context.Context, int, int, string) ([]Block, error)
-	SetTimeTableBlocksForDayType(context.Context, int, int, string, []Block) error
+	GetTimeTables(context.Context, int) ([]Timetable, error)
+	GetActiveTimeTable(context.Context, int) (Timetable, error)
+	SetActiveTimeTable(context.Context, int, Timetable) error
+	GetTimeTableBlocks(context.Context, int, TimetableID) ([]Block, error)
+	GetTimeTableBlocksForDayType(context.Context, int, TimetableID, string) ([]Block, error)
+	SetTimeTableBlocksForDayType(context.Context, int, TimetableID, string, []Block) error
 }
 
 // APIClient represents a Tado API client.
