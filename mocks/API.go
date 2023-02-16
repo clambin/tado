@@ -469,15 +469,15 @@ func (_m *API) GetZoneInfo(_a0 context.Context, _a1 int) (tado.ZoneInfo, error) 
 }
 
 // GetZones provides a mock function with given fields: _a0
-func (_m *API) GetZones(_a0 context.Context) ([]tado.Zone, error) {
+func (_m *API) GetZones(_a0 context.Context) (tado.Zones, error) {
 	ret := _m.Called(_a0)
 
-	var r0 []tado.Zone
-	if rf, ok := ret.Get(0).(func(context.Context) []tado.Zone); ok {
+	var r0 tado.Zones
+	if rf, ok := ret.Get(0).(func(context.Context) tado.Zones); ok {
 		r0 = rf(_a0)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]tado.Zone)
+			r0 = ret.Get(0).(tado.Zones)
 		}
 	}
 

@@ -27,7 +27,7 @@ type API interface {
 	GetUsers(context.Context) ([]User, error)
 	GetMobileDevices(context.Context) ([]MobileDevice, error)
 	GetWeatherInfo(context.Context) (WeatherInfo, error)
-	GetZones(context.Context) ([]Zone, error)
+	GetZones(context.Context) (Zones, error)
 	GetZoneInfo(context.Context, int) (ZoneInfo, error)
 	GetZoneCapabilities(context.Context, int) (ZoneCapabilities, error)
 	GetZoneEarlyStart(context.Context, int) (bool, error)
@@ -49,6 +49,8 @@ type API interface {
 	GetTimeTableBlocksForDayType(context.Context, int, TimetableID, string) ([]Block, error)
 	SetTimeTableBlocksForDayType(context.Context, int, TimetableID, string, []Block) error
 }
+
+var _ API = &APIClient{}
 
 // APIClient represents a Tado API client.
 type APIClient struct {
