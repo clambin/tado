@@ -46,6 +46,9 @@ func ExampleAPIClient_GetAirComfort() {
 	c := tado.New("me@example.com", "password", "")
 	ctx := context.Background()
 	zones, err := c.GetZones(ctx)
+	if err != nil {
+		panic(err)
+	}
 
 	info, err := c.GetAirComfort(ctx)
 	if err != nil {
