@@ -48,6 +48,7 @@ type API interface {
 	GetTimeTableBlocks(context.Context, int, TimetableID) ([]Block, error)
 	GetTimeTableBlocksForDayType(context.Context, int, TimetableID, string) ([]Block, error)
 	SetTimeTableBlocksForDayType(context.Context, int, TimetableID, string, []Block) error
+	GetHomeState(ctx context.Context) (homeState HomeState, err error)
 }
 
 var _ API = &APIClient{}
@@ -59,8 +60,8 @@ type APIClient struct {
 	// HTTPClient is used to perform HTTP requests
 	HTTPClient *http.Client
 
-	lock         sync.RWMutex
 	apiURL       map[string]string
+	lock         sync.RWMutex
 	account      *Account
 	activeHomeID int
 }

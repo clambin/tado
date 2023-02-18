@@ -1,7 +1,9 @@
 package tado
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 )
@@ -105,4 +107,44 @@ func (c *APIClient) GetHomeInfo(ctx context.Context) (homeInfo HomeInfo, err err
 		err = c.call(ctx, http.MethodGet, "myTado", "", nil, &homeInfo)
 	}
 	return homeInfo, err
+}
+
+// HomeState contains the home state (HOME/AWAY)
+type HomeState struct {
+	Presence       string `json:"presence"`
+	PresenceLocked bool   `json:"presenceLocked"`
+}
+
+// GetHomeState returns the home state (HOME/AWAY)
+func (c *APIClient) GetHomeState(ctx context.Context) (homeState HomeState, err error) {
+	if err = c.initialize(ctx); err == nil {
+		err = c.call(ctx, http.MethodGet, "myTado", "/state", nil, &homeState)
+	}
+	return homeState, err
+}
+
+// SetHomeState sets the home state (HOME/AWAY)
+func (c *APIClient) SetHomeState(ctx context.Context, home bool) (err error) {
+	if err = c.initialize(ctx); err == nil {
+		var homeState struct {
+			HomePresence string `json:"homePresence"`
+		}
+		if home {
+			homeState.HomePresence = "HOME"
+		} else {
+			homeState.HomePresence = "AWAY"
+		}
+		buf := new(bytes.Buffer)
+		err = json.NewEncoder(buf).Encode(homeState)
+		err = c.call(ctx, http.MethodPut, "myTado", "/presenceLock", buf, nil)
+	}
+	return err
+}
+
+// UnsetHomeState removes any manual presence set by SetHomeState
+func (c *APIClient) UnsetHomeState(ctx context.Context) (err error) {
+	if err = c.initialize(ctx); err == nil {
+		err = c.call(ctx, http.MethodDelete, "myTado", "/presenceLock", nil, nil)
+	}
+	return err
 }

@@ -47,3 +47,37 @@ func TestAPIClient_GetHomeInfo(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, info, home)
 }
+
+func TestAPIClient_GetHomeState(t *testing.T) {
+	for _, state := range []string{"HOME", "AWAY"} {
+		t.Run(state, func(t *testing.T) {
+			info := HomeState{
+				Presence: state,
+			}
+			c, s := makeTestServer(info, nil)
+			defer s.Close()
+
+			output, err := c.GetHomeState(context.Background())
+			require.NoError(t, err)
+			assert.Equal(t, info, output)
+		})
+	}
+}
+
+func TestAPIClient_SetHomeState(t *testing.T) {
+	c, s := makeTestServer(nil, nil)
+	defer s.Close()
+
+	err := c.SetHomeState(context.Background(), true)
+	require.NoError(t, err)
+	err = c.SetHomeState(context.Background(), false)
+	require.NoError(t, err)
+}
+
+func TestAPIClient_UnsetHomeState(t *testing.T) {
+	c, s := makeTestServer(nil, nil)
+	defer s.Close()
+
+	err := c.UnsetHomeState(context.Background())
+	require.NoError(t, err)
+}
