@@ -2,9 +2,7 @@ APIs to add:
 
 /homes/<home>/incidents (minder)
 /homes/<home>installations
-/homes/<home>/zones/<zone>/openWindowDetection
 /homes/<home>/zones/<zone>/dayReport?date=%s
-/homes/<home>/zones/<zone>/measuringDevice
 /homes/<home>/invitations
 /homes/<home>/zones/<zone>/dazzle
 
@@ -12,3 +10,6 @@ Won't do:
 
 /homes/<home>/zones/<zone>/details: same as GetZone(id)
 
+Can't do:
+
+/homes/<home>/zones/<zone>/openWindowDetection: return 403 Forbidden?

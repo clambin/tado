@@ -35,8 +35,8 @@ func TestAPIClient_GetZoneInfo_E2E(t *testing.T) {
 
 func TestAPIClient_Authentication(t *testing.T) {
 	response := []Zone{
-		{ID: 1, Name: "foo", Devices: []Device{{DeviceType: "foo", CurrentFwVersion: "v1.0", ConnectionState: ConnectionState{Value: true}, BatteryState: "OK"}}},
-		{ID: 2, Name: "bar", Devices: []Device{{DeviceType: "bar", CurrentFwVersion: "v1.0", ConnectionState: ConnectionState{Value: false}, BatteryState: "OK"}}},
+		{ID: 1, Name: "foo", Devices: []Device{{DeviceType: "foo", CurrentFwVersion: "v1.0", ConnectionState: State{Value: true}, BatteryState: "OK"}}},
+		{ID: 2, Name: "bar", Devices: []Device{{DeviceType: "bar", CurrentFwVersion: "v1.0", ConnectionState: State{Value: false}, BatteryState: "OK"}}},
 	}
 
 	_, s := makeTestServer(response, nil)
