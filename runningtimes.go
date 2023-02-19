@@ -24,13 +24,13 @@ func (c *APIClient) GetRunningTimes(ctx context.Context, from, to time.Time) (ru
 	if from.IsZero() {
 		return nil, fmt.Errorf("from cannot be zero")
 	}
-	if err = c.initialize(ctx); err == nil {
-		var output struct {
-			RunningTimes []RunningTime `json:"runningTimes"`
-		}
-		if err = c.call(ctx, http.MethodGet, "minder", "/runningTimes"+buildFromToArgs(from, to), nil, &output); err == nil {
-			runningTimes = output.RunningTimes
-		}
+
+	type response struct {
+		RunningTimes []RunningTime `json:"runningTimes"`
+	}
+	output, err := callAPI[response](c, ctx, http.MethodGet, "minder", "/runningTimes"+buildFromToArgs(from, to), nil)
+	if err == nil {
+		runningTimes = output.RunningTimes
 	}
 	return
 }

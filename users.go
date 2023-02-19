@@ -17,8 +17,5 @@ type User struct {
 
 // GetUsers returns all users registered for the Tado account
 func (c *APIClient) GetUsers(ctx context.Context) (users []User, err error) {
-	if err = c.initialize(ctx); err == nil {
-		err = c.call(ctx, http.MethodGet, "myTado", "/users", nil, &users)
-	}
-	return
+	return callAPI[[]User](c, ctx, http.MethodGet, "myTado", "/users", nil)
 }

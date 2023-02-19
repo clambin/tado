@@ -1,9 +1,7 @@
 package tado
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"net/http"
 	"strconv"
 	"time"
@@ -41,19 +39,12 @@ func (c *APIClient) SetZoneTemporaryOverlay(ctx context.Context, zoneID int, tem
 		Termination: termination,
 	}
 
-	if err = c.initialize(ctx); err == nil {
-		var payload bytes.Buffer
-		if err = json.NewEncoder(&payload).Encode(request); err == nil {
-			err = c.call(ctx, http.MethodPut, "myTado", "/zones/"+strconv.Itoa(zoneID)+"/overlay", &payload, nil)
-		}
-	}
+	_, err = callAPI[string](c, ctx, http.MethodPut, "myTado", "/zones/"+strconv.Itoa(zoneID)+"/overlay", request)
 	return
 }
 
 // DeleteZoneOverlay deletes the overlay (manual temperature setting) for the specified ZoneID
-func (c *APIClient) DeleteZoneOverlay(ctx context.Context, zoneID int) (err error) {
-	if err = c.initialize(ctx); err == nil {
-		err = c.call(ctx, http.MethodDelete, "myTado", "/zones/"+strconv.Itoa(zoneID)+"/overlay", nil, nil)
-	}
-	return
+func (c *APIClient) DeleteZoneOverlay(ctx context.Context, zoneID int) error {
+	_, err := callAPI[string](c, ctx, http.MethodDelete, "myTado", "/zones/"+strconv.Itoa(zoneID)+"/overlay", nil)
+	return err
 }

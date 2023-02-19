@@ -1,12 +1,14 @@
 package tado
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -55,11 +57,10 @@ var _ API = &APIClient{}
 
 // APIClient represents a Tado API client.
 type APIClient struct {
-	// authenticator handles logging in to the Tado server
-	authenticator
 	// HTTPClient is used to perform HTTP requests
 	HTTPClient *http.Client
 
+	authenticator
 	apiURL       map[string]string
 	lock         sync.RWMutex
 	account      *Account
@@ -79,17 +80,23 @@ func New(username, password, clientSecret string) *APIClient {
 		clientSecret = "wZaRN7rpjn3FoNyF5IFuxg9uMzYJcvOoQ8QWiIqS3hfk6gLhVlG57j5YNoZL2Rtc"
 	}
 
+	return NewWithAuthenticator(&auth.Authenticator{
+		HTTPClient:   http.DefaultClient,
+		ClientID:     "tado-web-app",
+		ClientSecret: clientSecret,
+		Username:     username,
+		Password:     password,
+		AuthURL:      "https://auth.tado.com/oauth/token",
+	})
+}
+
+func NewWithAuthenticator(auth authenticator) *APIClient {
 	return &APIClient{
-		authenticator: &auth.Authenticator{
-			HTTPClient:   http.DefaultClient,
-			ClientID:     "tado-web-app",
-			ClientSecret: clientSecret,
-			Username:     username,
-			Password:     password,
-			AuthURL:      "https://auth.tado.com/oauth/token",
+		HTTPClient: &http.Client{
+			Transport: roundTripper{authenticator: auth},
 		},
-		HTTPClient: http.DefaultClient,
-		apiURL:     buildURLMap(""),
+		authenticator: auth,
+		apiURL:        buildURLMap(""),
 	}
 }
 
@@ -115,7 +122,78 @@ func buildURLMap(override string) map[string]string {
 	}
 }
 
-func (c *APIClient) initialize(ctx context.Context) (err error) {
+// callAPI is implemented as a function rather than a method, because methods cannot have type parameters (yet?)
+func callAPI[T any](c *APIClient, ctx context.Context, method, apiClass, endpoint string, request any) (response T, err error) {
+	if apiClass != "me" {
+		if err = c.getActiveHomeID(ctx); err != nil {
+			return
+		}
+	}
+
+	target := c.makeAPIURL(apiClass, endpoint)
+	reqBody := new(bytes.Buffer)
+	if request != nil {
+		if err = json.NewEncoder(reqBody).Encode(request); err != nil {
+			return response, fmt.Errorf("encode: %w", err)
+		}
+	}
+
+	req, _ := http.NewRequestWithContext(ctx, method, target, reqBody)
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "application/json")
+
+	resp, err := c.HTTPClient.Do(req)
+	if err != nil {
+		return
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return response, fmt.Errorf("read: %w", err)
+	}
+
+	switch resp.StatusCode {
+	case http.StatusOK:
+		if resp.ContentLength != 0 {
+			err = json.Unmarshal(respBody, &response)
+		}
+	case http.StatusNoContent:
+	case http.StatusForbidden, http.StatusUnauthorized:
+		// we're authenticated, but still got forbidden.
+		// force password login to get a new token.
+		c.authenticator.Reset()
+		err = errors.New(resp.Status)
+	case http.StatusUnprocessableEntity:
+		var titles []string
+		if titles, err = getErrors(respBody); err == nil {
+			err = fmt.Errorf("unprocessable entry: %s", strings.Join(titles, ", "))
+		}
+	default:
+		err = errors.New(resp.Status)
+	}
+	return
+}
+
+func getErrors(body []byte) ([]string, error) {
+	var errs struct {
+		Errors []struct {
+			Code  string `json:"code"`
+			Title string `json:"title"`
+		} `json:"errors"`
+	}
+
+	if err := json.Unmarshal(body, &errs); err != nil {
+		return nil, fmt.Errorf("bad error: %w", err)
+	}
+	var titles []string
+	for _, entry := range errs.Errors {
+		titles = append(titles, entry.Title)
+	}
+	return titles, nil
+}
+
+func (c *APIClient) getActiveHomeID(ctx context.Context) (err error) {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 	if c.activeHomeID > 0 {
@@ -133,42 +211,6 @@ func (c *APIClient) initialize(ctx context.Context) (err error) {
 	return nil
 }
 
-func (c *APIClient) call(ctx context.Context, method string, apiClass, endpoint string, payload io.Reader, response any) error {
-	req, err := c.buildRequest(ctx, method, c.makeAPIURL(apiClass, endpoint), payload)
-	if err != nil {
-		return err
-	}
-
-	resp, err := c.HTTPClient.Do(req)
-	if err != nil {
-		return err
-	}
-
-	defer func() { _ = resp.Body.Close() }()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return fmt.Errorf("read: %w", err)
-	}
-
-	switch resp.StatusCode {
-	case http.StatusOK:
-		if resp.ContentLength != 0 && response != nil {
-			err = json.Unmarshal(body, response)
-		}
-	case http.StatusNoContent:
-	case http.StatusForbidden, http.StatusUnauthorized:
-		// we're authenticated, but still got forbidden.
-		// force password login to get a new token.
-		c.authenticator.Reset()
-		err = errors.New(resp.Status)
-	default:
-		err = errors.New(resp.Status)
-	}
-
-	return err
-}
-
 func (c *APIClient) makeAPIURL(apiClass string, endpoint string) string {
 	base, ok := c.apiURL[apiClass]
 	if !ok {
@@ -180,18 +222,4 @@ func (c *APIClient) makeAPIURL(apiClass string, endpoint string) string {
 	c.lock.RLock()
 	defer c.lock.RUnlock()
 	return fmt.Sprintf(base, c.activeHomeID) + endpoint
-}
-
-func (c *APIClient) buildRequest(ctx context.Context, method string, path string, payload io.Reader) (*http.Request, error) {
-	var req *http.Request
-	token, err := c.authenticator.GetAuthToken(ctx)
-	if err == nil {
-		req, _ = http.NewRequestWithContext(ctx, method, path, payload)
-		req.Header.Set("Content-Type", "application/json;charset=UTF-8")
-		req.Header.Set("Authorization", "Bearer "+token)
-	} else {
-		err = fmt.Errorf("auth: %w", err)
-	}
-
-	return req, err
 }

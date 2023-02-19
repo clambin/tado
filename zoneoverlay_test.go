@@ -59,9 +59,9 @@ func TestAPIClient_ZoneOverlay(t *testing.T) {
 			mgr := newOverlayManager()
 			s := httptest.NewServer(mgr)
 
-			c := New("", "", "")
+			auth := fakeAuthenticator{Token: "1234"}
+			c := NewWithAuthenticator(&auth)
 			c.apiURL = buildURLMap(s.URL)
-			c.authenticator = &fakeAuthenticator{Token: "1234"}
 
 			ctx := context.TODO()
 

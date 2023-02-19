@@ -1,9 +1,7 @@
 package tado
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -93,10 +91,7 @@ type ZoneInfoOverlayTermination struct {
 
 // GetZoneInfo gets the info for the specified ZoneID
 func (c *APIClient) GetZoneInfo(ctx context.Context, zoneID int) (tadoZoneInfo ZoneInfo, err error) {
-	if err = c.initialize(ctx); err == nil {
-		err = c.call(ctx, http.MethodGet, "myTado", "/zones/"+strconv.Itoa(zoneID)+"/state", nil, &tadoZoneInfo)
-	}
-	return
+	return callAPI[ZoneInfo](c, ctx, http.MethodGet, "myTado", "/zones/"+strconv.Itoa(zoneID)+"/state", nil)
 }
 
 // ZoneCapabilities returns the "capabilities" of a Tado zone
@@ -118,38 +113,29 @@ type ZoneCapabilities struct {
 
 // GetZoneCapabilities gets the capabilities for the specified zone
 func (c *APIClient) GetZoneCapabilities(ctx context.Context, zoneID int) (tadoZoneCapabilities ZoneCapabilities, err error) {
-	if err = c.initialize(ctx); err == nil {
-		err = c.call(ctx, http.MethodGet, "myTado", "/zones/"+strconv.Itoa(zoneID)+"/capabilities", nil, &tadoZoneCapabilities)
-	}
-	return
+	return callAPI[ZoneCapabilities](c, ctx, http.MethodGet, "myTado", "/zones/"+strconv.Itoa(zoneID)+"/capabilities", nil)
 }
 
 // GetZoneEarlyStart checks if "early start" is enabled for the specified zone
 func (c *APIClient) GetZoneEarlyStart(ctx context.Context, zoneID int) (earlyStart bool, err error) {
-	if err = c.initialize(ctx); err == nil {
-		var result struct {
-			Enabled bool
-		}
-		err = c.call(ctx, http.MethodGet, "myTado", "/zones/"+strconv.Itoa(zoneID)+"/earlyStart", nil, &result)
-		earlyStart = result.Enabled
-
+	type result struct {
+		Enabled bool
+	}
+	response, err := callAPI[result](c, ctx, http.MethodGet, "myTado", "/zones/"+strconv.Itoa(zoneID)+"/earlyStart", nil)
+	if err == nil {
+		earlyStart = response.Enabled
 	}
 	return
 }
 
 // SetZoneEarlyStart enabled or disables earlyStart for the specified zone
-func (c *APIClient) SetZoneEarlyStart(ctx context.Context, zoneID int, earlyAccess bool) (err error) {
-	if err = c.initialize(ctx); err == nil {
-		input := struct {
-			Enabled bool `json:"enabled"`
-		}{Enabled: earlyAccess}
+func (c *APIClient) SetZoneEarlyStart(ctx context.Context, zoneID int, earlyAccess bool) error {
+	input := struct {
+		Enabled bool `json:"enabled"`
+	}{Enabled: earlyAccess}
 
-		var buf bytes.Buffer
-		if err = json.NewEncoder(&buf).Encode(input); err == nil {
-			err = c.call(ctx, http.MethodPut, "myTado", "/zones/"+strconv.Itoa(zoneID)+"/earlyStart", &buf, nil)
-		}
-	}
-	return
+	_, err := callAPI[struct{}](c, ctx, http.MethodPut, "myTado", "/zones/"+strconv.Itoa(zoneID)+"/earlyStart", input)
+	return err
 }
 
 // ZoneAwayConfiguration determines how a Zone will be heated when all users are away and the home is in "away" mode.
@@ -188,10 +174,7 @@ const (
 
 // GetZoneAutoConfiguration returns the ZoneAwayConfiguration for the specified zone
 func (c *APIClient) GetZoneAutoConfiguration(ctx context.Context, zoneID int) (configuration ZoneAwayConfiguration, err error) {
-	if err = c.initialize(ctx); err == nil {
-		err = c.call(ctx, http.MethodGet, "myTado", "/zones/"+strconv.Itoa(zoneID)+"/schedule/awayConfiguration", nil, &configuration)
-	}
-	return
+	return callAPI[ZoneAwayConfiguration](c, ctx, http.MethodGet, "myTado", "/zones/"+strconv.Itoa(zoneID)+"/schedule/awayConfiguration", nil)
 }
 
 // SetZoneAutoConfiguration sets the ZoneAwayConfiguration for the specified zone
@@ -202,11 +185,6 @@ func (c *APIClient) SetZoneAutoConfiguration(ctx context.Context, zoneID int, co
 		configuration.ComfortLevel != Comfort {
 		return fmt.Errorf("invalid ComfortLevel: %d", configuration.ComfortLevel)
 	}
-	if err = c.initialize(ctx); err == nil {
-		payload := &bytes.Buffer{}
-		if err = json.NewEncoder(payload).Encode(configuration); err == nil {
-			err = c.call(ctx, http.MethodPut, "myTado", "/zones/"+strconv.Itoa(zoneID)+"/schedule/awayConfiguration", payload, nil)
-		}
-	}
+	_, err = callAPI[struct{}](c, ctx, http.MethodPut, "myTado", "/zones/"+strconv.Itoa(zoneID)+"/schedule/awayConfiguration", configuration)
 	return
 }
