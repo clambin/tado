@@ -60,7 +60,7 @@ func TestAPIClient_ZoneOverlay(t *testing.T) {
 			s := httptest.NewServer(mgr)
 
 			auth := fakeAuthenticator{Token: "1234"}
-			c := NewWithAuthenticator(&auth)
+			c := newWithAuthenticator(&auth)
 			c.apiURL = buildURLMap(s.URL)
 
 			ctx := context.TODO()
@@ -122,5 +122,119 @@ func (o *overlayManager) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		w.WriteHeader(http.StatusNoContent)
 	default:
 		http.Error(w, "invalid method", http.StatusMethodNotAllowed)
+	}
+}
+
+func TestDefaultOverlay_IsValid(t *testing.T) {
+	tests := []struct {
+		name            string
+		terminationType string
+		terminationTime int
+		reason          string
+		valid           bool
+	}{
+		{
+			name:            "manual",
+			terminationType: "MANUAL",
+			valid:           true,
+		},
+		{
+			name:            "tado",
+			terminationType: "TADO_MODE",
+			valid:           true,
+		},
+		{
+			name:            "timer",
+			terminationType: "TIMER",
+			terminationTime: 3600,
+			valid:           true,
+		},
+		{
+			name:            "invalid timer",
+			terminationType: "TIMER",
+			reason:          "DurationInSeconds must be set for TIMER overlay",
+			valid:           false,
+		},
+		{
+			name:            "invalid type",
+			terminationType: "foo",
+			reason:          "invalid type: foo",
+			valid:           false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var o DefaultOverlay
+			o.TerminationCondition.Type = tt.terminationType
+			o.TerminationCondition.DurationInSeconds = tt.terminationTime
+
+			reason, valid := o.isValid()
+			assert.Equal(t, tt.reason, reason)
+			assert.Equal(t, tt.valid, valid)
+		})
+	}
+}
+
+func TestAPIClient_GetDefaultOverlay(t *testing.T) {
+	var response DefaultOverlay
+	response.TerminationCondition.Type = "MANUAL"
+	c, s := makeTestServer(response, nil)
+	defer s.Close()
+
+	overlay, err := c.GetDefaultOverlay(context.Background(), 1)
+	require.NoError(t, err)
+	assert.Equal(t, "MANUAL", overlay.TerminationCondition.Type)
+}
+
+func TestAPIClient_SetDefaultOverlay(t *testing.T) {
+	tests := []struct {
+		name            string
+		terminationType string
+		terminationTime int
+		valid           bool
+	}{
+		{
+			name:            "manual",
+			terminationType: "MANUAL",
+			valid:           true,
+		},
+		{
+			name:            "tado",
+			terminationType: "TADO_MODE",
+			valid:           true,
+		},
+		{
+			name:            "timer",
+			terminationType: "TIMER",
+			terminationTime: 3600,
+			valid:           true,
+		},
+		{
+			name:            "invalid timer",
+			terminationType: "TIMER",
+			valid:           false,
+		},
+		{
+			name:            "invalid type",
+			terminationType: "foo",
+			valid:           false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var o DefaultOverlay
+			o.TerminationCondition.Type = tt.terminationType
+			o.TerminationCondition.DurationInSeconds = tt.terminationTime
+
+			c, s := makeTestServer(o, nil)
+			defer s.Close()
+
+			err := c.SetDefaultOverlay(context.Background(), 1, o)
+			if !tt.valid {
+				assert.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+		})
 	}
 }

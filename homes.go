@@ -26,7 +26,7 @@ type Home struct {
 
 // GetAccount returns the Account information for the account used to log into the Tado API servers.
 func (c *APIClient) GetAccount(ctx context.Context) (Account, error) {
-	return callAPI[Account](c, ctx, http.MethodGet, "me", "", nil)
+	return callAPI[Account](ctx, c, http.MethodGet, "me", "", nil)
 }
 
 // GetHomes returns all homes registered under the account used to log into the Tado API servers.
@@ -99,7 +99,7 @@ type HomeInfo struct {
 
 // GetHomeInfo returns detailed information about the active Home
 func (c *APIClient) GetHomeInfo(ctx context.Context) (homeInfo HomeInfo, err error) {
-	return callAPI[HomeInfo](c, ctx, http.MethodGet, "myTado", "", nil)
+	return callAPI[HomeInfo](ctx, c, http.MethodGet, "myTado", "", nil)
 }
 
 // HomeState contains the home state (HOME/AWAY)
@@ -110,7 +110,7 @@ type HomeState struct {
 
 // GetHomeState returns the home state (HOME/AWAY)
 func (c *APIClient) GetHomeState(ctx context.Context) (homeState HomeState, err error) {
-	return callAPI[HomeState](c, ctx, http.MethodGet, "myTado", "/state", nil)
+	return callAPI[HomeState](ctx, c, http.MethodGet, "myTado", "/state", nil)
 }
 
 // SetHomeState sets the home state (HOME/AWAY)
@@ -123,12 +123,12 @@ func (c *APIClient) SetHomeState(ctx context.Context, home bool) error {
 	} else {
 		homeState.HomePresence = "AWAY"
 	}
-	_, err := callAPI[string](c, ctx, http.MethodPut, "myTado", "/presenceLock", homeState)
+	_, err := callAPI[string](ctx, c, http.MethodPut, "myTado", "/presenceLock", homeState)
 	return err
 }
 
 // UnsetHomeState removes any manual presence set by SetHomeState
 func (c *APIClient) UnsetHomeState(ctx context.Context) error {
-	_, err := callAPI[string](c, ctx, http.MethodDelete, "myTado", "/presenceLock", nil)
+	_, err := callAPI[string](ctx, c, http.MethodDelete, "myTado", "/presenceLock", nil)
 	return err
 }

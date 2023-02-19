@@ -80,7 +80,7 @@ func New(username, password, clientSecret string) *APIClient {
 		clientSecret = "wZaRN7rpjn3FoNyF5IFuxg9uMzYJcvOoQ8QWiIqS3hfk6gLhVlG57j5YNoZL2Rtc"
 	}
 
-	return NewWithAuthenticator(&auth.Authenticator{
+	return newWithAuthenticator(&auth.Authenticator{
 		HTTPClient:   http.DefaultClient,
 		ClientID:     "tado-web-app",
 		ClientSecret: clientSecret,
@@ -90,7 +90,7 @@ func New(username, password, clientSecret string) *APIClient {
 	})
 }
 
-func NewWithAuthenticator(auth authenticator) *APIClient {
+func newWithAuthenticator(auth authenticator) *APIClient {
 	return &APIClient{
 		HTTPClient: &http.Client{
 			Transport: roundTripper{authenticator: auth},
@@ -123,7 +123,7 @@ func buildURLMap(override string) map[string]string {
 }
 
 // callAPI is implemented as a function rather than a method, because methods cannot have type parameters (yet?)
-func callAPI[T any](c *APIClient, ctx context.Context, method, apiClass, endpoint string, request any) (response T, err error) {
+func callAPI[T any](ctx context.Context, c *APIClient, method, apiClass, endpoint string, request any) (response T, err error) {
 	if apiClass != "me" {
 		if err = c.getActiveHomeID(ctx); err != nil {
 			return

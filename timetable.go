@@ -21,24 +21,27 @@ type Timetable struct {
 type TimetableID int
 
 const (
-	OneDay   TimetableID = 0
+	// OneDay timetables have one setting for all days of the week
+	OneDay TimetableID = 0
+	// ThreeDay timetables have one setting for working days, one for Saturday and one for Sunday
 	ThreeDay TimetableID = 1
+	// SevenDay timetables have individual settings for each day of the week
 	SevenDay TimetableID = 2
 )
 
 // GetTimeTables returns the possible Timetable options for the provided zone
 func (c *APIClient) GetTimeTables(ctx context.Context, zoneID int) (timeTables []Timetable, err error) {
-	return callAPI[[]Timetable](c, ctx, http.MethodGet, "myTado", "/zones/"+strconv.Itoa(zoneID)+"/schedule/timetables", nil)
+	return callAPI[[]Timetable](ctx, c, http.MethodGet, "myTado", "/zones/"+strconv.Itoa(zoneID)+"/schedule/timetables", nil)
 }
 
 // GetActiveTimeTable returns the active Timetable for the provided zone
 func (c *APIClient) GetActiveTimeTable(ctx context.Context, zoneID int) (timeTable Timetable, err error) {
-	return callAPI[Timetable](c, ctx, http.MethodGet, "myTado", "/zones/"+strconv.Itoa(zoneID)+"/schedule/activeTimetable", nil)
+	return callAPI[Timetable](ctx, c, http.MethodGet, "myTado", "/zones/"+strconv.Itoa(zoneID)+"/schedule/activeTimetable", nil)
 }
 
 // SetActiveTimeTable sets the active Timetable for the provided zone
 func (c *APIClient) SetActiveTimeTable(ctx context.Context, zoneID int, timeTable Timetable) error {
-	_, err := callAPI[struct{}](c, ctx, http.MethodPut, "myTado", "/zones/"+strconv.Itoa(zoneID)+"/schedule/activeTimetable", timeTable)
+	_, err := callAPI[struct{}](ctx, c, http.MethodPut, "myTado", "/zones/"+strconv.Itoa(zoneID)+"/schedule/activeTimetable", timeTable)
 	return err
 }
 
@@ -53,7 +56,7 @@ type Block struct {
 
 // GetTimeTableBlocks returns all Block entries for a zone and timetable
 func (c *APIClient) GetTimeTableBlocks(ctx context.Context, zoneID int, timetableID TimetableID) (blocks []Block, err error) {
-	return callAPI[[]Block](c, ctx, http.MethodGet, "myTado",
+	return callAPI[[]Block](ctx, c, http.MethodGet, "myTado",
 		"/zones/"+strconv.Itoa(zoneID)+"/schedule/timetables/"+strconv.Itoa(int(timetableID))+"/blocks",
 		nil)
 }
@@ -68,7 +71,7 @@ func (c *APIClient) GetTimeTableBlocksForDayType(ctx context.Context, zoneID int
 	if err = validateDayType(timetableID, dayType); err != nil {
 		return nil, err
 	}
-	return callAPI[[]Block](c, ctx, http.MethodGet, "myTado",
+	return callAPI[[]Block](ctx, c, http.MethodGet, "myTado",
 		"/zones/"+strconv.Itoa(zoneID)+"/schedule/timetables/"+strconv.Itoa(int(timetableID))+"/blocks/"+dayType,
 		nil)
 }
@@ -78,7 +81,7 @@ func (c *APIClient) SetTimeTableBlocksForDayType(ctx context.Context, zoneID int
 	if err := validateDayType(timetableID, dayType); err != nil {
 		return err
 	}
-	_, err := callAPI[string](c, ctx, http.MethodPut, "myTado",
+	_, err := callAPI[string](ctx, c, http.MethodPut, "myTado",
 		"/zones/"+strconv.Itoa(zoneID)+"/schedule/timetables/"+strconv.Itoa(int(timetableID))+"/blocks/"+dayType,
 		blocks)
 	return err

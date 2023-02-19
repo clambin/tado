@@ -4,7 +4,6 @@ APIs to add:
 /homes/<home>installations
 /homes/<home>/zones/<zone>/openWindowDetection
 /homes/<home>/zones/<zone>/dayReport?date=%s
-/homes/<home>/zones/<zone>/defaultOverlay
 /homes/<home>/zones/<zone>/measuringDevice
 /homes/<home>/invitations
 /homes/<home>/zones/<zone>/dazzle

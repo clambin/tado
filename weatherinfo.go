@@ -20,5 +20,5 @@ type WeatherInfo struct {
 
 // GetWeatherInfo retrieves weather information for the user's Home.
 func (c *APIClient) GetWeatherInfo(ctx context.Context) (weatherInfo WeatherInfo, err error) {
-	return callAPI[WeatherInfo](c, ctx, http.MethodGet, "myTado", "/weather", nil)
+	return callAPI[WeatherInfo](ctx, c, http.MethodGet, "myTado", "/weather", nil)
 }

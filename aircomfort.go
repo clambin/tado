@@ -28,5 +28,5 @@ type ZoneAirComfort struct {
 
 // GetAirComfort returns the AirComfort for the active Home
 func (c *APIClient) GetAirComfort(ctx context.Context) (airComfort AirComfort, err error) {
-	return callAPI[AirComfort](c, ctx, http.MethodGet, "myTado", "/airComfort", nil)
+	return callAPI[AirComfort](ctx, c, http.MethodGet, "myTado", "/airComfort", nil)
 }

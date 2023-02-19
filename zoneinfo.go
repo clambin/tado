@@ -91,7 +91,7 @@ type ZoneInfoOverlayTermination struct {
 
 // GetZoneInfo gets the info for the specified ZoneID
 func (c *APIClient) GetZoneInfo(ctx context.Context, zoneID int) (tadoZoneInfo ZoneInfo, err error) {
-	return callAPI[ZoneInfo](c, ctx, http.MethodGet, "myTado", "/zones/"+strconv.Itoa(zoneID)+"/state", nil)
+	return callAPI[ZoneInfo](ctx, c, http.MethodGet, "myTado", "/zones/"+strconv.Itoa(zoneID)+"/state", nil)
 }
 
 // ZoneCapabilities returns the "capabilities" of a Tado zone
@@ -113,7 +113,7 @@ type ZoneCapabilities struct {
 
 // GetZoneCapabilities gets the capabilities for the specified zone
 func (c *APIClient) GetZoneCapabilities(ctx context.Context, zoneID int) (tadoZoneCapabilities ZoneCapabilities, err error) {
-	return callAPI[ZoneCapabilities](c, ctx, http.MethodGet, "myTado", "/zones/"+strconv.Itoa(zoneID)+"/capabilities", nil)
+	return callAPI[ZoneCapabilities](ctx, c, http.MethodGet, "myTado", "/zones/"+strconv.Itoa(zoneID)+"/capabilities", nil)
 }
 
 // GetZoneEarlyStart checks if "early start" is enabled for the specified zone
@@ -121,7 +121,7 @@ func (c *APIClient) GetZoneEarlyStart(ctx context.Context, zoneID int) (earlySta
 	type result struct {
 		Enabled bool
 	}
-	response, err := callAPI[result](c, ctx, http.MethodGet, "myTado", "/zones/"+strconv.Itoa(zoneID)+"/earlyStart", nil)
+	response, err := callAPI[result](ctx, c, http.MethodGet, "myTado", "/zones/"+strconv.Itoa(zoneID)+"/earlyStart", nil)
 	if err == nil {
 		earlyStart = response.Enabled
 	}
@@ -134,7 +134,7 @@ func (c *APIClient) SetZoneEarlyStart(ctx context.Context, zoneID int, earlyAcce
 		Enabled bool `json:"enabled"`
 	}{Enabled: earlyAccess}
 
-	_, err := callAPI[struct{}](c, ctx, http.MethodPut, "myTado", "/zones/"+strconv.Itoa(zoneID)+"/earlyStart", input)
+	_, err := callAPI[struct{}](ctx, c, http.MethodPut, "myTado", "/zones/"+strconv.Itoa(zoneID)+"/earlyStart", input)
 	return err
 }
 
@@ -174,7 +174,7 @@ const (
 
 // GetZoneAutoConfiguration returns the ZoneAwayConfiguration for the specified zone
 func (c *APIClient) GetZoneAutoConfiguration(ctx context.Context, zoneID int) (configuration ZoneAwayConfiguration, err error) {
-	return callAPI[ZoneAwayConfiguration](c, ctx, http.MethodGet, "myTado", "/zones/"+strconv.Itoa(zoneID)+"/schedule/awayConfiguration", nil)
+	return callAPI[ZoneAwayConfiguration](ctx, c, http.MethodGet, "myTado", "/zones/"+strconv.Itoa(zoneID)+"/schedule/awayConfiguration", nil)
 }
 
 // SetZoneAutoConfiguration sets the ZoneAwayConfiguration for the specified zone
@@ -185,6 +185,6 @@ func (c *APIClient) SetZoneAutoConfiguration(ctx context.Context, zoneID int, co
 		configuration.ComfortLevel != Comfort {
 		return fmt.Errorf("invalid ComfortLevel: %d", configuration.ComfortLevel)
 	}
-	_, err = callAPI[struct{}](c, ctx, http.MethodPut, "myTado", "/zones/"+strconv.Itoa(zoneID)+"/schedule/awayConfiguration", configuration)
+	_, err = callAPI[struct{}](ctx, c, http.MethodPut, "myTado", "/zones/"+strconv.Itoa(zoneID)+"/schedule/awayConfiguration", configuration)
 	return
 }

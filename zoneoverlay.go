@@ -2,6 +2,7 @@ package tado
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"strconv"
 	"time"
@@ -39,12 +40,49 @@ func (c *APIClient) SetZoneTemporaryOverlay(ctx context.Context, zoneID int, tem
 		Termination: termination,
 	}
 
-	_, err = callAPI[string](c, ctx, http.MethodPut, "myTado", "/zones/"+strconv.Itoa(zoneID)+"/overlay", request)
+	_, err = callAPI[string](ctx, c, http.MethodPut, "myTado", "/zones/"+strconv.Itoa(zoneID)+"/overlay", request)
 	return
 }
 
 // DeleteZoneOverlay deletes the overlay (manual temperature setting) for the specified ZoneID
 func (c *APIClient) DeleteZoneOverlay(ctx context.Context, zoneID int) error {
-	_, err := callAPI[string](c, ctx, http.MethodDelete, "myTado", "/zones/"+strconv.Itoa(zoneID)+"/overlay", nil)
+	_, err := callAPI[string](ctx, c, http.MethodDelete, "myTado", "/zones/"+strconv.Itoa(zoneID)+"/overlay", nil)
+	return err
+}
+
+// DefaultOverlay defines what happens when a user sets a manual temperature setting ("overlay") on the TRV.
+// Type can be "MANUAL", "TADO_MODE" or "TIMER". For "TIMER", the DurationInSeconds must be set.
+type DefaultOverlay struct {
+	TerminationCondition struct {
+		Type              string `json:"type"`
+		DurationInSeconds int    `json:"durationInSeconds"`
+	} `json:"terminationCondition"`
+}
+
+func (o DefaultOverlay) isValid() (string, bool) {
+	switch o.TerminationCondition.Type {
+	case "TADO_MODE":
+	case "MANUAL":
+	case "TIMER":
+		if o.TerminationCondition.DurationInSeconds == 0 {
+			return "DurationInSeconds must be set for TIMER overlay", false
+		}
+	default:
+		return "invalid type: " + o.TerminationCondition.Type, false
+	}
+	return "", true
+}
+
+// GetDefaultOverlay returns the DefaultOverlay for the specified zone.
+func (c *APIClient) GetDefaultOverlay(ctx context.Context, zoneID int) (DefaultOverlay, error) {
+	return callAPI[DefaultOverlay](ctx, c, http.MethodGet, "myTado", "/zones/"+strconv.Itoa(zoneID)+"/defaultOverlay", nil)
+}
+
+// SetDefaultOverlay sets the DefaultOverlay for the specified zone.
+func (c *APIClient) SetDefaultOverlay(ctx context.Context, zoneID int, mode DefaultOverlay) error {
+	if reason, valid := mode.isValid(); !valid {
+		return fmt.Errorf("invalid overlay: %s", reason)
+	}
+	_, err := callAPI[struct{}](ctx, c, http.MethodPut, "myTado", "/zones/"+strconv.Itoa(zoneID)+"/defaultOverlay", mode)
 	return err
 }

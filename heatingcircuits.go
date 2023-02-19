@@ -14,5 +14,5 @@ type HeatingCircuit struct {
 
 // GetHeatingCircuits returns all registered heating circuits
 func (c *APIClient) GetHeatingCircuits(ctx context.Context) (output []HeatingCircuit, err error) {
-	return callAPI[[]HeatingCircuit](c, ctx, http.MethodGet, "myTado", "/heatingCircuits", nil)
+	return callAPI[[]HeatingCircuit](ctx, c, http.MethodGet, "myTado", "/heatingCircuits", nil)
 }

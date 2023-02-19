@@ -42,7 +42,7 @@ func TestAPIClient_Authentication(t *testing.T) {
 	_, s := makeTestServer(response, nil)
 
 	auth := fakeAuthenticator{}
-	c := NewWithAuthenticator(&auth)
+	c := newWithAuthenticator(&auth)
 	c.apiURL = buildURLMap(s.URL)
 
 	auth.Token = "4321"
@@ -109,7 +109,7 @@ func TestAPIClient_TooManyRequests(t *testing.T) {
 	defer s.Close()
 
 	auth := fakeAuthenticator{Token: "1234"}
-	c := NewWithAuthenticator(&auth)
+	c := newWithAuthenticator(&auth)
 	c.apiURL = buildURLMap(s.URL)
 
 	_, err := c.GetZones(context.Background())
@@ -124,7 +124,7 @@ func TestAPIClient_NoHomes(t *testing.T) {
 	defer s.Close()
 
 	auth := fakeAuthenticator{Token: "1234"}
-	c := NewWithAuthenticator(&auth)
+	c := newWithAuthenticator(&auth)
 	c.apiURL = buildURLMap(s.URL)
 
 	_, err := c.GetZones(context.Background())
@@ -136,7 +136,7 @@ func makeTestServer(response any, middleware func(ctx context.Context) bool) (*A
 	const token = "1234"
 	s := httptest.NewServer(authenticationHandler(token)(responder(response, middleware)))
 
-	c := NewWithAuthenticator(&fakeAuthenticator{Token: token})
+	c := newWithAuthenticator(&fakeAuthenticator{Token: token})
 	c.apiURL = buildURLMap(s.URL)
 
 	return c, s

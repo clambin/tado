@@ -66,7 +66,7 @@ func (c *APIClient) GetEnergySavings(ctx context.Context) (reports []EnergySavin
 	type response struct {
 		Reports []EnergySavingsReport `json:"reports"`
 	}
-	output, err := callAPI[response](c, ctx, http.MethodGet, "bob", "/", nil)
+	output, err := callAPI[response](ctx, c, http.MethodGet, "bob", "/", nil)
 	if err == nil {
 		reports = output.Reports
 	}

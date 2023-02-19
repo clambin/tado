@@ -28,7 +28,7 @@ func (c *APIClient) GetRunningTimes(ctx context.Context, from, to time.Time) (ru
 	type response struct {
 		RunningTimes []RunningTime `json:"runningTimes"`
 	}
-	output, err := callAPI[response](c, ctx, http.MethodGet, "minder", "/runningTimes"+buildFromToArgs(from, to), nil)
+	output, err := callAPI[response](ctx, c, http.MethodGet, "minder", "/runningTimes"+buildFromToArgs(from, to), nil)
 	if err == nil {
 		runningTimes = output.RunningTimes
 	}
