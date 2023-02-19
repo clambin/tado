@@ -20,7 +20,6 @@ func TestRoundTripper_RoundTrip(t *testing.T) {
 	resp, err := c.Do(req)
 	require.NoError(t, err)
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
-	assert.True(t, auth.set)
 
 	auth = fakeAuthenticator{Token: "4321"}
 	c = http.Client{Transport: roundTripper{authenticator: &auth}}
@@ -28,5 +27,4 @@ func TestRoundTripper_RoundTrip(t *testing.T) {
 	resp, err = c.Do(req)
 	require.NoError(t, err)
 	assert.Equal(t, http.StatusForbidden, resp.StatusCode)
-	assert.False(t, auth.set)
 }

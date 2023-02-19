@@ -18,10 +18,5 @@ func (r roundTripper) RoundTrip(request *http.Request) (*http.Response, error) {
 	}
 	request.Header.Set("Authorization", "Bearer "+token)
 
-	resp, err := http.DefaultTransport.RoundTrip(request)
-	if err == nil && resp.StatusCode == http.StatusForbidden {
-		// we're authenticated, but getting forbidden: reset the authenticator to use password-based auth next
-		r.authenticator.Reset()
-	}
-	return resp, err
+	return http.DefaultTransport.RoundTrip(request)
 }

@@ -49,11 +49,19 @@ func TestAPIClient_Authentication(t *testing.T) {
 	_, err := c.GetZones(context.Background())
 	assert.Error(t, err)
 	assert.Equal(t, "403 Forbidden", err.Error())
+	assert.False(t, auth.set)
 
 	auth.Token = "1234"
 	_, err = c.GetZones(context.Background())
 	require.NoError(t, err)
 	assert.Equal(t, 242, c.activeHomeID)
+	assert.True(t, auth.set)
+
+	auth.Token = "4321"
+	_, err = c.GetZones(context.Background())
+	assert.Error(t, err)
+	assert.Equal(t, "403 Forbidden", err.Error())
+	assert.False(t, auth.set)
 
 	s.Close()
 	_, err = c.GetZones(context.Background())
