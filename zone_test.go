@@ -5,6 +5,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"testing"
+	"time"
 )
 
 func TestAPIClient_GetZones(t *testing.T) {
@@ -211,5 +212,16 @@ func TestAPIClient_GetZoneMeasuringDevice(t *testing.T) {
 	output, err := c.GetZoneMeasuringDevice(ctx, 1)
 	require.NoError(t, err)
 	assert.Equal(t, info, output)
+}
 
+func TestAPIClient_GetZoneDayReport(t *testing.T) {
+	var info DayReport
+
+	c, s := makeTestServer(info, nil)
+	defer s.Close()
+
+	ctx := context.Background()
+	output, err := c.GetZoneDayReport(ctx, 1, time.Now())
+	require.NoError(t, err)
+	assert.Equal(t, info, output)
 }

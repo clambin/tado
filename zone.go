@@ -195,3 +195,137 @@ type ZoneMeasuringDevice struct {
 func (c *APIClient) GetZoneMeasuringDevice(ctx context.Context, zoneID int) (measuringDevice ZoneMeasuringDevice, err error) {
 	return callAPI[ZoneMeasuringDevice](ctx, c, http.MethodGet, "myTado", "/zones/"+strconv.Itoa(zoneID)+"/measuringDevice", nil)
 }
+
+// DayReport gives overview of heating, temperature, humidity, etc. for a given zone on a given day
+type DayReport struct {
+	CallForHeat struct {
+		DataIntervals []struct {
+			From  time.Time `json:"from"`
+			To    time.Time `json:"to"`
+			Value string    `json:"value"`
+		} `json:"dataIntervals"`
+		TimeSeriesType string `json:"timeSeriesType"`
+		ValueType      string `json:"valueType"`
+	} `json:"callForHeat"`
+	HoursInDay int `json:"hoursInDay"`
+	Interval   struct {
+		From time.Time `json:"from"`
+		To   time.Time `json:"to"`
+	} `json:"interval"`
+	MeasuredData struct {
+		Humidity struct {
+			DataPoints []struct {
+				Timestamp time.Time `json:"timestamp"`
+				Value     float64   `json:"value"`
+			} `json:"dataPoints"`
+			Max            float64 `json:"max"`
+			Min            float64 `json:"min"`
+			PercentageUnit string  `json:"percentageUnit"`
+			TimeSeriesType string  `json:"timeSeriesType"`
+			ValueType      string  `json:"valueType"`
+		} `json:"humidity"`
+		InsideTemperature struct {
+			DataPoints []struct {
+				Timestamp time.Time   `json:"timestamp"`
+				Value     Temperature `json:"value"`
+			} `json:"dataPoints"`
+			Max            Temperature `json:"max"`
+			Min            Temperature `json:"min"`
+			TimeSeriesType string      `json:"timeSeriesType"`
+			ValueType      string      `json:"valueType"`
+		} `json:"insideTemperature"`
+		MeasuringDeviceConnected struct {
+			DataIntervals []struct {
+				From  time.Time `json:"from"`
+				To    time.Time `json:"to"`
+				Value bool      `json:"value"`
+			} `json:"dataIntervals"`
+			TimeSeriesType string `json:"timeSeriesType"`
+			ValueType      string `json:"valueType"`
+		} `json:"measuringDeviceConnected"`
+	} `json:"measuredData"`
+	Settings struct {
+		DataIntervals []struct {
+			From  time.Time `json:"from"`
+			To    time.Time `json:"to"`
+			Value struct {
+				Power       string      `json:"power"`
+				Temperature Temperature `json:"temperature"`
+				Type        string      `json:"type"`
+			} `json:"value"`
+		} `json:"dataIntervals"`
+		TimeSeriesType string `json:"timeSeriesType"`
+		ValueType      string `json:"valueType"`
+	} `json:"settings"`
+	Stripes struct {
+		DataIntervals []struct {
+			From  time.Time `json:"from"`
+			To    time.Time `json:"to"`
+			Value struct {
+				Setting struct {
+					Power       string      `json:"power"`
+					Temperature Temperature `json:"temperature"`
+					Type        string      `json:"type"`
+				} `json:"setting"`
+				StripeType string `json:"stripeType"`
+			} `json:"value"`
+		} `json:"dataIntervals"`
+		TimeSeriesType string `json:"timeSeriesType"`
+		ValueType      string `json:"valueType"`
+	} `json:"stripes"`
+	Weather struct {
+		Condition struct {
+			DataIntervals []struct {
+				From  time.Time `json:"from"`
+				To    time.Time `json:"to"`
+				Value struct {
+					State       string      `json:"state"`
+					Temperature Temperature `json:"temperature"`
+				} `json:"value"`
+			} `json:"dataIntervals"`
+			TimeSeriesType string `json:"timeSeriesType"`
+			ValueType      string `json:"valueType"`
+		} `json:"condition"`
+		Slots struct {
+			Slots struct {
+				Field1 struct {
+					State       string      `json:"state"`
+					Temperature Temperature `json:"temperature"`
+				} `json:"04:00"`
+				Field2 struct {
+					State       string      `json:"state"`
+					Temperature Temperature `json:"temperature"`
+				} `json:"08:00"`
+				Field3 struct {
+					State       string      `json:"state"`
+					Temperature Temperature `json:"temperature"`
+				} `json:"12:00"`
+				Field4 struct {
+					State       string      `json:"state"`
+					Temperature Temperature `json:"temperature"`
+				} `json:"16:00"`
+				Field5 struct {
+					State       string      `json:"state"`
+					Temperature Temperature `json:"temperature"`
+				} `json:"20:00"`
+			} `json:"slots"`
+			TimeSeriesType string `json:"timeSeriesType"`
+			ValueType      string `json:"valueType"`
+		} `json:"slots"`
+		Sunny struct {
+			DataIntervals []struct {
+				From  time.Time `json:"from"`
+				To    time.Time `json:"to"`
+				Value bool      `json:"value"`
+			} `json:"dataIntervals"`
+			TimeSeriesType string `json:"timeSeriesType"`
+			ValueType      string `json:"valueType"`
+		} `json:"sunny"`
+	} `json:"weather"`
+	ZoneType string `json:"zoneType"`
+}
+
+// GetZoneDayReport returns the DayReport for the specified zone on the specified day
+func (c *APIClient) GetZoneDayReport(ctx context.Context, zoneID int, date time.Time) (report DayReport, err error) {
+	return callAPI[DayReport](ctx, c, http.MethodGet, "myTado", "/zones/"+strconv.Itoa(zoneID)+"/dayReport?date="+date.Format("2006-01-02"), nil)
+}
