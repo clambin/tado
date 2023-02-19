@@ -1,9 +1,7 @@
 package tado
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
 )
@@ -28,14 +26,12 @@ type Home struct {
 
 // GetAccount returns the Account information for the account used to log into the Tado API servers.
 func (c *APIClient) GetAccount(ctx context.Context) (Account, error) {
-	var me Account
-	err := c.call(ctx, http.MethodGet, "me", "", nil, &me)
-	return me, err
+	return callAPI[Account](c, ctx, http.MethodGet, "me", "", nil)
 }
 
 // GetHomes returns all homes registered under the account used to log into the Tado API servers.
 func (c *APIClient) GetHomes(ctx context.Context) (homeNames []string, err error) {
-	if err = c.initialize(ctx); err == nil {
+	if err = c.getActiveHomeID(ctx); err == nil {
 		for _, home := range c.account.Homes {
 			homeNames = append(homeNames, home.Name)
 		}
@@ -45,7 +41,7 @@ func (c *APIClient) GetHomes(ctx context.Context) (homeNames []string, err error
 
 // SetActiveHome sets the active home for all subsequent API calls. By default, the first registered home is used.
 func (c *APIClient) SetActiveHome(ctx context.Context, name string) (err error) {
-	if err = c.initialize(ctx); err == nil {
+	if err = c.getActiveHomeID(ctx); err == nil {
 		for _, home := range c.account.Homes {
 			if home.Name == name {
 				c.lock.Lock()
@@ -61,7 +57,7 @@ func (c *APIClient) SetActiveHome(ctx context.Context, name string) (err error) 
 
 // GetActiveHome returns the current active Home
 func (c *APIClient) GetActiveHome(ctx context.Context) (Home, bool) {
-	if err := c.initialize(ctx); err == nil {
+	if err := c.getActiveHomeID(ctx); err == nil {
 		if c.account != nil {
 			for _, home := range c.account.Homes {
 				if home.ID == c.activeHomeID {
@@ -103,10 +99,7 @@ type HomeInfo struct {
 
 // GetHomeInfo returns detailed information about the active Home
 func (c *APIClient) GetHomeInfo(ctx context.Context) (homeInfo HomeInfo, err error) {
-	if err = c.initialize(ctx); err == nil {
-		err = c.call(ctx, http.MethodGet, "myTado", "", nil, &homeInfo)
-	}
-	return homeInfo, err
+	return callAPI[HomeInfo](c, ctx, http.MethodGet, "myTado", "", nil)
 }
 
 // HomeState contains the home state (HOME/AWAY)
@@ -117,34 +110,25 @@ type HomeState struct {
 
 // GetHomeState returns the home state (HOME/AWAY)
 func (c *APIClient) GetHomeState(ctx context.Context) (homeState HomeState, err error) {
-	if err = c.initialize(ctx); err == nil {
-		err = c.call(ctx, http.MethodGet, "myTado", "/state", nil, &homeState)
-	}
-	return homeState, err
+	return callAPI[HomeState](c, ctx, http.MethodGet, "myTado", "/state", nil)
 }
 
 // SetHomeState sets the home state (HOME/AWAY)
-func (c *APIClient) SetHomeState(ctx context.Context, home bool) (err error) {
-	if err = c.initialize(ctx); err == nil {
-		var homeState struct {
-			HomePresence string `json:"homePresence"`
-		}
-		if home {
-			homeState.HomePresence = "HOME"
-		} else {
-			homeState.HomePresence = "AWAY"
-		}
-		buf := new(bytes.Buffer)
-		err = json.NewEncoder(buf).Encode(homeState)
-		err = c.call(ctx, http.MethodPut, "myTado", "/presenceLock", buf, nil)
+func (c *APIClient) SetHomeState(ctx context.Context, home bool) error {
+	var homeState struct {
+		HomePresence string `json:"homePresence"`
 	}
+	if home {
+		homeState.HomePresence = "HOME"
+	} else {
+		homeState.HomePresence = "AWAY"
+	}
+	_, err := callAPI[string](c, ctx, http.MethodPut, "myTado", "/presenceLock", homeState)
 	return err
 }
 
 // UnsetHomeState removes any manual presence set by SetHomeState
-func (c *APIClient) UnsetHomeState(ctx context.Context) (err error) {
-	if err = c.initialize(ctx); err == nil {
-		err = c.call(ctx, http.MethodDelete, "myTado", "/presenceLock", nil, nil)
-	}
+func (c *APIClient) UnsetHomeState(ctx context.Context) error {
+	_, err := callAPI[string](c, ctx, http.MethodDelete, "myTado", "/presenceLock", nil)
 	return err
 }

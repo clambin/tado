@@ -54,7 +54,6 @@ func (a *Authenticator) Reset() {
 
 func (a *Authenticator) authenticate(ctx context.Context, grantType, credential string) error {
 	req, _ := http.NewRequestWithContext(ctx, http.MethodPost, a.getURL(), strings.NewReader(a.buildForm(grantType, credential).Encode()))
-	// TODO: is this needed?
 	req.Header.Add("Referer", "https://my.tado.com/")
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 	//req.Header.Add("Accept-Encoding", "application/json")

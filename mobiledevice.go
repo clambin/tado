@@ -48,10 +48,7 @@ type MobileDeviceLocation struct {
 
 // GetMobileDevices retrieves the status of all registered mobile devices.
 func (c *APIClient) GetMobileDevices(ctx context.Context) (tadoMobileDevices []MobileDevice, err error) {
-	if err = c.initialize(ctx); err == nil {
-		err = c.call(ctx, http.MethodGet, "myTado", "/mobileDevices", nil, &tadoMobileDevices)
-	}
-	return
+	return callAPI[[]MobileDevice](c, ctx, http.MethodGet, "myTado", "/mobileDevices", nil)
 }
 
 // MobileDeviceLocationState is the state of the user's device (mobile phone), i.e. home or away

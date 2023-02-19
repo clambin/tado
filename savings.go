@@ -63,11 +63,12 @@ type EnergySavingsReport struct {
 
 // GetEnergySavings returns all EnergySavingsReports
 func (c *APIClient) GetEnergySavings(ctx context.Context) (reports []EnergySavingsReport, err error) {
-	var output struct {
+	type response struct {
 		Reports []EnergySavingsReport `json:"reports"`
 	}
-	if err = c.initialize(ctx); err == nil {
-		err = c.call(ctx, http.MethodGet, "bob", "/", nil, &output)
+	output, err := callAPI[response](c, ctx, http.MethodGet, "bob", "/", nil)
+	if err == nil {
+		reports = output.Reports
 	}
-	return output.Reports, err
+	return
 }

@@ -39,10 +39,7 @@ type ConsumptionPerDay struct {
 
 // GetConsumption returns Consumption reports per day for the period between start and end date
 func (c *APIClient) GetConsumption(ctx context.Context, country string, start, end time.Time) (consumption Consumption, err error) {
-	if err = c.initialize(ctx); err == nil {
-		err = c.call(ctx, http.MethodGet, "insights", "/consumption?"+buildConsumptionArgs(country, start, end).Encode(), nil, &consumption)
-	}
-	return
+	return callAPI[Consumption](c, ctx, http.MethodGet, "insights", "/consumption?"+buildConsumptionArgs(country, start, end).Encode(), nil)
 }
 
 func buildConsumptionArgs(country string, start, end time.Time) url.Values {

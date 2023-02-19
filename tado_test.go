@@ -39,10 +39,11 @@ func TestAPIClient_Authentication(t *testing.T) {
 		{ID: 2, Name: "bar", Devices: []Device{{DeviceType: "bar", CurrentFwVersion: "v1.0", ConnectionState: ConnectionState{Value: false}, BatteryState: "OK"}}},
 	}
 
-	c, s := makeTestServer(response, nil)
+	_, s := makeTestServer(response, nil)
 
 	auth := fakeAuthenticator{}
-	c.authenticator = &auth
+	c := NewWithAuthenticator(&auth)
+	c.apiURL = buildURLMap(s.URL)
 
 	auth.Token = "4321"
 	_, err := c.GetZones(context.Background())
@@ -107,9 +108,9 @@ func TestAPIClient_TooManyRequests(t *testing.T) {
 	}))
 	defer s.Close()
 
-	c := New("", "", "")
+	auth := fakeAuthenticator{Token: "1234"}
+	c := NewWithAuthenticator(&auth)
 	c.apiURL = buildURLMap(s.URL)
-	c.authenticator = fakeAuthenticator{Token: "1234"}
 
 	_, err := c.GetZones(context.Background())
 	require.Error(t, err)
@@ -122,9 +123,9 @@ func TestAPIClient_NoHomes(t *testing.T) {
 	}))
 	defer s.Close()
 
-	c := New("", "", "")
+	auth := fakeAuthenticator{Token: "1234"}
+	c := NewWithAuthenticator(&auth)
 	c.apiURL = buildURLMap(s.URL)
-	c.authenticator = fakeAuthenticator{Token: "1234"}
 
 	_, err := c.GetZones(context.Background())
 	assert.Error(t, err)
@@ -135,9 +136,8 @@ func makeTestServer(response any, middleware func(ctx context.Context) bool) (*A
 	const token = "1234"
 	s := httptest.NewServer(authenticationHandler(token)(responder(response, middleware)))
 
-	c := New("", "", "")
+	c := NewWithAuthenticator(&fakeAuthenticator{Token: token})
 	c.apiURL = buildURLMap(s.URL)
-	c.authenticator = fakeAuthenticator{Token: token}
 
 	return c, s
 }
@@ -159,14 +159,17 @@ func responder(response any, middleware func(ctx context.Context) bool) http.Han
 }
 
 type fakeAuthenticator struct {
+	set   bool
 	Token string
 }
 
-func (f fakeAuthenticator) GetAuthToken(_ context.Context) (string, error) {
+func (f *fakeAuthenticator) GetAuthToken(_ context.Context) (string, error) {
+	f.set = true
 	return f.Token, nil
 }
 
-func (f fakeAuthenticator) Reset() {
+func (f *fakeAuthenticator) Reset() {
+	f.set = false
 }
 
 var _ authenticator = &fakeAuthenticator{}

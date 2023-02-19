@@ -1,9 +1,7 @@
 package tado
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"github.com/clambin/go-common/set"
 	"net/http"
@@ -30,30 +28,18 @@ const (
 
 // GetTimeTables returns the possible Timetable options for the provided zone
 func (c *APIClient) GetTimeTables(ctx context.Context, zoneID int) (timeTables []Timetable, err error) {
-	if err = c.initialize(ctx); err == nil {
-		err = c.call(ctx, http.MethodGet, "myTado", "/zones/"+strconv.Itoa(zoneID)+"/schedule/timetables", nil, &timeTables)
-	}
-	return
+	return callAPI[[]Timetable](c, ctx, http.MethodGet, "myTado", "/zones/"+strconv.Itoa(zoneID)+"/schedule/timetables", nil)
 }
 
 // GetActiveTimeTable returns the active Timetable for the provided zone
 func (c *APIClient) GetActiveTimeTable(ctx context.Context, zoneID int) (timeTable Timetable, err error) {
-	if err = c.initialize(ctx); err == nil {
-		err = c.call(ctx, http.MethodGet, "myTado", "/zones/"+strconv.Itoa(zoneID)+"/schedule/activeTimetable", nil, &timeTable)
-	}
-	return
+	return callAPI[Timetable](c, ctx, http.MethodGet, "myTado", "/zones/"+strconv.Itoa(zoneID)+"/schedule/activeTimetable", nil)
 }
 
 // SetActiveTimeTable sets the active Timetable for the provided zone
-func (c *APIClient) SetActiveTimeTable(ctx context.Context, zoneID int, timeTable Timetable) (err error) {
-	if err = c.initialize(ctx); err == nil {
-		buf := new(bytes.Buffer)
-		err = json.NewEncoder(buf).Encode(timeTable)
-		if err == nil {
-			err = c.call(ctx, http.MethodPut, "myTado", "/zones/"+strconv.Itoa(zoneID)+"/schedule/activeTimetable", buf, nil)
-		}
-	}
-	return
+func (c *APIClient) SetActiveTimeTable(ctx context.Context, zoneID int, timeTable Timetable) error {
+	_, err := callAPI[struct{}](c, ctx, http.MethodPut, "myTado", "/zones/"+strconv.Itoa(zoneID)+"/schedule/activeTimetable", timeTable)
+	return err
 }
 
 // A Block is an entry in a Timetable. It specifies the heating settings (as per the Setting attribute) for the zone at the specified time range (specified by Start and End times)
@@ -67,12 +53,9 @@ type Block struct {
 
 // GetTimeTableBlocks returns all Block entries for a zone and timetable
 func (c *APIClient) GetTimeTableBlocks(ctx context.Context, zoneID int, timetableID TimetableID) (blocks []Block, err error) {
-	if err = c.initialize(ctx); err == nil {
-		err = c.call(ctx, http.MethodGet, "myTado",
-			"/zones/"+strconv.Itoa(zoneID)+"/schedule/timetables/"+strconv.Itoa(int(timetableID))+"/blocks",
-			nil, &blocks)
-	}
-	return
+	return callAPI[[]Block](c, ctx, http.MethodGet, "myTado",
+		"/zones/"+strconv.Itoa(zoneID)+"/schedule/timetables/"+strconv.Itoa(int(timetableID))+"/blocks",
+		nil)
 }
 
 // GetTimeTableBlocksForDayType returns all Block entries for a zone, timetable and day type.
@@ -85,29 +68,20 @@ func (c *APIClient) GetTimeTableBlocksForDayType(ctx context.Context, zoneID int
 	if err = validateDayType(timetableID, dayType); err != nil {
 		return nil, err
 	}
-	if err = c.initialize(ctx); err == nil {
-		err = c.call(ctx, http.MethodGet, "myTado",
-			"/zones/"+strconv.Itoa(zoneID)+"/schedule/timetables/"+strconv.Itoa(int(timetableID))+"/blocks/"+dayType,
-			nil, &blocks)
-	}
-	return
+	return callAPI[[]Block](c, ctx, http.MethodGet, "myTado",
+		"/zones/"+strconv.Itoa(zoneID)+"/schedule/timetables/"+strconv.Itoa(int(timetableID))+"/blocks/"+dayType,
+		nil)
 }
 
 // SetTimeTableBlocksForDayType sets the Block entries for a zone, timetable and day type.
-func (c *APIClient) SetTimeTableBlocksForDayType(ctx context.Context, zoneID int, timetableID TimetableID, dayType string, blocks []Block) (err error) {
-	if err = validateDayType(timetableID, dayType); err != nil {
+func (c *APIClient) SetTimeTableBlocksForDayType(ctx context.Context, zoneID int, timetableID TimetableID, dayType string, blocks []Block) error {
+	if err := validateDayType(timetableID, dayType); err != nil {
 		return err
 	}
-	if err = c.initialize(ctx); err == nil {
-		buf := new(bytes.Buffer)
-		err = json.NewEncoder(buf).Encode(blocks)
-		if err == nil {
-			err = c.call(ctx, http.MethodPut, "myTado",
-				"/zones/"+strconv.Itoa(zoneID)+"/schedule/timetables/"+strconv.Itoa(int(timetableID))+"/blocks/"+dayType,
-				buf, nil)
-		}
-	}
-	return
+	_, err := callAPI[string](c, ctx, http.MethodPut, "myTado",
+		"/zones/"+strconv.Itoa(zoneID)+"/schedule/timetables/"+strconv.Itoa(int(timetableID))+"/blocks/"+dayType,
+		blocks)
+	return err
 }
 
 var validDayTypes = map[TimetableID]set.Set[string]{
