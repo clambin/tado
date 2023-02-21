@@ -15,42 +15,28 @@ func TestAPIClient_ZoneOverlay(t *testing.T) {
 	tests := []struct {
 		name          string
 		action        func(ctx context.Context, client *APIClient) error
-		expectedState ZoneState
+		expectedState OverlayTerminationMode
 	}{
 		{
 			name: "manual",
 			action: func(ctx context.Context, client *APIClient) error {
 				return client.SetZoneOverlay(ctx, 1, 18.0)
 			},
-			expectedState: ZoneStateManual,
-		},
-		{
-			name: "off",
-			action: func(ctx context.Context, client *APIClient) error {
-				return client.SetZoneOverlay(ctx, 1, 1.0)
-			},
-			expectedState: ZoneStateOff,
+			expectedState: PermanentOverlay,
 		},
 		{
 			name: "temp manual",
 			action: func(ctx context.Context, client *APIClient) error {
 				return client.SetZoneTemporaryOverlay(ctx, 1, 18.0, time.Hour)
 			},
-			expectedState: ZoneStateTemporaryManual,
+			expectedState: TimerOverlay,
 		},
 		{
-			name: "temp off",
-			action: func(ctx context.Context, client *APIClient) error {
-				return client.SetZoneTemporaryOverlay(ctx, 1, 1.0, time.Hour)
-			},
-			expectedState: ZoneStateOff,
-		},
-		{
-			name: "temp not temp",
+			name: "manual (duration not set)",
 			action: func(ctx context.Context, client *APIClient) error {
 				return client.SetZoneTemporaryOverlay(ctx, 1, 18.0, 0)
 			},
-			expectedState: ZoneStateManual,
+			expectedState: PermanentOverlay,
 		},
 	}
 
@@ -67,21 +53,21 @@ func TestAPIClient_ZoneOverlay(t *testing.T) {
 
 			zoneInfo, err := c.GetZoneInfo(ctx, 1)
 			require.NoError(t, err)
-			assert.Equal(t, ZoneStateAuto, zoneInfo.GetState())
+			assert.Equal(t, NoOverlay, zoneInfo.Overlay.GetMode())
 
 			err = tt.action(ctx, c)
 			require.NoError(t, err)
 
 			zoneInfo, err = c.GetZoneInfo(ctx, 1)
 			require.NoError(t, err)
-			assert.Equal(t, tt.expectedState, zoneInfo.GetState())
+			assert.Equal(t, tt.expectedState, zoneInfo.Overlay.GetMode())
 
 			err = c.DeleteZoneOverlay(ctx, 1)
 			require.NoError(t, err)
 
 			zoneInfo, err = c.GetZoneInfo(ctx, 1)
 			require.NoError(t, err)
-			assert.Equal(t, ZoneStateAuto, zoneInfo.GetState())
+			assert.Equal(t, NoOverlay, zoneInfo.Overlay.GetMode())
 
 			s.Close()
 			err = tt.action(ctx, c)
@@ -91,13 +77,14 @@ func TestAPIClient_ZoneOverlay(t *testing.T) {
 }
 
 type overlayManager struct {
-	zoneInfo ZoneInfo
+	zoneInfo      ZoneInfo
+	savedSettings *ZonePowerSetting
 }
 
 func newOverlayManager() *overlayManager {
 	return &overlayManager{
 		zoneInfo: ZoneInfo{
-			Setting:            ZoneInfoSetting{Power: "ON", Temperature: Temperature{Celsius: 22.5}},
+			Setting:            ZonePowerSetting{Power: "ON", Temperature: Temperature{Celsius: 22.5}},
 			ActivityDataPoints: ZoneInfoActivityDataPoints{HeatingPower: Percentage{Percentage: 80.0}},
 			SensorDataPoints:   ZoneInfoSensorDataPoints{InsideTemperature: Temperature{Celsius: 20.0}, Humidity: Percentage{Percentage: 75.0}},
 		},
@@ -113,12 +100,24 @@ func (o *overlayManager) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
 	case http.MethodPut:
-		if err := json.NewDecoder(req.Body).Decode(&o.zoneInfo.Overlay); err != nil {
+		var overlay ZoneInfoOverlay
+		if err := json.NewDecoder(req.Body).Decode(&overlay); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
+		overlay.Termination.TypeSkillBasedApp = overlay.Termination.Type
+		if o.savedSettings == nil {
+			o.savedSettings = &ZonePowerSetting{}
+			*o.savedSettings = o.zoneInfo.Setting
+		}
+		o.zoneInfo.Overlay = overlay
+		o.zoneInfo.Setting = overlay.Setting
 	case http.MethodDelete:
 		o.zoneInfo.Overlay = ZoneInfoOverlay{}
+		if o.savedSettings != nil {
+			o.zoneInfo.Setting = *o.savedSettings
+		}
+		o.savedSettings = nil
 		w.WriteHeader(http.StatusNoContent)
 	default:
 		http.Error(w, "invalid method", http.StatusMethodNotAllowed)

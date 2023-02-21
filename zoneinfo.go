@@ -15,7 +15,7 @@ type ZoneInfo struct {
 	GeolocationOverrideDisableTime interface{} `json:"geolocationOverrideDisableTime"`
 	// TODO
 	Preparation        interface{}        `json:"preparation"`
-	Setting            ZoneInfoSetting    `json:"setting"`
+	Setting            ZonePowerSetting   `json:"setting"`
 	OverlayType        string             `json:"overlayType"`
 	Overlay            ZoneInfoOverlay    `json:"overlay,omitempty"`
 	OpenWindow         ZoneInfoOpenWindow `json:"openwindow,omitempty"`
@@ -35,13 +35,6 @@ type ZoneInfo struct {
 	} `json:"link"`
 	ActivityDataPoints ZoneInfoActivityDataPoints `json:"activityDataPoints"`
 	SensorDataPoints   ZoneInfoSensorDataPoints   `json:"sensorDataPoints"`
-}
-
-// ZoneInfoSetting contains the zone's current power & target temperature
-type ZoneInfoSetting struct {
-	Type        string      `json:"type"`
-	Power       string      `json:"power"`
-	Temperature Temperature `json:"temperature"`
 }
 
 // ZoneInfoOpenWindow contains info on an open window. Only set if a window is open
@@ -88,6 +81,35 @@ type ZoneInfoActivityDataPoints struct {
 type ZoneInfoSensorDataPoints struct {
 	InsideTemperature Temperature `json:"insideTemperature"`
 	Humidity          Percentage  `json:"humidity"`
+}
+
+type OverlayTerminationMode int
+
+const (
+	UnknownOverlay OverlayTerminationMode = iota
+	NoOverlay
+	PermanentOverlay
+	TimerOverlay
+	NextBlockOverlay
+)
+
+// GetMode determines the type of overlay, i.e. permanent, timer-based or expiring at the next block change.
+func (z ZoneInfoOverlay) GetMode() OverlayTerminationMode {
+	if z.Type == "" {
+		return NoOverlay
+	}
+	switch z.Termination.Type {
+	case "MANUAL":
+		return PermanentOverlay
+	case "TIMER":
+		switch z.Termination.TypeSkillBasedApp {
+		case "TIMER":
+			return TimerOverlay
+		case "NEXT_TIME_BLOCK":
+			return NextBlockOverlay
+		}
+	}
+	return UnknownOverlay
 }
 
 // GetZoneInfo gets the info for the specified ZoneID

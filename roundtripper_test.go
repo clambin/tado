@@ -27,4 +27,10 @@ func TestRoundTripper_RoundTrip(t *testing.T) {
 	resp, err = c.Do(req)
 	require.NoError(t, err)
 	assert.Equal(t, http.StatusForbidden, resp.StatusCode)
+
+	auth.fail = true
+	req, _ = http.NewRequest(http.MethodGet, s.URL, nil)
+	_, err = c.Do(req)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "auth: failed")
 }

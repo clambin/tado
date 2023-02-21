@@ -40,13 +40,13 @@ func (c *APIClient) SetZoneTemporaryOverlay(ctx context.Context, zoneID int, tem
 		Termination: termination,
 	}
 
-	_, err = callAPI[string](ctx, c, http.MethodPut, "myTado", "/zones/"+strconv.Itoa(zoneID)+"/overlay", request)
+	_, err = callAPI[ZoneInfoOverlay](ctx, c, http.MethodPut, "myTado", "/zones/"+strconv.Itoa(zoneID)+"/overlay", request)
 	return
 }
 
 // DeleteZoneOverlay deletes the overlay (manual temperature setting) for the specified ZoneID
 func (c *APIClient) DeleteZoneOverlay(ctx context.Context, zoneID int) error {
-	_, err := callAPI[string](ctx, c, http.MethodDelete, "myTado", "/zones/"+strconv.Itoa(zoneID)+"/overlay", nil)
+	_, err := callAPI[struct{}](ctx, c, http.MethodDelete, "myTado", "/zones/"+strconv.Itoa(zoneID)+"/overlay", nil)
 	return err
 }
 

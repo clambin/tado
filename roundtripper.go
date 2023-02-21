@@ -17,6 +17,5 @@ func (r roundTripper) RoundTrip(request *http.Request) (*http.Response, error) {
 		return nil, fmt.Errorf("auth: %w", err)
 	}
 	request.Header.Set("Authorization", "Bearer "+token)
-
 	return http.DefaultTransport.RoundTrip(request)
 }

@@ -3,6 +3,7 @@ package tado
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -27,9 +28,8 @@ func TestAPIClient_GetZoneInfo_E2E(t *testing.T) {
 	require.NoError(t, err)
 
 	for _, zone := range zones {
-		zoneInfo, err := c.GetZoneInfo(ctx, zone.ID)
+		_, err := c.GetZoneInfo(ctx, zone.ID)
 		require.NoError(t, err)
-		t.Logf("%s: %s", zone.Name, zoneInfo.GetState())
 	}
 }
 
@@ -204,10 +204,14 @@ func (s *testServer[T]) handler(middleware func(ctx context.Context) bool) http.
 
 type fakeAuthenticator struct {
 	set   bool
+	fail  bool
 	Token string
 }
 
 func (f *fakeAuthenticator) GetAuthToken(_ context.Context) (string, error) {
+	if f.fail {
+		return "", errors.New("failed")
+	}
 	f.set = true
 	return f.Token, nil
 }

@@ -1,6 +1,8 @@
 package tado
 
 // ZoneState is the state of the zone, i.e. heating is off, controlled automatically, or controlled manually
+//
+// Deprecated: will be removed in a future release
 type ZoneState int
 
 const (
@@ -17,6 +19,8 @@ const (
 )
 
 // String returns a string representation of a ZoneState
+//
+// Deprecated: will be removed in a future release
 func (s ZoneState) String() string {
 	names := map[ZoneState]string{
 		ZoneStateUnknown:         "unknown",
@@ -33,20 +37,19 @@ func (s ZoneState) String() string {
 }
 
 // GetState returns the state of the zone
-func (zoneInfo ZoneInfo) GetState() ZoneState {
-	var state ZoneState
-	if zoneInfo.Overlay.Type == "MANUAL" && zoneInfo.Overlay.Setting.Type == "HEATING" {
-		if zoneInfo.Overlay.Setting.Power != "ON" || zoneInfo.Overlay.Setting.Temperature.Celsius <= 5.0 {
-			state = ZoneStateOff
-		} else if zoneInfo.Overlay.Termination.Type != "MANUAL" {
-			state = ZoneStateTemporaryManual
-		} else {
-			state = ZoneStateManual
-		}
-	} else if zoneInfo.Setting.Power != "ON" {
-		state = ZoneStateOff
-	} else {
-		state = ZoneStateAuto
+//
+// Deprecated: will be removed in a future release
+func (z ZoneInfo) GetState() ZoneState {
+	if z.Setting.Power == "OFF" {
+		return ZoneStateOff
 	}
-	return state
+	switch z.Overlay.GetMode() {
+	case NoOverlay:
+		return ZoneStateAuto
+	case PermanentOverlay:
+		return ZoneStateManual
+	case TimerOverlay, NextBlockOverlay:
+		return ZoneStateTemporaryManual
+	}
+	return ZoneStateUnknown
 }

@@ -81,7 +81,7 @@ func (c *APIClient) SetTimeTableBlocksForDayType(ctx context.Context, zoneID int
 	if err := validateDayType(timetableID, dayType); err != nil {
 		return err
 	}
-	_, err := callAPI[string](ctx, c, http.MethodPut, "myTado",
+	_, err := callAPI[struct{}](ctx, c, http.MethodPut, "myTado",
 		"/zones/"+strconv.Itoa(zoneID)+"/schedule/timetables/"+strconv.Itoa(int(timetableID))+"/blocks/"+dayType,
 		blocks)
 	return err

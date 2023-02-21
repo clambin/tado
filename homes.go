@@ -159,12 +159,12 @@ func (c *APIClient) SetHomeState(ctx context.Context, home bool) error {
 	} else {
 		homeState.HomePresence = "AWAY"
 	}
-	_, err := callAPI[string](ctx, c, http.MethodPut, "myTado", "/presenceLock", homeState)
+	_, err := callAPI[struct{}](ctx, c, http.MethodPut, "myTado", "/presenceLock", homeState)
 	return err
 }
 
 // UnsetHomeState removes any manual presence set by SetHomeState
 func (c *APIClient) UnsetHomeState(ctx context.Context) error {
-	_, err := callAPI[string](ctx, c, http.MethodDelete, "myTado", "/presenceLock", nil)
+	_, err := callAPI[struct{}](ctx, c, http.MethodDelete, "myTado", "/presenceLock", nil)
 	return err
 }
