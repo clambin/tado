@@ -86,7 +86,7 @@ func TestAPIClient_DecodeError(t *testing.T) {
 }
 
 func TestAPIClient_Timeout(t *testing.T) {
-	c, s := makeTestServer(nil, func(ctx context.Context) bool { return wait(ctx, 5*time.Second) })
+	c, s := makeTestServer(WeatherInfo{}, func(ctx context.Context) bool { return wait(ctx, 5*time.Second) })
 	defer s.Close()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
@@ -155,17 +155,22 @@ func TestAPIClient_NoHomes(t *testing.T) {
 	assert.Equal(t, "no homes detected", err.Error())
 }
 
-func makeTestServer(response any, middleware func(ctx context.Context) bool) (*APIClient, *httptest.Server) {
+func makeTestServer[T any](response T, middleware func(ctx context.Context) bool) (*APIClient, *httptest.Server) {
+	s := testServer[T]{content: response}
 	const token = "1234"
-	s := httptest.NewServer(authenticationHandler(token)(responder(response, middleware)))
+	h := httptest.NewServer(authenticationHandler(token)(s.handler(middleware)))
 
 	c := newWithAuthenticator(&fakeAuthenticator{Token: token})
-	c.apiURL = buildURLMap(s.URL)
+	c.apiURL = buildURLMap(h.URL)
 
-	return c, s
+	return c, h
 }
 
-func responder(response any, middleware func(ctx context.Context) bool) http.HandlerFunc {
+type testServer[T any] struct {
+	content T
+}
+
+func (s *testServer[T]) handler(middleware func(ctx context.Context) bool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 		if middleware != nil && !middleware(ctx) {
@@ -176,7 +181,23 @@ func responder(response any, middleware func(ctx context.Context) bool) http.Han
 		case "/me":
 			_, _ = w.Write([]byte(`{ "homes": [ { "id" : 242, "name": "home" } ] }`))
 		default:
-			_ = json.NewEncoder(w).Encode(response)
+			switch r.Method {
+			case http.MethodGet:
+				_ = json.NewEncoder(w).Encode(s.content)
+			case http.MethodPut:
+				if err := json.NewDecoder(r.Body).Decode(&s.content); err != nil {
+					e := ErrUnprocessableEntry{Err: &Error{
+						Errors: []errorEntry{{
+							Code:  "unprocessable entry",
+							Title: err.Error(),
+						}},
+					}}
+					_ = json.NewEncoder(w).Encode(e)
+					w.WriteHeader(http.StatusUnprocessableEntity)
+				}
+			default:
+				w.WriteHeader(http.StatusNotFound)
+			}
 		}
 	}
 }

@@ -13,7 +13,7 @@ import (
 )
 
 func TestAPIClient_GetHomes(t *testing.T) {
-	c, s := makeTestServer(nil, nil)
+	c, s := makeTestServer[Homes](nil, nil)
 	defer s.Close()
 
 	homes, err := c.GetHomes(context.Background())
@@ -22,7 +22,7 @@ func TestAPIClient_GetHomes(t *testing.T) {
 }
 
 func TestAPIClient_GetActiveHome(t *testing.T) {
-	c, s := makeTestServer(nil, nil)
+	c, s := makeTestServer[Homes](nil, nil)
 	defer s.Close()
 
 	ctx := context.Background()
@@ -32,7 +32,7 @@ func TestAPIClient_GetActiveHome(t *testing.T) {
 }
 
 func TestAPIClient_SetActiveHome(t *testing.T) {
-	c, s := makeTestServer(nil, nil)
+	c, s := makeTestServer[Homes](nil, nil)
 	defer s.Close()
 
 	err := c.SetActiveHome(context.Background(), 242)
@@ -43,7 +43,7 @@ func TestAPIClient_SetActiveHome(t *testing.T) {
 }
 
 func TestAPIClient_SetActiveHomeByName(t *testing.T) {
-	c, s := makeTestServer(nil, nil)
+	c, s := makeTestServer[Homes](nil, nil)
 	defer s.Close()
 
 	err := c.SetActiveHomeByName(context.Background(), "home")
@@ -66,12 +66,8 @@ func TestAPIClient_GetHomeInfo(t *testing.T) {
 func TestAPIClient_GetHomeState(t *testing.T) {
 	for _, state := range []string{"HOME", "AWAY"} {
 		t.Run(state, func(t *testing.T) {
-			s := homeStateServer{HomeState: HomeState{Presence: state}}
-			h := httptest.NewServer(http.HandlerFunc(s.Handle))
-			defer h.Close()
-
-			c := newWithAuthenticator(&fakeAuthenticator{Token: "1234"})
-			c.apiURL = buildURLMap(h.URL)
+			c, s := makeTestServer(HomeState{Presence: state}, nil)
+			defer s.Close()
 
 			output, err := c.GetHomeState(context.Background())
 			require.NoError(t, err)
@@ -92,10 +88,11 @@ func TestAPIClient_SetHomeState(t *testing.T) {
 	require.NoError(t, err)
 	err = c.SetHomeState(context.Background(), false)
 	require.NoError(t, err)
+	assert.True(t, s.HomeState.PresenceLocked)
 }
 
 func TestAPIClient_UnsetHomeState(t *testing.T) {
-	s := homeStateServer{HomeState: HomeState{Presence: "HOME"}}
+	s := homeStateServer{HomeState: HomeState{Presence: "HOME", PresenceLocked: true}}
 	h := httptest.NewServer(authenticationHandler("1234")(http.HandlerFunc(s.Handle)))
 	defer h.Close()
 
@@ -104,6 +101,7 @@ func TestAPIClient_UnsetHomeState(t *testing.T) {
 
 	err := c.UnsetHomeState(context.Background())
 	require.NoError(t, err)
+	assert.False(t, s.HomeState.PresenceLocked)
 }
 
 type homeStateServer struct {

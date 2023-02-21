@@ -178,7 +178,7 @@ func TestAPIClient_SetTimeTableBlocksForDayType(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			c, s := makeTestServer(nil, nil)
+			c, s := makeTestServer[[]Block](nil, nil)
 			defer s.Close()
 			err := c.SetTimeTableBlocksForDayType(context.Background(), 1, tt.timeTableID, tt.dayType, tt.input)
 			if !tt.pass {

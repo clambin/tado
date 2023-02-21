@@ -2,11 +2,8 @@ package tado
 
 import (
 	"context"
-	"encoding/json"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"net/http"
-	"net/http/httptest"
 	"testing"
 	"time"
 )
@@ -197,12 +194,8 @@ func TestAPIClient_SetZoneAwayAutoAdjust(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			h := zoneAwayHandler{}
-			s := httptest.NewServer(http.HandlerFunc(h.Handle))
+			c, s := makeTestServer(ZoneAwayConfiguration{}, nil)
 			defer s.Close()
-			a := fakeAuthenticator{}
-			c := newWithAuthenticator(&a)
-			c.apiURL = buildURLMap(s.URL)
 
 			err := c.SetZoneAwayAutoAdjust(context.Background(), 1, tt.comfortLevel)
 			if !tt.pass {
@@ -229,12 +222,8 @@ func TestAPIClient_SetZoneAwayManual(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			h := zoneAwayHandler{}
-			s := httptest.NewServer(http.HandlerFunc(h.Handle))
+			c, s := makeTestServer(ZoneAwayConfiguration{}, nil)
 			defer s.Close()
-			a := fakeAuthenticator{}
-			c := newWithAuthenticator(&a)
-			c.apiURL = buildURLMap(s.URL)
 
 			err := c.SetZoneAwayManual(context.Background(), 1, tt.temperature)
 			if !tt.pass {
@@ -252,29 +241,6 @@ func TestAPIClient_SetZoneAwayManual(t *testing.T) {
 				assert.Equal(t, tt.temperature, cfg.Setting.Temperature.Celsius)
 			}
 		})
-	}
-}
-
-type zoneAwayHandler struct {
-	zoneConfig ZoneAwayConfiguration
-}
-
-func (h *zoneAwayHandler) Handle(w http.ResponseWriter, r *http.Request) {
-	switch r.URL.Path {
-	case "/me":
-		_, _ = w.Write([]byte(`{ "homes": [ { "id" : 242, "name": "home" } ] }`))
-	default:
-		switch r.Method {
-		case http.MethodGet:
-			_ = json.NewEncoder(w).Encode(h.zoneConfig)
-		case http.MethodPut:
-			if err := json.NewDecoder(r.Body).Decode(&h.zoneConfig); err != nil {
-				http.Error(w, "", http.StatusUnprocessableEntity)
-			}
-		default:
-			http.Error(w, r.Method, http.StatusMethodNotAllowed)
-		}
-
 	}
 }
 
