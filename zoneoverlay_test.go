@@ -99,7 +99,7 @@ func newOverlayManager() *overlayManager {
 		zoneInfo: ZoneInfo{
 			Setting:            ZoneInfoSetting{Power: "ON", Temperature: Temperature{Celsius: 22.5}},
 			ActivityDataPoints: ZoneInfoActivityDataPoints{HeatingPower: Percentage{Percentage: 80.0}},
-			SensorDataPoints:   ZoneInfoSensorDataPoints{Temperature: Temperature{Celsius: 20.0}, Humidity: Percentage{Percentage: 75.0}},
+			SensorDataPoints:   ZoneInfoSensorDataPoints{InsideTemperature: Temperature{Celsius: 20.0}, Humidity: Percentage{Percentage: 75.0}},
 		},
 	}
 }

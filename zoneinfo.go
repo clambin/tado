@@ -14,12 +14,9 @@ type ZoneInfo struct {
 	// TODO
 	GeolocationOverrideDisableTime interface{} `json:"geolocationOverrideDisableTime"`
 	// TODO
-	Preparation        interface{}                `json:"preparation"`
-	Setting            ZoneInfoSetting            `json:"setting"`
-	ActivityDataPoints ZoneInfoActivityDataPoints `json:"activityDataPoints"`
-	SensorDataPoints   ZoneInfoSensorDataPoints   `json:"sensorDataPoints"`
-	// TODO
-	OverlayType        interface{}        `json:"overlayType"`
+	Preparation        interface{}        `json:"preparation"`
+	Setting            ZoneInfoSetting    `json:"setting"`
+	OverlayType        string             `json:"overlayType"`
 	Overlay            ZoneInfoOverlay    `json:"overlay,omitempty"`
 	OpenWindow         ZoneInfoOpenWindow `json:"openwindow,omitempty"`
 	NextScheduleChange struct {
@@ -36,23 +33,15 @@ type ZoneInfo struct {
 	Link struct {
 		State string `json:"state"`
 	} `json:"link"`
+	ActivityDataPoints ZoneInfoActivityDataPoints `json:"activityDataPoints"`
+	SensorDataPoints   ZoneInfoSensorDataPoints   `json:"sensorDataPoints"`
 }
 
 // ZoneInfoSetting contains the zone's current power & target temperature
 type ZoneInfoSetting struct {
+	Type        string      `json:"type"`
 	Power       string      `json:"power"`
 	Temperature Temperature `json:"temperature"`
-}
-
-// ZoneInfoActivityDataPoints contains the zone's heating info
-type ZoneInfoActivityDataPoints struct {
-	HeatingPower Percentage `json:"heatingPower"`
-}
-
-// ZoneInfoSensorDataPoints contains the zone's current temperature & humidity
-type ZoneInfoSensorDataPoints struct {
-	Temperature Temperature `json:"insideTemperature"`
-	Humidity    Percentage  `json:"humidity"`
 }
 
 // ZoneInfoOpenWindow contains info on an open window. Only set if a window is open
@@ -63,11 +52,43 @@ type ZoneInfoOpenWindow struct {
 	RemainingTimeInSeconds int       `json:"remainingTimeInSeconds"`
 }
 
-// ZoneInfoOverlay contains the zone's manual settings
+// ZoneInfoOverlay contains the zone's manual settings.
+//
+// Tado supports three types of overlays: permanent ones (no expiry), timer-based ones (with a fixed time) and overlays
+// that expire at the next block change on the timeTable. Use GetMode() to help determine the type of overlay.
 type ZoneInfoOverlay struct {
 	Type        string                     `json:"type"`
 	Setting     ZonePowerSetting           `json:"setting"`
 	Termination ZoneInfoOverlayTermination `json:"termination"`
+}
+
+type OverlayTerminationMode int
+
+const (
+	UnknownOverlay OverlayTerminationMode = iota
+	NoOverlay
+	PermanentOverlay
+	TimerOverlay
+	NextBlockOverlay
+)
+
+// GetMode determines the type of overlay, i.e. permanent, timer-based or expiring at the next block change.
+func (z ZoneInfoOverlay) GetMode() OverlayTerminationMode {
+	if z.Type == "" {
+		return NoOverlay
+	}
+	switch z.Termination.Type {
+	case "MANUAL":
+		return PermanentOverlay
+	case "TIMER":
+		switch z.Termination.TypeSkillBasedApp {
+		case "TIMER":
+			return TimerOverlay
+		case "NEXT_TIME_BLOCK":
+			return NextBlockOverlay
+		}
+	}
+	return UnknownOverlay
 }
 
 // ZonePowerSetting contains the zone's overlay settings
@@ -77,15 +98,25 @@ type ZonePowerSetting struct {
 	Temperature Temperature `json:"temperature"`
 }
 
-// ZoneInfoOverlayTermination contains the termination parameters for the zone's overlay
+// ZoneInfoOverlayTermination contains the termination parameters for the zone's overlay. Timers will only be populated for non-permanent modes.
 type ZoneInfoOverlayTermination struct {
-	Type              string `json:"type"`
-	RemainingTime     int    `json:"remainingTimeInSeconds,omitempty"`
-	DurationInSeconds int    `json:"durationInSeconds,omitempty"`
-	// not specified:
-	//  "typeSkillBasedApp":"NEXT_TIME_BLOCK",
-	//  "expiry":"2021-02-05T23:00:00Z",
-	//  "projectedExpiry":"2021-02-05T23:00:00Z"
+	Type                   string    `json:"type"`
+	TypeSkillBasedApp      string    `json:"typeSkillBasedApp"`
+	DurationInSeconds      int       `json:"durationInSeconds"`
+	Expiry                 time.Time `json:"expiry"`
+	RemainingTimeInSeconds int       `json:"remainingTimeInSeconds"`
+	ProjectedExpiry        time.Time `json:"projectedExpiry"`
+}
+
+// ZoneInfoActivityDataPoints contains the zone's heating info
+type ZoneInfoActivityDataPoints struct {
+	HeatingPower Percentage `json:"heatingPower"`
+}
+
+// ZoneInfoSensorDataPoints contains the zone's current temperature & humidity
+type ZoneInfoSensorDataPoints struct {
+	InsideTemperature Temperature `json:"insideTemperature"`
+	Humidity          Percentage  `json:"humidity"`
 }
 
 // GetZoneInfo gets the info for the specified ZoneID

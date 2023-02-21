@@ -12,9 +12,6 @@ func TestAPIClient_GetTimeTables(t *testing.T) {
 		{ID: 0, Type: "ONE_DAY"},
 		{ID: 1, Type: "THREE_DAY"},
 		{ID: 2, Type: "SEVEN_DAY"},
-		//{DayType: "MONDAY_TO_FRIDAY", Start: "00:00", End: "00:00", Setting: ZonePowerSetting{Type: "HEATING", Power: "OFF"}},
-		//{DayType: "SATURDAY", Start: "00:00", End: "00:00", Setting: ZonePowerSetting{Type: "HEATING", Power: "OFF"}},
-		//{DayType: "SUNDAY", Start: "00:00", End: "00:00", Setting: ZonePowerSetting{Type: "HEATING", Power: "OFF"}},
 	}
 
 	c, s := makeTestServer(schedules, nil)
@@ -40,23 +37,6 @@ func TestAPIClient_SetActiveTimeTable(t *testing.T) {
 	err := c.SetActiveTimeTable(context.Background(), 1, active)
 	require.NoError(t, err)
 }
-
-/*
-func TestAPIClient_GetZoneScheduleForDay(t *testing.T) {
-	schedules := []Schedule{
-		{DayType: "MONDAY_TO_FRIDAY", Start: "00:00", End: "00:00", Setting: ZonePowerSetting{Type: "HEATING", Power: "OFF"}},
-	}
-
-	c, s := makeTestServer(schedules, nil)
-	defer s.Close()
-	output, err := c.GetZoneScheduleForDay(context.Background(), 1, "MONDAY_TO_FRIDAY")
-	require.NoError(t, err)
-	assert.Equal(t, schedules, output)
-
-	err = c.SetZoneScheduleForDay(context.Background(), 1, schedules[0].DayType, schedules)
-	assert.NoError(t, err)
-}
-*/
 
 func TestAPIClient_GetTimeTableBlocks(t *testing.T) {
 	blocks := []Block{
