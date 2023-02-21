@@ -62,35 +62,6 @@ type ZoneInfoOverlay struct {
 	Termination ZoneInfoOverlayTermination `json:"termination"`
 }
 
-type OverlayTerminationMode int
-
-const (
-	UnknownOverlay OverlayTerminationMode = iota
-	NoOverlay
-	PermanentOverlay
-	TimerOverlay
-	NextBlockOverlay
-)
-
-// GetMode determines the type of overlay, i.e. permanent, timer-based or expiring at the next block change.
-func (z ZoneInfoOverlay) GetMode() OverlayTerminationMode {
-	if z.Type == "" {
-		return NoOverlay
-	}
-	switch z.Termination.Type {
-	case "MANUAL":
-		return PermanentOverlay
-	case "TIMER":
-		switch z.Termination.TypeSkillBasedApp {
-		case "TIMER":
-			return TimerOverlay
-		case "NEXT_TIME_BLOCK":
-			return NextBlockOverlay
-		}
-	}
-	return UnknownOverlay
-}
-
 // ZonePowerSetting contains the zone's overlay settings
 type ZonePowerSetting struct {
 	Type        string      `json:"type"`
