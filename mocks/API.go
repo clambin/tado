@@ -135,6 +135,27 @@ func (_m *API) GetConsumption(_a0 context.Context, _a1 string, _a2 time.Time, _a
 	return r0, r1
 }
 
+// GetDefaultOverlay provides a mock function with given fields: ctx, zoneID
+func (_m *API) GetDefaultOverlay(ctx context.Context, zoneID int) (tado.DefaultOverlay, error) {
+	ret := _m.Called(ctx, zoneID)
+
+	var r0 tado.DefaultOverlay
+	if rf, ok := ret.Get(0).(func(context.Context, int) tado.DefaultOverlay); ok {
+		r0 = rf(ctx, zoneID)
+	} else {
+		r0 = ret.Get(0).(tado.DefaultOverlay)
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context, int) error); ok {
+		r1 = rf(ctx, zoneID)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // GetEnergySavings provides a mock function with given fields: _a0
 func (_m *API) GetEnergySavings(_a0 context.Context) ([]tado.EnergySavingsReport, error) {
 	ret := _m.Called(_a0)
@@ -202,16 +223,37 @@ func (_m *API) GetHomeInfo(_a0 context.Context) (tado.HomeInfo, error) {
 	return r0, r1
 }
 
+// GetHomeState provides a mock function with given fields: ctx
+func (_m *API) GetHomeState(ctx context.Context) (tado.HomeState, error) {
+	ret := _m.Called(ctx)
+
+	var r0 tado.HomeState
+	if rf, ok := ret.Get(0).(func(context.Context) tado.HomeState); ok {
+		r0 = rf(ctx)
+	} else {
+		r0 = ret.Get(0).(tado.HomeState)
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context) error); ok {
+		r1 = rf(ctx)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // GetHomes provides a mock function with given fields: _a0
-func (_m *API) GetHomes(_a0 context.Context) ([]string, error) {
+func (_m *API) GetHomes(_a0 context.Context) (tado.Homes, error) {
 	ret := _m.Called(_a0)
 
-	var r0 []string
-	if rf, ok := ret.Get(0).(func(context.Context) []string); ok {
+	var r0 tado.Homes
+	if rf, ok := ret.Get(0).(func(context.Context) tado.Homes); ok {
 		r0 = rf(_a0)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]string)
+			r0 = ret.Get(0).(tado.Homes)
 		}
 	}
 
@@ -426,6 +468,27 @@ func (_m *API) GetZoneCapabilities(_a0 context.Context, _a1 int) (tado.ZoneCapab
 	return r0, r1
 }
 
+// GetZoneDayReport provides a mock function with given fields: ctx, zoneID, date
+func (_m *API) GetZoneDayReport(ctx context.Context, zoneID int, date time.Time) (tado.DayReport, error) {
+	ret := _m.Called(ctx, zoneID, date)
+
+	var r0 tado.DayReport
+	if rf, ok := ret.Get(0).(func(context.Context, int, time.Time) tado.DayReport); ok {
+		r0 = rf(ctx, zoneID, date)
+	} else {
+		r0 = ret.Get(0).(tado.DayReport)
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context, int, time.Time) error); ok {
+		r1 = rf(ctx, zoneID, date)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // GetZoneEarlyStart provides a mock function with given fields: _a0, _a1
 func (_m *API) GetZoneEarlyStart(_a0 context.Context, _a1 int) (bool, error) {
 	ret := _m.Called(_a0, _a1)
@@ -468,6 +531,27 @@ func (_m *API) GetZoneInfo(_a0 context.Context, _a1 int) (tado.ZoneInfo, error) 
 	return r0, r1
 }
 
+// GetZoneMeasuringDevice provides a mock function with given fields: ctx, zoneID
+func (_m *API) GetZoneMeasuringDevice(ctx context.Context, zoneID int) (tado.ZoneMeasuringDevice, error) {
+	ret := _m.Called(ctx, zoneID)
+
+	var r0 tado.ZoneMeasuringDevice
+	if rf, ok := ret.Get(0).(func(context.Context, int) tado.ZoneMeasuringDevice); ok {
+		r0 = rf(ctx, zoneID)
+	} else {
+		r0 = ret.Get(0).(tado.ZoneMeasuringDevice)
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context, int) error); ok {
+		r1 = rf(ctx, zoneID)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // GetZones provides a mock function with given fields: _a0
 func (_m *API) GetZones(_a0 context.Context) (tado.Zones, error) {
 	ret := _m.Called(_a0)
@@ -492,7 +576,21 @@ func (_m *API) GetZones(_a0 context.Context) (tado.Zones, error) {
 }
 
 // SetActiveHome provides a mock function with given fields: _a0, _a1
-func (_m *API) SetActiveHome(_a0 context.Context, _a1 string) error {
+func (_m *API) SetActiveHome(_a0 context.Context, _a1 int) error {
+	ret := _m.Called(_a0, _a1)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, int) error); ok {
+		r0 = rf(_a0, _a1)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// SetActiveHomeByName provides a mock function with given fields: _a0, _a1
+func (_m *API) SetActiveHomeByName(_a0 context.Context, _a1 string) error {
 	ret := _m.Called(_a0, _a1)
 
 	var r0 error
@@ -519,6 +617,34 @@ func (_m *API) SetActiveTimeTable(_a0 context.Context, _a1 int, _a2 tado.Timetab
 	return r0
 }
 
+// SetDefaultOverlay provides a mock function with given fields: ctx, zoneID, mode
+func (_m *API) SetDefaultOverlay(ctx context.Context, zoneID int, mode tado.DefaultOverlay) error {
+	ret := _m.Called(ctx, zoneID, mode)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, int, tado.DefaultOverlay) error); ok {
+		r0 = rf(ctx, zoneID, mode)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// SetHomeState provides a mock function with given fields: ctx, home
+func (_m *API) SetHomeState(ctx context.Context, home bool) error {
+	ret := _m.Called(ctx, home)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, bool) error); ok {
+		r0 = rf(ctx, home)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // SetTimeTableBlocksForDayType provides a mock function with given fields: _a0, _a1, _a2, _a3, _a4
 func (_m *API) SetTimeTableBlocksForDayType(_a0 context.Context, _a1 int, _a2 tado.TimetableID, _a3 string, _a4 []tado.Block) error {
 	ret := _m.Called(_a0, _a1, _a2, _a3, _a4)
@@ -533,13 +659,27 @@ func (_m *API) SetTimeTableBlocksForDayType(_a0 context.Context, _a1 int, _a2 ta
 	return r0
 }
 
-// SetZoneAutoConfiguration provides a mock function with given fields: _a0, _a1, _a2
-func (_m *API) SetZoneAutoConfiguration(_a0 context.Context, _a1 int, _a2 tado.ZoneAwayConfiguration) error {
-	ret := _m.Called(_a0, _a1, _a2)
+// SetZoneAwayAutoAdjust provides a mock function with given fields: ctx, zoneID, comfortLevel
+func (_m *API) SetZoneAwayAutoAdjust(ctx context.Context, zoneID int, comfortLevel tado.ComfortLevel) error {
+	ret := _m.Called(ctx, zoneID, comfortLevel)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, int, tado.ZoneAwayConfiguration) error); ok {
-		r0 = rf(_a0, _a1, _a2)
+	if rf, ok := ret.Get(0).(func(context.Context, int, tado.ComfortLevel) error); ok {
+		r0 = rf(ctx, zoneID, comfortLevel)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// SetZoneAwayManual provides a mock function with given fields: ctx, zoneID, temperature
+func (_m *API) SetZoneAwayManual(ctx context.Context, zoneID int, temperature float64) error {
+	ret := _m.Called(ctx, zoneID, temperature)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, int, float64) error); ok {
+		r0 = rf(ctx, zoneID, temperature)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -582,6 +722,20 @@ func (_m *API) SetZoneTemporaryOverlay(_a0 context.Context, _a1 int, _a2 float64
 	var r0 error
 	if rf, ok := ret.Get(0).(func(context.Context, int, float64, time.Duration) error); ok {
 		r0 = rf(_a0, _a1, _a2, _a3)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// UnsetHomeState provides a mock function with given fields: ctx
+func (_m *API) UnsetHomeState(ctx context.Context) error {
+	ret := _m.Called(ctx)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context) error); ok {
+		r0 = rf(ctx)
 	} else {
 		r0 = ret.Error(0)
 	}

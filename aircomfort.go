@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-// AirComfort contains the air comfort for a home. This contains the overall air comfort for the house, along with details for each zone.
+// AirComfort contains the air comfort for a home. This contains the overall air freshness for the house, along with details for each zone.
 type AirComfort struct {
 	Freshness struct {
 		Value          string    `json:"value"`
@@ -15,7 +15,7 @@ type AirComfort struct {
 	Comfort []ZoneAirComfort `json:"comfort"`
 }
 
-// ZoneAirComfort contains the air comfort for one room / zone in the home
+// ZoneAirComfort contains the air comfort for one zone in the home
 type ZoneAirComfort struct {
 	RoomID           int    `json:"roomId"`
 	TemperatureLevel string `json:"temperatureLevel"`

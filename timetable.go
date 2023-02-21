@@ -45,7 +45,7 @@ func (c *APIClient) SetActiveTimeTable(ctx context.Context, zoneID int, timeTabl
 	return err
 }
 
-// A Block is an entry in a Timetable. It specifies the heating settings (as per the Setting attribute) for the zone at the specified time range (specified by Start and End times)
+// A Block is an entry in a Timetable. It specifies the heating settings (as per the Setting attribute) for the zone at the specified DayType and time range (specified by Start and End times)
 type Block struct {
 	DayType             string           `json:"dayType"`
 	Start               string           `json:"start"`

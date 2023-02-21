@@ -125,6 +125,21 @@ func TestAPIClient_TooManyRequests(t *testing.T) {
 	assert.Equal(t, "429 Too Many Requests", err.Error())
 }
 
+func TestAPIClient_UnprocessableEntity(t *testing.T) {
+	s := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, _ *http.Request) {
+		http.Error(writer, `{"errors":[{"code": "foo", "title": "bar"}]}`, http.StatusUnprocessableEntity)
+	}))
+	defer s.Close()
+
+	auth := fakeAuthenticator{Token: "1234"}
+	c := newWithAuthenticator(&auth)
+	c.apiURL = buildURLMap(s.URL)
+
+	_, err := c.GetZones(context.Background())
+	require.Error(t, err)
+	assert.Equal(t, "unprocessable entity: bar", err.Error())
+}
+
 func TestAPIClient_NoHomes(t *testing.T) {
 	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		_, _ = w.Write([]byte(`{ "homes": [ ] }`))

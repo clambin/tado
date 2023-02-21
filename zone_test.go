@@ -2,8 +2,11 @@ package tado
 
 import (
 	"context"
+	"encoding/json"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 	"time"
 )
@@ -159,40 +162,119 @@ func TestAPIClient_GetZoneAutoConfiguration(t *testing.T) {
 	tests := []struct {
 		name   string
 		config ZoneAwayConfiguration
-		pass   bool
 	}{
 		{
 			name:   "auto",
 			config: ZoneAwayConfiguration{Type: "HEATING", AutoAdjust: true, ComfortLevel: Eco},
-			pass:   true,
 		},
 		{
 			name:   "manual",
-			config: ZoneAwayConfiguration{Type: "HEATING", Setting: &ZonePowerSetting{Type: "HEATING", Power: "ON", Temperature: Temperature{Celsius: 15.0}}},
-			pass:   true,
-		},
-		{
-			name:   "invalid",
-			config: ZoneAwayConfiguration{Type: "HEATING", AutoAdjust: true, ComfortLevel: 33},
-			pass:   false,
+			config: ZoneAwayConfiguration{Type: "HEATING", Setting: ZonePowerSetting{Type: "HEATING", Power: "ON", Temperature: Temperature{Celsius: 15.0}}},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			c, s := makeTestServer(tt.config, nil)
+			defer s.Close()
 			output, err := c.GetZoneAutoConfiguration(context.Background(), 1)
 			require.NoError(t, err)
 			assert.Equal(t, output, tt.config)
+		})
+	}
+}
 
-			err = c.SetZoneAutoConfiguration(context.Background(), 1, tt.config)
+func TestAPIClient_SetZoneAwayAutoAdjust(t *testing.T) {
+	tests := []struct {
+		name         string
+		comfortLevel ComfortLevel
+		pass         bool
+	}{
+		{name: "eco", comfortLevel: Eco, pass: true},
+		{name: "balance", comfortLevel: Balance, pass: true},
+		{name: "comfort", comfortLevel: Comfort, pass: true},
+		{name: "invalid", comfortLevel: 12, pass: false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			h := zoneAwayHandler{}
+			s := httptest.NewServer(http.HandlerFunc(h.Handle))
+			defer s.Close()
+			a := fakeAuthenticator{}
+			c := newWithAuthenticator(&a)
+			c.apiURL = buildURLMap(s.URL)
+
+			err := c.SetZoneAwayAutoAdjust(context.Background(), 1, tt.comfortLevel)
 			if !tt.pass {
 				assert.Error(t, err)
-			} else {
-				require.NoError(t, err)
+				return
 			}
-			s.Close()
+			require.NoError(t, err)
+			cfg, err := c.GetZoneAutoConfiguration(context.Background(), 1)
+			require.NoError(t, err)
+			assert.True(t, cfg.AutoAdjust)
+			assert.Equal(t, tt.comfortLevel, cfg.ComfortLevel)
 		})
+	}
+}
+
+func TestAPIClient_SetZoneAwayManual(t *testing.T) {
+	tests := []struct {
+		name        string
+		temperature float64
+		pass        bool
+	}{
+		{name: "on", temperature: 18, pass: true},
+		{name: "off", temperature: 5, pass: true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			h := zoneAwayHandler{}
+			s := httptest.NewServer(http.HandlerFunc(h.Handle))
+			defer s.Close()
+			a := fakeAuthenticator{}
+			c := newWithAuthenticator(&a)
+			c.apiURL = buildURLMap(s.URL)
+
+			err := c.SetZoneAwayManual(context.Background(), 1, tt.temperature)
+			if !tt.pass {
+				assert.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+
+			cfg, err := c.GetZoneAutoConfiguration(context.Background(), 1)
+			assert.False(t, cfg.AutoAdjust)
+			if tt.temperature <= 5.0 {
+				assert.Equal(t, "OFF", cfg.Setting.Power)
+			} else {
+				assert.Equal(t, "ON", cfg.Setting.Power)
+				assert.Equal(t, tt.temperature, cfg.Setting.Temperature.Celsius)
+			}
+		})
+	}
+}
+
+type zoneAwayHandler struct {
+	zoneConfig ZoneAwayConfiguration
+}
+
+func (h *zoneAwayHandler) Handle(w http.ResponseWriter, r *http.Request) {
+	switch r.URL.Path {
+	case "/me":
+		_, _ = w.Write([]byte(`{ "homes": [ { "id" : 242, "name": "home" } ] }`))
+	default:
+		switch r.Method {
+		case http.MethodGet:
+			_ = json.NewEncoder(w).Encode(h.zoneConfig)
+		case http.MethodPut:
+			if err := json.NewDecoder(r.Body).Decode(&h.zoneConfig); err != nil {
+				http.Error(w, "", http.StatusUnprocessableEntity)
+			}
+		default:
+			http.Error(w, r.Method, http.StatusMethodNotAllowed)
+		}
+
 	}
 }
 

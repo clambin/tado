@@ -18,7 +18,7 @@ func TestAPIClient_GetHomes(t *testing.T) {
 
 	homes, err := c.GetHomes(context.Background())
 	require.NoError(t, err)
-	assert.Equal(t, []string{"home"}, homes)
+	assert.Equal(t, Homes{{ID: 242, Name: "home"}}, homes)
 }
 
 func TestAPIClient_GetActiveHome(t *testing.T) {
@@ -35,10 +35,21 @@ func TestAPIClient_SetActiveHome(t *testing.T) {
 	c, s := makeTestServer(nil, nil)
 	defer s.Close()
 
-	err := c.SetActiveHome(context.Background(), "home")
+	err := c.SetActiveHome(context.Background(), 242)
 	assert.NoError(t, err)
 
-	err = c.SetActiveHome(context.Background(), "invalid")
+	err = c.SetActiveHome(context.Background(), 42)
+	assert.Error(t, err)
+}
+
+func TestAPIClient_SetActiveHomeByName(t *testing.T) {
+	c, s := makeTestServer(nil, nil)
+	defer s.Close()
+
+	err := c.SetActiveHomeByName(context.Background(), "home")
+	assert.NoError(t, err)
+
+	err = c.SetActiveHomeByName(context.Background(), "invalid")
 	assert.Error(t, err)
 }
 
@@ -141,5 +152,79 @@ func (h *homeStateServer) Handle(w http.ResponseWriter, r *http.Request) {
 		log.Print(r.URL.Path)
 		http.Error(w, r.URL.Path, http.StatusNotFound)
 		return
+	}
+}
+
+func TestHomes_FindHome(t *testing.T) {
+	tests := []struct {
+		name   string
+		h      Homes
+		lookup int
+		want   Home
+		want1  bool
+	}{
+		{
+			name:   "found",
+			h:      Homes{{ID: 1, Name: "foo"}, {ID: 2, Name: "bar"}},
+			lookup: 2,
+			want:   Home{ID: 2, Name: "bar"},
+			want1:  true,
+		},
+		{
+			name:   "not found",
+			h:      Homes{{ID: 1, Name: "foo"}},
+			lookup: 2,
+			want1:  false,
+		},
+		{
+			name:   "empty",
+			h:      Homes{},
+			lookup: 2,
+			want1:  false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, got1 := tt.h.GetHome(tt.lookup)
+			assert.Equal(t, tt.want, got)
+			assert.Equal(t, tt.want1, got1)
+		})
+	}
+}
+
+func TestHomes_FindHomeByName(t *testing.T) {
+	tests := []struct {
+		name   string
+		h      Homes
+		lookup string
+		want   Home
+		want1  bool
+	}{
+		{
+			name:   "found",
+			h:      Homes{{ID: 1, Name: "foo"}, {ID: 2, Name: "bar"}},
+			lookup: "bar",
+			want:   Home{ID: 2, Name: "bar"},
+			want1:  true,
+		},
+		{
+			name:   "not found",
+			h:      Homes{{ID: 1, Name: "foo"}},
+			lookup: "bar",
+			want1:  false,
+		},
+		{
+			name:   "empty",
+			h:      Homes{},
+			lookup: "bar",
+			want1:  false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, got1 := tt.h.GetHomeByName(tt.lookup)
+			assert.Equal(t, tt.want, got)
+			assert.Equal(t, tt.want1, got1)
+		})
 	}
 }

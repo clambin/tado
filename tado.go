@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"strings"
 	"sync"
 	"time"
 
@@ -22,8 +21,9 @@ import (
 //go:generate mockery --name API
 type API interface {
 	GetAccount(context.Context) (Account, error)
-	GetHomes(context.Context) ([]string, error)
-	SetActiveHome(context.Context, string) error
+	GetHomes(context.Context) (Homes, error)
+	SetActiveHome(context.Context, int) error
+	SetActiveHomeByName(context.Context, string) error
 	GetActiveHome(context.Context) (Home, bool)
 	GetHomeInfo(context.Context) (HomeInfo, error)
 	GetUsers(context.Context) ([]User, error)
@@ -35,7 +35,8 @@ type API interface {
 	GetZoneEarlyStart(context.Context, int) (bool, error)
 	SetZoneEarlyStart(context.Context, int, bool) error
 	GetZoneAutoConfiguration(context.Context, int) (ZoneAwayConfiguration, error)
-	SetZoneAutoConfiguration(context.Context, int, ZoneAwayConfiguration) error
+	SetZoneAwayAutoAdjust(ctx context.Context, zoneID int, comfortLevel ComfortLevel) error
+	SetZoneAwayManual(ctx context.Context, zoneID int, temperature float64) error
 	SetZoneOverlay(context.Context, int, float64) error
 	SetZoneTemporaryOverlay(context.Context, int, float64, time.Duration) error
 	DeleteZoneOverlay(context.Context, int) error
@@ -51,6 +52,12 @@ type API interface {
 	GetTimeTableBlocksForDayType(context.Context, int, TimetableID, string) ([]Block, error)
 	SetTimeTableBlocksForDayType(context.Context, int, TimetableID, string, []Block) error
 	GetHomeState(ctx context.Context) (homeState HomeState, err error)
+	SetHomeState(ctx context.Context, home bool) error
+	UnsetHomeState(ctx context.Context) error
+	GetDefaultOverlay(ctx context.Context, zoneID int) (DefaultOverlay, error)
+	SetDefaultOverlay(ctx context.Context, zoneID int, mode DefaultOverlay) error
+	GetZoneMeasuringDevice(ctx context.Context, zoneID int) (measuringDevice ZoneMeasuringDevice, err error)
+	GetZoneDayReport(ctx context.Context, zoneID int, date time.Time) (report DayReport, err error)
 }
 
 var _ API = &APIClient{}
@@ -125,7 +132,7 @@ func buildURLMap(override string) map[string]string {
 // callAPI is implemented as a function rather than a method, because methods cannot have type parameters (yet?)
 func callAPI[T any](ctx context.Context, c *APIClient, method, apiClass, endpoint string, request any) (response T, err error) {
 	if apiClass != "me" {
-		if err = c.getActiveHomeID(ctx); err != nil {
+		if err = c.setActiveHomeID(ctx); err != nil {
 			return
 		}
 	}
@@ -165,35 +172,24 @@ func callAPI[T any](ctx context.Context, c *APIClient, method, apiClass, endpoin
 		c.authenticator.Reset()
 		err = errors.New(resp.Status)
 	case http.StatusUnprocessableEntity:
-		var titles []string
-		if titles, err = getErrors(respBody); err == nil {
-			err = fmt.Errorf("unprocessable entry: %s", strings.Join(titles, ", "))
-		}
+		err = &ErrUnprocessableEntry{Err: parseError(respBody)}
 	default:
-		err = errors.New(resp.Status)
+		if err = parseError(respBody); !errors.Is(err, &Error{}) {
+			err = errors.New(resp.Status)
+		}
 	}
 	return
 }
 
-func getErrors(body []byte) ([]string, error) {
-	var errs struct {
-		Errors []struct {
-			Code  string `json:"code"`
-			Title string `json:"title"`
-		} `json:"errors"`
-	}
-
+func parseError(body []byte) error {
+	var errs Error
 	if err := json.Unmarshal(body, &errs); err != nil {
-		return nil, fmt.Errorf("bad error: %w", err)
+		return fmt.Errorf("unparsable error: %w", err)
 	}
-	var titles []string
-	for _, entry := range errs.Errors {
-		titles = append(titles, entry.Title)
-	}
-	return titles, nil
+	return &errs
 }
 
-func (c *APIClient) getActiveHomeID(ctx context.Context) (err error) {
+func (c *APIClient) setActiveHomeID(ctx context.Context) (err error) {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 	if c.activeHomeID > 0 {

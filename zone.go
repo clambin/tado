@@ -129,7 +129,9 @@ func (c *APIClient) SetZoneEarlyStart(ctx context.Context, zoneID int, earlyAcce
 
 // ZoneAwayConfiguration determines how a Zone will be heated when all users are away and the home is in "away" mode.
 // If AdjustType is true, the zone's heating will be switched off. When the heating is switched back on is determined by ComfortLevel (Eco, Balance, Comfort).
-// If AdjustType is false, the zone will be heated as per the Settings field.  E.g. using the following ZoneAwayConfigutation will heat the room at 16ºC:
+// If AdjustType is false, the zone will be heated as per the Settings field.
+//
+// E.g. using the following ZoneAwayConfigutation will heat the room at 16ºC:
 //
 //	{
 //	 "type": "HEATING",
@@ -143,22 +145,22 @@ func (c *APIClient) SetZoneEarlyStart(ctx context.Context, zoneID int, earlyAcce
 //	 }
 //	}
 type ZoneAwayConfiguration struct {
-	Type         string            `json:"type"`
-	AutoAdjust   bool              `json:"autoAdjust"`
-	ComfortLevel AutoAdjustMode    `json:"comfortLevel"`
-	Setting      *ZonePowerSetting `json:"setting"`
+	Type         string           `json:"type"`
+	AutoAdjust   bool             `json:"autoAdjust"`
+	ComfortLevel ComfortLevel     `json:"comfortLevel"`
+	Setting      ZonePowerSetting `json:"setting"`
 }
 
-// AutoAdjustMode determines how the heating should be switched back on when one or more users return home.
-type AutoAdjustMode int
+// ComfortLevel determines how the heating should be switched back on when one or more users return home.
+type ComfortLevel int
 
 const (
 	// Eco mode
-	Eco AutoAdjustMode = 0
+	Eco ComfortLevel = 0
 	// Balance mode
-	Balance AutoAdjustMode = 50
+	Balance ComfortLevel = 50
 	// Comfort mode
-	Comfort AutoAdjustMode = 100
+	Comfort ComfortLevel = 100
 )
 
 // GetZoneAutoConfiguration returns the ZoneAwayConfiguration for the specified zone
@@ -166,16 +168,46 @@ func (c *APIClient) GetZoneAutoConfiguration(ctx context.Context, zoneID int) (c
 	return callAPI[ZoneAwayConfiguration](ctx, c, http.MethodGet, "myTado", "/zones/"+strconv.Itoa(zoneID)+"/schedule/awayConfiguration", nil)
 }
 
-// SetZoneAutoConfiguration sets the ZoneAwayConfiguration for the specified zone
-func (c *APIClient) SetZoneAutoConfiguration(ctx context.Context, zoneID int, configuration ZoneAwayConfiguration) (err error) {
-	if configuration.AutoAdjust &&
-		configuration.ComfortLevel != Eco &&
-		configuration.ComfortLevel != Balance &&
-		configuration.ComfortLevel != Comfort {
-		return fmt.Errorf("invalid ComfortLevel: %d", configuration.ComfortLevel)
+// SetZoneAwayAutoAdjust configures the zone to autoAdjust mode when the home is in "away" mode. ComfortLevel determines
+// when to start heating the zone again.
+func (c *APIClient) SetZoneAwayAutoAdjust(ctx context.Context, zoneID int, comfortLevel ComfortLevel) error {
+	if comfortLevel != Eco &&
+		comfortLevel != Balance &&
+		comfortLevel != Comfort {
+		return fmt.Errorf("invalid ComfortLevel: %d", comfortLevel)
 	}
-	_, err = callAPI[struct{}](ctx, c, http.MethodPut, "myTado", "/zones/"+strconv.Itoa(zoneID)+"/schedule/awayConfiguration", configuration)
-	return
+	cfg := ZoneAwayConfiguration{
+		Type:         "HEATING",
+		AutoAdjust:   true,
+		ComfortLevel: comfortLevel,
+	}
+	_, err := callAPI[struct{}](ctx, c, http.MethodPut, "myTado", "/zones/"+strconv.Itoa(zoneID)+"/schedule/awayConfiguration", cfg)
+	return err
+}
+
+// SetZoneAwayManual configures the zone to be heated to the specified temperature when the home is in "away" mode.
+// If the specified temperature is 5ºC or less, it will not be heated.
+func (c *APIClient) SetZoneAwayManual(ctx context.Context, zoneID int, temperature float64) error {
+	var settings ZonePowerSetting
+	if temperature <= 5.0 {
+		settings = ZonePowerSetting{
+			Type:  "HEATING",
+			Power: "OFF",
+		}
+	} else {
+		settings = ZonePowerSetting{
+			Type:        "HEATING",
+			Power:       "ON",
+			Temperature: Temperature{Celsius: temperature},
+		}
+	}
+	cfg := ZoneAwayConfiguration{
+		Type:       "HEATING",
+		AutoAdjust: false,
+		Setting:    settings,
+	}
+	_, err := callAPI[struct{}](ctx, c, http.MethodPut, "myTado", "/zones/"+strconv.Itoa(zoneID)+"/schedule/awayConfiguration", cfg)
+	return err
 }
 
 // ZoneMeasuringDevice contains configuration parameters of a measuring device at a given zone

@@ -13,7 +13,7 @@ type Account struct {
 	Email         string         `json:"email"`
 	Username      string         `json:"username"`
 	ID            string         `json:"id"`
-	Homes         []Home         `json:"homes"`
+	Homes         Homes          `json:"homes"`
 	Locale        string         `json:"locale"`
 	MobileDevices []MobileDevice `json:"mobileDevices"`
 }
@@ -30,18 +30,54 @@ func (c *APIClient) GetAccount(ctx context.Context) (Account, error) {
 }
 
 // GetHomes returns all homes registered under the account used to log into the Tado API servers.
-func (c *APIClient) GetHomes(ctx context.Context) (homeNames []string, err error) {
-	if err = c.getActiveHomeID(ctx); err == nil {
-		for _, home := range c.account.Homes {
-			homeNames = append(homeNames, home.Name)
+func (c *APIClient) GetHomes(ctx context.Context) (zones Homes, err error) {
+	if err = c.setActiveHomeID(ctx); err == nil {
+		zones = c.account.Homes
+	}
+	return
+}
+
+type Homes []Home
+
+// GetHome looks up the home by ID. Returns false if the home could not be found.
+func (h Homes) GetHome(id int) (Home, bool) {
+	for _, home := range h {
+		if home.ID == id {
+			return home, true
 		}
 	}
-	return homeNames, err
+	return Home{}, false
+}
+
+// GetHomeByName looks up the home by name. Returns false if the home could not be found.
+func (h Homes) GetHomeByName(name string) (Home, bool) {
+	for _, home := range h {
+		if home.Name == name {
+			return home, true
+		}
+	}
+	return Home{}, false
 }
 
 // SetActiveHome sets the active home for all subsequent API calls. By default, the first registered home is used.
-func (c *APIClient) SetActiveHome(ctx context.Context, name string) (err error) {
-	if err = c.getActiveHomeID(ctx); err == nil {
+func (c *APIClient) SetActiveHome(ctx context.Context, id int) (err error) {
+	if err = c.setActiveHomeID(ctx); err == nil {
+		for _, home := range c.account.Homes {
+			if home.ID == id {
+				c.lock.Lock()
+				c.activeHomeID = home.ID
+				c.lock.Unlock()
+				return nil
+			}
+		}
+		err = fmt.Errorf("invalid home id: %d", id)
+	}
+	return err
+}
+
+// SetActiveHomeByName sets the active home for all subsequent API calls. By default, the first registered home is used.
+func (c *APIClient) SetActiveHomeByName(ctx context.Context, name string) (err error) {
+	if err = c.setActiveHomeID(ctx); err == nil {
 		for _, home := range c.account.Homes {
 			if home.Name == name {
 				c.lock.Lock()
@@ -57,7 +93,7 @@ func (c *APIClient) SetActiveHome(ctx context.Context, name string) (err error) 
 
 // GetActiveHome returns the current active Home
 func (c *APIClient) GetActiveHome(ctx context.Context) (Home, bool) {
-	if err := c.getActiveHomeID(ctx); err == nil {
+	if err := c.setActiveHomeID(ctx); err == nil {
 		if c.account != nil {
 			for _, home := range c.account.Homes {
 				if home.ID == c.activeHomeID {

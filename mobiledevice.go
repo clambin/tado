@@ -55,7 +55,7 @@ func (c *APIClient) GetMobileDevices(ctx context.Context) (tadoMobileDevices []M
 type MobileDeviceLocationState int
 
 const (
-	// DeviceUnknown means the device state is not initialized yet
+	// DeviceUnknown means the device state is not known. Typically this means the device isn't enabled for geotracking.
 	DeviceUnknown MobileDeviceLocationState = iota
 	// DeviceHome means the user's device is home
 	DeviceHome
