@@ -186,7 +186,7 @@ func (s *testServer[T]) handler(middleware func(ctx context.Context) bool) http.
 				_ = json.NewEncoder(w).Encode(s.content)
 			case http.MethodPut:
 				if err := json.NewDecoder(r.Body).Decode(&s.content); err != nil {
-					e := ErrUnprocessableEntry{Err: &Error{
+					e := UnprocessableEntryError{Err: &Error{
 						Errors: []errorEntry{{
 							Code:  "unprocessable entry",
 							Title: err.Error(),

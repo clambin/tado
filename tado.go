@@ -172,7 +172,7 @@ func callAPI[T any](ctx context.Context, c *APIClient, method, apiClass, endpoin
 		c.authenticator.Reset()
 		err = errors.New(resp.Status)
 	case http.StatusUnprocessableEntity:
-		err = &ErrUnprocessableEntry{Err: parseError(respBody)}
+		err = &UnprocessableEntryError{Err: parseError(respBody)}
 	default:
 		if err = parseError(respBody); !errors.Is(err, &Error{}) {
 			err = errors.New(resp.Status)

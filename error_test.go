@@ -37,7 +37,7 @@ func TestError_Error(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			assert.Equal(t, tt.want, tt.input.Error())
 
-			e2 := &ErrUnprocessableEntry{Err: tt.input}
+			e2 := &UnprocessableEntryError{Err: tt.input}
 			assert.Equal(t, "unprocessable entity: "+tt.want, e2.Error())
 		})
 	}
@@ -53,16 +53,16 @@ func TestError_Is(t *testing.T) {
 }
 
 func TestErrUnprocessableEntity_Is(t *testing.T) {
-	err1 := &ErrUnprocessableEntry{Err: &Error{Errors: []errorEntry{{Code: "foo", Title: "error1"}}}}
+	err1 := &UnprocessableEntryError{Err: &Error{Errors: []errorEntry{{Code: "foo", Title: "error1"}}}}
 
-	err2 := &ErrUnprocessableEntry{}
+	err2 := &UnprocessableEntryError{}
 	assert.ErrorIs(t, err1, err2)
 	err3 := errors.New("some error")
 	assert.NotErrorIs(t, err1, err3)
 }
 
 func TestErrUnprocessableEntry_Unwrap(t *testing.T) {
-	err1 := &ErrUnprocessableEntry{Err: &Error{Errors: []errorEntry{{Code: "foo", Title: "error1"}}}}
+	err1 := &UnprocessableEntryError{Err: &Error{Errors: []errorEntry{{Code: "foo", Title: "error1"}}}}
 
 	err2 := err1.Unwrap()
 	var err3 *Error

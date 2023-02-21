@@ -29,23 +29,23 @@ func (e *Error) Is(e2 error) bool {
 	return ok
 }
 
-// ErrUnprocessableEntry indicates an API call returned http.StatusUnprocessableEntity
-type ErrUnprocessableEntry struct {
+// UnprocessableEntryError indicates an API call returned http.StatusUnprocessableEntity
+type UnprocessableEntryError struct {
 	Err error
 }
 
 // Error implements the error interface
-func (e *ErrUnprocessableEntry) Error() string {
+func (e *UnprocessableEntryError) Error() string {
 	return "unprocessable entity: " + e.Err.Error()
 }
 
-// Is checks if a received error is an ErrUnprocessableEntry
-func (e *ErrUnprocessableEntry) Is(e2 error) bool {
-	_, ok := e2.(*ErrUnprocessableEntry)
+// Is checks if a received error is an UnprocessableEntryError
+func (e *UnprocessableEntryError) Is(e2 error) bool {
+	_, ok := e2.(*UnprocessableEntryError)
 	return ok
 }
 
 // Unwrap returns the wrapped error
-func (e *ErrUnprocessableEntry) Unwrap() error {
+func (e *UnprocessableEntryError) Unwrap() error {
 	return e.Err
 }
