@@ -7,8 +7,6 @@
 
 Basic Go API for Tado thermostats.
 
-See [pkg.go.dev](https://pkg.go.dev/github.com/clambin/tado) for documentation.
-
 ## Authors
 
 * **Christophe Lambin**
