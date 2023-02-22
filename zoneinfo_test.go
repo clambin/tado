@@ -76,3 +76,23 @@ func TestZoneInfoOverlay_GetMode(t *testing.T) {
 		})
 	}
 }
+
+func TestOverlayTerminationMode_String(t *testing.T) {
+	tests := []struct {
+		name string
+		m    OverlayTerminationMode
+		want string
+	}{
+		{name: "UnknownOverlay", m: UnknownOverlay, want: "unknown"},
+		{name: "NoOverlay", m: NoOverlay, want: "no overlay"},
+		{name: "PermanentOverlay", m: PermanentOverlay, want: "permanent overlay"},
+		{name: "TimerOverlay", m: TimerOverlay, want: "timer overlay"},
+		{name: "NextBlockOverlay", m: NextBlockOverlay, want: "overlay till next time block"},
+		{name: "invalid", m: -1, want: "(unknown)"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equalf(t, tt.want, tt.m.String(), "String()")
+		})
+	}
+}

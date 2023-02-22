@@ -85,6 +85,23 @@ type ZoneInfoSensorDataPoints struct {
 
 type OverlayTerminationMode int
 
+// String returns a string representation of an OverlayTerminationMode
+func (m OverlayTerminationMode) String() string {
+	switch m {
+	case UnknownOverlay:
+		return "unknown"
+	case NoOverlay:
+		return "no overlay"
+	case PermanentOverlay:
+		return "permanent overlay"
+	case TimerOverlay:
+		return "timer overlay"
+	case NextBlockOverlay:
+		return "overlay till next time block"
+	}
+	return "(unknown)"
+}
+
 const (
 	UnknownOverlay OverlayTerminationMode = iota
 	NoOverlay

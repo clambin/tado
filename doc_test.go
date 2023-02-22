@@ -6,7 +6,7 @@ import (
 	"github.com/clambin/tado"
 )
 
-func ExampleZoneInfo_GetState() {
+func ExampleAPIClient_GetZoneInfo() {
 	c := tado.New("me@example.com", "password", "")
 	ctx := context.Background()
 
@@ -20,7 +20,7 @@ func ExampleZoneInfo_GetState() {
 		if err != nil {
 			panic(err)
 		}
-		fmt.Printf("%s: %s\n", zone.Name, info.GetState().String())
+		fmt.Printf("%s: %s\n", zone.Name, info.Overlay.GetMode())
 	}
 }
 

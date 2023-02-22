@@ -6,61 +6,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/clambin/tado/auth"
 	"io"
 	"net/http"
 	"sync"
-	"time"
-
-	"github.com/clambin/tado/auth"
 )
-
-// API for the Tado APIClient.
-//
-// Deprecated: will be removed in a future version. Clients should make their own, tailor-made mocks if needed.
-//
-//go:generate mockery --name API
-type API interface {
-	GetAccount(context.Context) (Account, error)
-	GetHomes(context.Context) (Homes, error)
-	SetActiveHome(context.Context, int) error
-	SetActiveHomeByName(context.Context, string) error
-	GetActiveHome(context.Context) (Home, bool)
-	GetHomeInfo(context.Context) (HomeInfo, error)
-	GetUsers(context.Context) ([]User, error)
-	GetMobileDevices(context.Context) ([]MobileDevice, error)
-	GetWeatherInfo(context.Context) (WeatherInfo, error)
-	GetZones(context.Context) (Zones, error)
-	GetZoneInfo(context.Context, int) (ZoneInfo, error)
-	GetZoneCapabilities(context.Context, int) (ZoneCapabilities, error)
-	GetZoneEarlyStart(context.Context, int) (bool, error)
-	SetZoneEarlyStart(context.Context, int, bool) error
-	GetZoneAutoConfiguration(context.Context, int) (ZoneAwayConfiguration, error)
-	SetZoneAwayAutoAdjust(ctx context.Context, zoneID int, comfortLevel ComfortLevel) error
-	SetZoneAwayManual(ctx context.Context, zoneID int, temperature float64) error
-	SetZoneOverlay(context.Context, int, float64) error
-	SetZoneTemporaryOverlay(context.Context, int, float64, time.Duration) error
-	DeleteZoneOverlay(context.Context, int) error
-	GetAirComfort(context.Context) (AirComfort, error)
-	GetConsumption(context.Context, string, time.Time, time.Time) (Consumption, error)
-	GetEnergySavings(context.Context) ([]EnergySavingsReport, error)
-	GetRunningTimes(context.Context, time.Time, time.Time) ([]RunningTime, error)
-	GetHeatingCircuits(context.Context) ([]HeatingCircuit, error)
-	GetTimeTables(context.Context, int) ([]Timetable, error)
-	GetActiveTimeTable(context.Context, int) (Timetable, error)
-	SetActiveTimeTable(context.Context, int, Timetable) error
-	GetTimeTableBlocks(context.Context, int, TimetableID) ([]Block, error)
-	GetTimeTableBlocksForDayType(context.Context, int, TimetableID, string) ([]Block, error)
-	SetTimeTableBlocksForDayType(context.Context, int, TimetableID, string, []Block) error
-	GetHomeState(ctx context.Context) (homeState HomeState, err error)
-	SetHomeState(ctx context.Context, home bool) error
-	UnsetHomeState(ctx context.Context) error
-	GetDefaultOverlay(ctx context.Context, zoneID int) (DefaultOverlay, error)
-	SetDefaultOverlay(ctx context.Context, zoneID int, mode DefaultOverlay) error
-	GetZoneMeasuringDevice(ctx context.Context, zoneID int) (measuringDevice ZoneMeasuringDevice, err error)
-	GetZoneDayReport(ctx context.Context, zoneID int, date time.Time) (report DayReport, err error)
-}
-
-var _ API = &APIClient{}
 
 // APIClient represents a Tado API client.
 type APIClient struct {
