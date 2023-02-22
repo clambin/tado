@@ -233,8 +233,9 @@ func TestAPIClient_SetZoneAwayManual(t *testing.T) {
 			require.NoError(t, err)
 
 			cfg, err := c.GetZoneAutoConfiguration(context.Background(), 1)
+			require.NoError(t, err)
 			assert.False(t, cfg.AutoAdjust)
-			if tt.temperature <= 5.0 {
+			if tt.temperature <= 5 {
 				assert.Equal(t, "OFF", cfg.Setting.Power)
 			} else {
 				assert.Equal(t, "ON", cfg.Setting.Power)
