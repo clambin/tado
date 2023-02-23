@@ -7,6 +7,14 @@ import (
 	"testing"
 )
 
+func TestValidDayTypes(t *testing.T) {
+	// test that validDayTypes is valid, so we don't have to validate it at runtime
+	for _, timetableID := range []TimetableID{OneDay, ThreeDay, SevenDay} {
+		_, ok := validDayTypes[timetableID]
+		assert.True(t, ok)
+	}
+
+}
 func TestAPIClient_GetTimeTables(t *testing.T) {
 	schedules := []Timetable{
 		{ID: 0, Type: "ONE_DAY"},
@@ -40,22 +48,25 @@ func TestAPIClient_SetActiveTimeTable(t *testing.T) {
 
 func TestAPIClient_GetTimeTableBlocks(t *testing.T) {
 	blocks := []Block{
-		{DayType: "MONDAY_TO_SUNDAY", Start: "00:00", End: "07:00"},
-		{DayType: "MONDAY_TO_SUNDAY", Start: "07:00", End: "22:00", Setting: ZonePowerSetting{Type: "HEATING", Power: "ON", Temperature: Temperature{Celsius: 21.0}}},
-		{DayType: "MONDAY_TO_SUNDAY", Start: "22:00", End: "00:00"},
+		{DayType: MondayToSunday, Start: "00:00", End: "07:00"},
+		{DayType: MondayToSunday, Start: "07:00", End: "22:00", Setting: ZonePowerSetting{Type: "HEATING", Power: "ON", Temperature: Temperature{Celsius: 21.0}}},
+		{DayType: MondayToSunday, Start: "22:00", End: "00:00"},
 	}
 	c, s := makeTestServer(blocks, nil)
 	defer s.Close()
 	output, err := c.GetTimeTableBlocks(context.Background(), 1, 0)
 	require.NoError(t, err)
 	assert.Equal(t, blocks, output)
+
+	_, err = c.GetTimeTableBlocks(context.Background(), 1, -1)
+	assert.Error(t, err)
 }
 
 func TestAPIClient_GetTimeTableBlocksForDayType(t *testing.T) {
 	tests := []struct {
 		name        string
 		timeTableID TimetableID
-		dayType     string
+		dayType     DayType
 		input       []Block
 		pass        bool
 	}{
@@ -115,7 +126,7 @@ func TestAPIClient_SetTimeTableBlocksForDayType(t *testing.T) {
 	tests := []struct {
 		name        string
 		timeTableID TimetableID
-		dayType     string
+		dayType     DayType
 		input       []Block
 		pass        bool
 	}{

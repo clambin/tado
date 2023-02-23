@@ -14,18 +14,18 @@ func TestError_Error(t *testing.T) {
 	}{
 		{
 			name:  "single",
-			input: &Error{Errors: []errorEntry{{Code: "foo", Title: "error1"}}},
-			want:  "error1",
+			input: &APIError{Errors: []errorEntry{{Code: "foo", Title: "error1"}}},
+			want:  `{"foo":"error1"}`,
 		},
 		{
 			name:  "multiple",
-			input: &Error{Errors: []errorEntry{{Code: "foo", Title: "error1"}, {Code: "foo", Title: "error2"}}},
-			want:  "error1,error2",
+			input: &APIError{Errors: []errorEntry{{Code: "foo", Title: "error1"}, {Code: "foo", Title: "error2"}}},
+			want:  `[{"foo":"error1"},{"foo":"error2"}]`,
 		},
 		{
 			name:  "empty",
-			input: &Error{},
-			want:  "",
+			input: &APIError{},
+			want:  "[]",
 		},
 		{
 			name:  "other error",
@@ -37,23 +37,23 @@ func TestError_Error(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			assert.Equal(t, tt.want, tt.input.Error())
 
-			e2 := &UnprocessableEntryError{Err: tt.input}
+			e2 := &UnprocessableEntryError{err: tt.input}
 			assert.Equal(t, "unprocessable entity: "+tt.want, e2.Error())
 		})
 	}
 }
 
 func TestError_Is(t *testing.T) {
-	err1 := &Error{Errors: []errorEntry{{Code: "foo", Title: "error1"}}}
+	err1 := &APIError{Errors: []errorEntry{{Code: "foo", Title: "error1"}}}
 
-	err2 := &Error{}
+	err2 := &APIError{}
 	assert.ErrorIs(t, err1, err2)
 	err3 := errors.New("some error")
 	assert.NotErrorIs(t, err1, err3)
 }
 
 func TestErrUnprocessableEntity_Is(t *testing.T) {
-	err1 := &UnprocessableEntryError{Err: &Error{Errors: []errorEntry{{Code: "foo", Title: "error1"}}}}
+	err1 := &UnprocessableEntryError{err: &APIError{Errors: []errorEntry{{Code: "foo", Title: "error1"}}}}
 
 	err2 := &UnprocessableEntryError{}
 	assert.ErrorIs(t, err1, err2)
@@ -62,12 +62,12 @@ func TestErrUnprocessableEntity_Is(t *testing.T) {
 }
 
 func TestErrUnprocessableEntry_Unwrap(t *testing.T) {
-	err1 := &UnprocessableEntryError{Err: &Error{Errors: []errorEntry{{Code: "foo", Title: "error1"}}}}
+	err1 := &UnprocessableEntryError{err: &APIError{Errors: []errorEntry{{Code: "foo", Title: "error1"}}}}
 
 	err2 := err1.Unwrap()
-	var err3 *Error
+	var err3 *APIError
 	assert.ErrorIs(t, err2, err3)
 
 	assert.True(t, errors.As(err1, &err3))
-	assert.Equal(t, "unprocessable entity: error1", err1.Error())
+	assert.Equal(t, `unprocessable entity: {"foo":"error1"}`, err1.Error())
 }

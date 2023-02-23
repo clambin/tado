@@ -37,7 +37,12 @@ type ConsumptionPerDay struct {
 	CostInCents float64 `json:"costInCents"`
 }
 
-// GetConsumption returns Consumption reports per day for the period between start and end date
+// GetConsumption returns Consumption report for the specified period. This includes both the total consumption, as well as
+// the consumption per day of the period
+//
+// TODO:
+//   - not clear what values are supported for country, or how the server uses it
+//   - /consumption also supports "ngsw-bypass" (true/false) parameter, but unclear what it does
 func (c *APIClient) GetConsumption(ctx context.Context, country string, start, end time.Time) (consumption Consumption, err error) {
 	return callAPI[Consumption](ctx, c, http.MethodGet, "insights", "/consumption?"+buildConsumptionArgs(country, start, end).Encode(), nil)
 }

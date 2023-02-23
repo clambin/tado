@@ -137,7 +137,7 @@ func TestAPIClient_UnprocessableEntity(t *testing.T) {
 
 	_, err := c.GetZones(context.Background())
 	require.Error(t, err)
-	assert.Equal(t, "unprocessable entity: bar", err.Error())
+	assert.Equal(t, `unprocessable entity: {"foo":"bar"}`, err.Error())
 }
 
 func TestAPIClient_NoHomes(t *testing.T) {
@@ -186,7 +186,7 @@ func (s *testServer[T]) handler(middleware func(ctx context.Context) bool) http.
 				_ = json.NewEncoder(w).Encode(s.content)
 			case http.MethodPut:
 				if err := json.NewDecoder(r.Body).Decode(&s.content); err != nil {
-					e := UnprocessableEntryError{Err: &Error{
+					e := UnprocessableEntryError{err: &APIError{
 						Errors: []errorEntry{{
 							Code:  "unprocessable entry",
 							Title: err.Error(),

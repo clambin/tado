@@ -73,12 +73,12 @@ func (o DefaultOverlay) isValid() (string, bool) {
 	return "", true
 }
 
-// GetDefaultOverlay returns the DefaultOverlay for the specified zone.
+// GetDefaultOverlay returns the default overlay for the specified zone, which defines what happens when a user sets a manual temperature setting ("overlay") on the TRV.
 func (c *APIClient) GetDefaultOverlay(ctx context.Context, zoneID int) (DefaultOverlay, error) {
 	return callAPI[DefaultOverlay](ctx, c, http.MethodGet, "myTado", "/zones/"+strconv.Itoa(zoneID)+"/defaultOverlay", nil)
 }
 
-// SetDefaultOverlay sets the DefaultOverlay for the specified zone.
+// SetDefaultOverlay sets the DefaultOverlay for the specified zone, which defines what happens when a user sets a manual temperature setting ("overlay") on the TRV.
 func (c *APIClient) SetDefaultOverlay(ctx context.Context, zoneID int, mode DefaultOverlay) error {
 	if reason, valid := mode.isValid(); !valid {
 		return fmt.Errorf("invalid overlay: %s", reason)

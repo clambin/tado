@@ -61,7 +61,7 @@ type EnergySavingsReport struct {
 	Home                                    int        `json:"home"`
 }
 
-// GetEnergySavings returns all EnergySavingsReports
+// GetEnergySavings returns all available energy savings reports
 func (c *APIClient) GetEnergySavings(ctx context.Context) (reports []EnergySavingsReport, err error) {
 	type response struct {
 		Reports []EnergySavingsReport `json:"reports"`

@@ -122,9 +122,9 @@ func callAPI[T any](ctx context.Context, c *APIClient, method, apiClass, endpoin
 		c.authenticator.Reset()
 		err = errors.New(resp.Status)
 	case http.StatusUnprocessableEntity:
-		err = &UnprocessableEntryError{Err: parseError(respBody)}
+		err = &UnprocessableEntryError{err: parseError(respBody)}
 	default:
-		if err = parseError(respBody); !errors.Is(err, &Error{}) {
+		if err = parseError(respBody); !errors.Is(err, &APIError{}) {
 			err = errors.New(resp.Status)
 		}
 	}
@@ -132,7 +132,7 @@ func callAPI[T any](ctx context.Context, c *APIClient, method, apiClass, endpoin
 }
 
 func parseError(body []byte) error {
-	var errs Error
+	var errs APIError
 	if err := json.Unmarshal(body, &errs); err != nil {
 		return fmt.Errorf("unparsable error: %w", err)
 	}

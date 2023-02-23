@@ -1,11 +1,14 @@
 package tado
 
-import "strings"
+import (
+	"fmt"
+	"strings"
+)
 
-var _ error = &Error{}
+var _ error = &APIError{}
 
-// Error is a generic tado error
-type Error struct {
+// APIError contains errors received from the Tado servers when calling an API
+type APIError struct {
 	Errors []errorEntry `json:"errors"`
 }
 
@@ -14,38 +17,46 @@ type errorEntry struct {
 	Title string `json:"title"`
 }
 
-// Error implements the error interface
-func (e *Error) Error() string {
-	var titles []string
-	for _, entry := range e.Errors {
-		titles = append(titles, entry.Title)
-	}
-	return strings.Join(titles, ",")
+func (e errorEntry) String() string {
+	return fmt.Sprintf(`{"%s":"%s"}`, e.Code, e.Title)
 }
 
-// Is checks if a received error is a tado Error
-func (e *Error) Is(e2 error) bool {
-	_, ok := e2.(*Error)
+// Error implements the Error interface. It returns a string representation of the error.
+func (e *APIError) Error() string {
+	var errors []string
+	for _, entry := range e.Errors {
+		errors = append(errors, entry.String())
+	}
+	if len(errors) == 1 {
+		return errors[0]
+	}
+	return "[" + strings.Join(errors, ",") + "]"
+}
+
+// Is returns true if e2 is an APIError
+func (e *APIError) Is(e2 error) bool {
+	_, ok := e2.(*APIError)
 	return ok
 }
 
-// UnprocessableEntryError indicates an API call returned http.StatusUnprocessableEntity
+// UnprocessableEntryError indicates an API call returned http.StatusUnprocessableEntity, indicating the Tado servers
+// could not parse the request
 type UnprocessableEntryError struct {
-	Err error
+	err error
 }
 
-// Error implements the error interface
+// Error implements the Error interface. It returns a string representation of the error.
 func (e *UnprocessableEntryError) Error() string {
-	return "unprocessable entity: " + e.Err.Error()
+	return "unprocessable entity: " + e.err.Error()
 }
 
-// Is checks if a received error is an UnprocessableEntryError
+// Is returns true if e2 is an UnprocessableEntryError
 func (e *UnprocessableEntryError) Is(e2 error) bool {
 	_, ok := e2.(*UnprocessableEntryError)
 	return ok
 }
 
-// Unwrap returns the wrapped error
+// Unwrap returns the wrapped APIError
 func (e *UnprocessableEntryError) Unwrap() error {
-	return e.Err
+	return e.err
 }
