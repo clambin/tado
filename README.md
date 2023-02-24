@@ -5,7 +5,7 @@
 ![GitHub](https://img.shields.io/github/license/clambin/tado?style=plastic)
 [![GoDoc](https://pkg.go.dev/badge/github.com/clambin/tado?utm_source=godoc)](http://pkg.go.dev/github.com/clambin/tado)
 
-Basic Go API for Tado thermostats.
+Go API for Tadoº thermostats.
 
 ## Authors
 

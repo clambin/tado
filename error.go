@@ -39,7 +39,7 @@ func (e *APIError) Is(e2 error) bool {
 	return ok
 }
 
-// UnprocessableEntryError indicates an API call returned http.StatusUnprocessableEntity, indicating the Tado servers
+// UnprocessableEntryError indicates an API call returned http.StatusUnprocessableEntity, meaning the Tado servers
 // could not parse the request
 type UnprocessableEntryError struct {
 	err error
