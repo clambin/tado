@@ -17,7 +17,7 @@ func (c *APIClient) SetZoneOverlay(ctx context.Context, zoneID int, temperature 
 // If duration is zero, it is equivalent to calling SetZoneOverlay().
 func (c *APIClient) SetZoneTemporaryOverlay(ctx context.Context, zoneID int, temperature float64, duration time.Duration) (err error) {
 	power := "ON"
-	if temperature < 5 {
+	if temperature <= 5 {
 		temperature = 5
 		power = "OFF"
 	}

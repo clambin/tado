@@ -16,13 +16,23 @@ func TestAPIClient_ZoneOverlay(t *testing.T) {
 		name          string
 		action        func(ctx context.Context, client *APIClient) error
 		expectedState OverlayTerminationMode
+		expectedPower string
 	}{
 		{
-			name: "manual",
+			name: "manual on",
 			action: func(ctx context.Context, client *APIClient) error {
 				return client.SetZoneOverlay(ctx, 1, 18.0)
 			},
 			expectedState: PermanentOverlay,
+			expectedPower: "ON",
+		},
+		{
+			name: "manual off",
+			action: func(ctx context.Context, client *APIClient) error {
+				return client.SetZoneOverlay(ctx, 1, 5.0)
+			},
+			expectedState: PermanentOverlay,
+			expectedPower: "OFF",
 		},
 		{
 			name: "temp manual",
@@ -30,6 +40,7 @@ func TestAPIClient_ZoneOverlay(t *testing.T) {
 				return client.SetZoneTemporaryOverlay(ctx, 1, 18.0, time.Hour)
 			},
 			expectedState: TimerOverlay,
+			expectedPower: "ON",
 		},
 		{
 			name: "manual (duration not set)",
@@ -37,6 +48,7 @@ func TestAPIClient_ZoneOverlay(t *testing.T) {
 				return client.SetZoneTemporaryOverlay(ctx, 1, 18.0, 0)
 			},
 			expectedState: PermanentOverlay,
+			expectedPower: "ON",
 		},
 	}
 
@@ -61,6 +73,7 @@ func TestAPIClient_ZoneOverlay(t *testing.T) {
 			zoneInfo, err = c.GetZoneInfo(ctx, 1)
 			require.NoError(t, err)
 			assert.Equal(t, tt.expectedState, zoneInfo.Overlay.GetMode())
+			assert.Equal(t, tt.expectedPower, zoneInfo.Setting.Power)
 
 			err = c.DeleteZoneOverlay(ctx, 1)
 			require.NoError(t, err)
