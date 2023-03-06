@@ -72,7 +72,7 @@ func TestZoneInfoOverlay_GetMode(t *testing.T) {
 				Type:        tt.fields.Type,
 				Termination: tt.fields.Termination,
 			}
-			assert.Equalf(t, tt.want, z.GetMode(), "GetMode()")
+			assert.Equal(t, tt.want, z.GetMode())
 		})
 	}
 }
@@ -92,7 +92,7 @@ func TestOverlayTerminationMode_String(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Equalf(t, tt.want, tt.m.String(), "String()")
+			assert.Equal(t, tt.want, tt.m.String())
 		})
 	}
 }

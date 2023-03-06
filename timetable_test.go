@@ -68,31 +68,31 @@ func TestAPIClient_GetTimeTableBlocksForDayType(t *testing.T) {
 		timeTableID TimetableID
 		dayType     DayType
 		input       []Block
-		pass        bool
+		wantErr     assert.ErrorAssertionFunc
 	}{
 		{
 			name:        "invalid timeTableID",
 			timeTableID: 242,
 			dayType:     "SATURDAY",
-			pass:        false,
+			wantErr:     assert.Error,
 		},
 		{
 			name:        "invalid dayType",
 			timeTableID: OneDay,
 			dayType:     "SATURDAY",
-			pass:        false,
+			wantErr:     assert.Error,
 		},
 		{
 			name:        "invalid dayType",
 			timeTableID: ThreeDay,
 			dayType:     "MONDAY",
-			pass:        false,
+			wantErr:     assert.Error,
 		},
 		{
 			name:        "invalid dayType",
 			timeTableID: SevenDay,
 			dayType:     "foo",
-			pass:        false,
+			wantErr:     assert.Error,
 		},
 		{
 			name:        "valid",
@@ -103,7 +103,7 @@ func TestAPIClient_GetTimeTableBlocksForDayType(t *testing.T) {
 				{DayType: "MONDAY_TO_SUNDAY", Start: "07:00", End: "22:00", Setting: ZonePowerSetting{Type: "HEATING", Power: "ON", Temperature: Temperature{Celsius: 21.0}}},
 				{DayType: "MONDAY_TO_SUNDAY", Start: "22:00", End: "00:00"},
 			},
-			pass: true,
+			wantErr: assert.NoError,
 		},
 	}
 
@@ -111,13 +111,11 @@ func TestAPIClient_GetTimeTableBlocksForDayType(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			c, s := makeTestServer(tt.input, nil)
 			defer s.Close()
+
 			output, err := c.GetTimeTableBlocksForDayType(context.Background(), 1, tt.timeTableID, tt.dayType)
-			if !tt.pass {
-				assert.Error(t, err)
-				return
-			}
-			require.NoError(t, err)
+
 			assert.Equal(t, tt.input, output)
+			tt.wantErr(t, err)
 		})
 	}
 }
@@ -128,31 +126,31 @@ func TestAPIClient_SetTimeTableBlocksForDayType(t *testing.T) {
 		timeTableID TimetableID
 		dayType     DayType
 		input       []Block
-		pass        bool
+		wantErr     assert.ErrorAssertionFunc
 	}{
 		{
 			name:        "invalid timeTableID",
 			timeTableID: 242,
 			dayType:     "SATURDAY",
-			pass:        false,
+			wantErr:     assert.Error,
 		},
 		{
 			name:        "invalid dayType",
 			timeTableID: OneDay,
 			dayType:     "SATURDAY",
-			pass:        false,
+			wantErr:     assert.Error,
 		},
 		{
 			name:        "invalid dayType",
 			timeTableID: ThreeDay,
 			dayType:     "MONDAY",
-			pass:        false,
+			wantErr:     assert.Error,
 		},
 		{
 			name:        "invalid dayType",
 			timeTableID: SevenDay,
 			dayType:     "foo",
-			pass:        false,
+			wantErr:     assert.Error,
 		},
 		{
 			name:        "valid",
@@ -163,7 +161,7 @@ func TestAPIClient_SetTimeTableBlocksForDayType(t *testing.T) {
 				{DayType: "MONDAY_TO_SUNDAY", Start: "07:00", End: "22:00", Setting: ZonePowerSetting{Type: "HEATING", Power: "ON", Temperature: Temperature{Celsius: 21.0}}},
 				{DayType: "MONDAY_TO_SUNDAY", Start: "22:00", End: "00:00"},
 			},
-			pass: true,
+			wantErr: assert.NoError,
 		},
 	}
 
@@ -171,12 +169,9 @@ func TestAPIClient_SetTimeTableBlocksForDayType(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			c, s := makeTestServer[[]Block](nil, nil)
 			defer s.Close()
+
 			err := c.SetTimeTableBlocksForDayType(context.Background(), 1, tt.timeTableID, tt.dayType, tt.input)
-			if !tt.pass {
-				assert.Error(t, err)
-				return
-			}
-			require.NoError(t, err)
+			tt.wantErr(t, err)
 		})
 	}
 }

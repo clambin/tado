@@ -59,8 +59,8 @@ func TestZones_GetZone(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, got1 := tt.z.GetZone(tt.args.id)
-			assert.Equalf(t, tt.want, got, "GetZone(%v)", tt.args.id)
-			assert.Equalf(t, tt.want1, got1, "GetZone(%v)", tt.args.id)
+			assert.Equal(t, tt.want, got)
+			assert.Equal(t, tt.want1, got1)
 		})
 	}
 }
@@ -99,8 +99,8 @@ func TestZones_GetZoneByName(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, got1 := tt.z.GetZoneByName(tt.args.name)
-			assert.Equalf(t, tt.want, got, "GetZone(%v)", tt.args.name)
-			assert.Equalf(t, tt.want1, got1, "GetZone(%v)", tt.args.name)
+			assert.Equal(t, tt.want, got)
+			assert.Equal(t, tt.want1, got1)
 		})
 	}
 }
@@ -185,12 +185,12 @@ func TestAPIClient_SetZoneAwayAutoAdjust(t *testing.T) {
 	tests := []struct {
 		name         string
 		comfortLevel ComfortLevel
-		pass         bool
+		wantErr      assert.ErrorAssertionFunc
 	}{
-		{name: "eco", comfortLevel: Eco, pass: true},
-		{name: "balance", comfortLevel: Balance, pass: true},
-		{name: "comfort", comfortLevel: Comfort, pass: true},
-		{name: "invalid", comfortLevel: 12, pass: false},
+		{name: "eco", comfortLevel: Eco, wantErr: assert.NoError},
+		{name: "balance", comfortLevel: Balance, wantErr: assert.NoError},
+		{name: "comfort", comfortLevel: Comfort, wantErr: assert.NoError},
+		{name: "invalid", comfortLevel: 12, wantErr: assert.Error},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -198,11 +198,12 @@ func TestAPIClient_SetZoneAwayAutoAdjust(t *testing.T) {
 			defer s.Close()
 
 			err := c.SetZoneAwayAutoAdjust(context.Background(), 1, tt.comfortLevel)
-			if !tt.pass {
-				assert.Error(t, err)
+			tt.wantErr(t, err)
+
+			if err != nil {
 				return
 			}
-			require.NoError(t, err)
+
 			cfg, err := c.GetZoneAutoConfiguration(context.Background(), 1)
 			require.NoError(t, err)
 			assert.True(t, cfg.AutoAdjust)
@@ -215,10 +216,10 @@ func TestAPIClient_SetZoneAwayManual(t *testing.T) {
 	tests := []struct {
 		name        string
 		temperature float64
-		pass        bool
+		wantErr     assert.ErrorAssertionFunc
 	}{
-		{name: "on", temperature: 18, pass: true},
-		{name: "off", temperature: 5, pass: true},
+		{name: "on", temperature: 18, wantErr: assert.NoError},
+		{name: "off", temperature: 5, wantErr: assert.NoError},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -226,11 +227,11 @@ func TestAPIClient_SetZoneAwayManual(t *testing.T) {
 			defer s.Close()
 
 			err := c.SetZoneAwayManual(context.Background(), 1, tt.temperature)
-			if !tt.pass {
-				assert.Error(t, err)
+			tt.wantErr(t, err)
+
+			if err != nil {
 				return
 			}
-			require.NoError(t, err)
 
 			cfg, err := c.GetZoneAutoConfiguration(context.Background(), 1)
 			require.NoError(t, err)
