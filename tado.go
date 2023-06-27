@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/clambin/tado/auth"
+	"github.com/clambin/tado/internal/oauth2"
 	"io"
 	"net/http"
 	"sync"
@@ -17,44 +17,32 @@ type APIClient struct {
 	// HTTPClient is used to perform HTTP requests
 	HTTPClient *http.Client
 
-	authenticator
 	apiURL       map[string]string
 	lock         sync.RWMutex
 	account      *Account
 	activeHomeID int
 }
 
-type authenticator interface {
-	GetAuthToken(ctx context.Context) (token string, err error)
-	Reset()
-}
-
-// New creates a new client
+// New creates a new Tado API client
 //
 // clientSecret can typically be left blank.  If the default secret does not work, your client secret can be found by visiting https://my.tado.com/webapp/env.js after logging in to https://my.tado.com
-func New(username, password, clientSecret string) *APIClient {
-	if clientSecret == "" {
-		clientSecret = "wZaRN7rpjn3FoNyF5IFuxg9uMzYJcvOoQ8QWiIqS3hfk6gLhVlG57j5YNoZL2Rtc"
-	}
-
-	return newWithAuthenticator(&auth.Authenticator{
-		HTTPClient:   http.DefaultClient,
-		ClientID:     "tado-web-app",
-		ClientSecret: clientSecret,
-		Username:     username,
-		Password:     password,
-		AuthURL:      "https://auth.tado.com/oauth/token",
-	})
+func New(username, password, clientSecret string) (*APIClient, error) {
+	return NewWithContext(context.Background(), username, password, clientSecret)
 }
 
-func newWithAuthenticator(auth authenticator) *APIClient {
-	return &APIClient{
-		HTTPClient: &http.Client{
-			Transport: roundTripper{authenticator: auth},
-		},
-		authenticator: auth,
-		apiURL:        buildURLMap(""),
+// NewWithContext creates a new Tado API client for the provided Context. The API Client will no longer be valid when the Context is cancelled.
+//
+// clientSecret can typically be left blank.  If the default secret does not work, your client secret can be found by visiting https://my.tado.com/webapp/env.js after logging in to https://my.tado.com
+func NewWithContext(ctx context.Context, username, password, clientSecret string) (*APIClient, error) {
+	var client *APIClient
+	httpClient, err := oauth2.NewClient(ctx, username, password, clientSecret)
+	if err == nil {
+		client = &APIClient{
+			HTTPClient: httpClient,
+			apiURL:     buildURLMap(""),
+		}
 	}
+	return client, err
 }
 
 func buildURLMap(override string) map[string]string {
@@ -117,9 +105,6 @@ func callAPI[T any](ctx context.Context, c *APIClient, method, apiClass, endpoin
 		}
 	case http.StatusNoContent:
 	case http.StatusForbidden, http.StatusUnauthorized:
-		// we're authenticated, but still got forbidden.
-		// force password login to get a new token.
-		c.authenticator.Reset()
 		err = errors.New(resp.Status)
 	case http.StatusUnprocessableEntity:
 		err = &UnprocessableEntryError{err: parseError(respBody)}

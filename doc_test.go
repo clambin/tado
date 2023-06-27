@@ -7,7 +7,7 @@ import (
 )
 
 func ExampleAPIClient_GetZoneInfo() {
-	c := tado.New("me@example.com", "password", "")
+	c, _ := tado.New("me@example.com", "password", "")
 	ctx := context.Background()
 
 	zones, err := c.GetZones(ctx)
@@ -25,7 +25,7 @@ func ExampleAPIClient_GetZoneInfo() {
 }
 
 func ExampleAPIClient_GetEnergySavings() {
-	c := tado.New("me@example.com", "password", "")
+	c, _ := tado.New("me@example.com", "password", "")
 	ctx := context.Background()
 
 	info, err := c.GetEnergySavings(ctx)
@@ -43,7 +43,7 @@ func ExampleAPIClient_GetEnergySavings() {
 }
 
 func ExampleAPIClient_GetAirComfort() {
-	c := tado.New("me@example.com", "password", "")
+	c, _ := tado.New("me@example.com", "password", "")
 	ctx := context.Background()
 	zones, err := c.GetZones(ctx)
 	if err != nil {
@@ -66,7 +66,7 @@ func ExampleAPIClient_GetAirComfort() {
 }
 
 func ExampleAPIClient_SetTimeTableBlocksForDayType() {
-	c := tado.New("me@example.com", "password", "")
+	c, _ := tado.New("me@example.com", "password", "")
 	ctx := context.Background()
 	blocks, err := c.GetTimeTableBlocksForDayType(ctx, 1, tado.OneDay, "MONDAY_TO_SUNDAY")
 	if err != nil {

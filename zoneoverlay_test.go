@@ -57,8 +57,8 @@ func TestAPIClient_ZoneOverlay(t *testing.T) {
 			mgr := newOverlayManager()
 			s := httptest.NewServer(mgr)
 
-			auth := fakeAuthenticator{Token: "1234"}
-			c := newWithAuthenticator(&auth)
+			var c APIClient
+			c.HTTPClient = http.DefaultClient
 			c.apiURL = buildURLMap(s.URL)
 
 			ctx := context.TODO()
@@ -67,7 +67,7 @@ func TestAPIClient_ZoneOverlay(t *testing.T) {
 			require.NoError(t, err)
 			assert.Equal(t, NoOverlay, zoneInfo.Overlay.GetMode())
 
-			err = tt.action(ctx, c)
+			err = tt.action(ctx, &c)
 			require.NoError(t, err)
 
 			zoneInfo, err = c.GetZoneInfo(ctx, 1)
@@ -83,7 +83,7 @@ func TestAPIClient_ZoneOverlay(t *testing.T) {
 			assert.Equal(t, NoOverlay, zoneInfo.Overlay.GetMode())
 
 			s.Close()
-			err = tt.action(ctx, c)
+			err = tt.action(ctx, &c)
 			assert.Error(t, err)
 		})
 	}

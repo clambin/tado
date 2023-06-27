@@ -81,7 +81,8 @@ func TestAPIClient_SetHomeState(t *testing.T) {
 	h := httptest.NewServer(http.HandlerFunc(s.Handle))
 	defer h.Close()
 
-	c := newWithAuthenticator(&fakeAuthenticator{Token: "1234"})
+	var c APIClient
+	c.HTTPClient = http.DefaultClient
 	c.apiURL = buildURLMap(h.URL)
 
 	err := c.SetHomeState(context.Background(), true)
@@ -93,10 +94,11 @@ func TestAPIClient_SetHomeState(t *testing.T) {
 
 func TestAPIClient_UnsetHomeState(t *testing.T) {
 	s := homeStateServer{HomeState: HomeState{Presence: "HOME", PresenceLocked: true}}
-	h := httptest.NewServer(authenticationHandler("1234")(http.HandlerFunc(s.Handle)))
+	h := httptest.NewServer(http.HandlerFunc(s.Handle))
 	defer h.Close()
 
-	c := newWithAuthenticator(&fakeAuthenticator{Token: "1234"})
+	var c APIClient
+	c.HTTPClient = http.DefaultClient
 	c.apiURL = buildURLMap(h.URL)
 
 	err := c.UnsetHomeState(context.Background())

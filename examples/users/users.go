@@ -8,7 +8,7 @@ import (
 )
 
 func main() {
-	c := tado.New(os.Getenv("TADO_USERNAME"), os.Getenv("TADO_PASSWORD"), "")
+	c, _ := tado.New(os.Getenv("TADO_USERNAME"), os.Getenv("TADO_PASSWORD"), "")
 	ctx := context.Background()
 
 	users, err := c.GetUsers(ctx)

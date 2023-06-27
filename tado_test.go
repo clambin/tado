@@ -3,7 +3,6 @@ package tado
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -22,50 +21,15 @@ func TestAPIClient_GetZoneInfo_E2E(t *testing.T) {
 		t.Skip("environment not set. skipping ...")
 	}
 
-	c := New(username, password, "")
+	c, _ := New(username, password, "")
 	ctx := context.Background()
 	zones, err := c.GetZones(ctx)
 	require.NoError(t, err)
 
 	for _, zone := range zones {
-		_, err := c.GetZoneInfo(ctx, zone.ID)
+		_, err = c.GetZoneInfo(ctx, zone.ID)
 		require.NoError(t, err)
 	}
-}
-
-func TestAPIClient_Authentication(t *testing.T) {
-	response := []Zone{
-		{ID: 1, Name: "foo", Devices: []Device{{DeviceType: "foo", CurrentFwVersion: "v1.0", ConnectionState: State{Value: true}, BatteryState: "OK"}}},
-		{ID: 2, Name: "bar", Devices: []Device{{DeviceType: "bar", CurrentFwVersion: "v1.0", ConnectionState: State{Value: false}, BatteryState: "OK"}}},
-	}
-
-	_, s := makeTestServer(response, nil)
-
-	auth := fakeAuthenticator{}
-	c := newWithAuthenticator(&auth)
-	c.apiURL = buildURLMap(s.URL)
-
-	auth.Token = "4321"
-	_, err := c.GetZones(context.Background())
-	assert.Error(t, err)
-	assert.Equal(t, "403 Forbidden", err.Error())
-	assert.False(t, auth.set)
-
-	auth.Token = "1234"
-	_, err = c.GetZones(context.Background())
-	require.NoError(t, err)
-	assert.Equal(t, 242, c.activeHomeID)
-	assert.True(t, auth.set)
-
-	auth.Token = "4321"
-	_, err = c.GetZones(context.Background())
-	assert.Error(t, err)
-	assert.Equal(t, "403 Forbidden", err.Error())
-	assert.False(t, auth.set)
-
-	s.Close()
-	_, err = c.GetZones(context.Background())
-	assert.Error(t, err)
 }
 
 func TestAPIClient_DecodeError(t *testing.T) {
@@ -116,8 +80,8 @@ func TestAPIClient_TooManyRequests(t *testing.T) {
 	}))
 	defer s.Close()
 
-	auth := fakeAuthenticator{Token: "1234"}
-	c := newWithAuthenticator(&auth)
+	var c APIClient
+	c.HTTPClient = http.DefaultClient
 	c.apiURL = buildURLMap(s.URL)
 
 	_, err := c.GetZones(context.Background())
@@ -131,8 +95,8 @@ func TestAPIClient_UnprocessableEntity(t *testing.T) {
 	}))
 	defer s.Close()
 
-	auth := fakeAuthenticator{Token: "1234"}
-	c := newWithAuthenticator(&auth)
+	var c APIClient
+	c.HTTPClient = http.DefaultClient
 	c.apiURL = buildURLMap(s.URL)
 
 	_, err := c.GetZones(context.Background())
@@ -146,8 +110,8 @@ func TestAPIClient_NoHomes(t *testing.T) {
 	}))
 	defer s.Close()
 
-	auth := fakeAuthenticator{Token: "1234"}
-	c := newWithAuthenticator(&auth)
+	var c APIClient
+	c.HTTPClient = http.DefaultClient
 	c.apiURL = buildURLMap(s.URL)
 
 	_, err := c.GetZones(context.Background())
@@ -157,13 +121,13 @@ func TestAPIClient_NoHomes(t *testing.T) {
 
 func makeTestServer[T any](response T, middleware func(ctx context.Context) bool) (*APIClient, *httptest.Server) {
 	s := testServer[T]{content: response}
-	const token = "1234"
-	h := httptest.NewServer(authenticationHandler(token)(s.handler(middleware)))
+	h := httptest.NewServer(s.handler(middleware))
 
-	c := newWithAuthenticator(&fakeAuthenticator{Token: token})
+	var c APIClient
+	c.HTTPClient = http.DefaultClient
 	c.apiURL = buildURLMap(h.URL)
 
-	return c, h
+	return &c, h
 }
 
 type testServer[T any] struct {
@@ -192,45 +156,12 @@ func (s *testServer[T]) handler(middleware func(ctx context.Context) bool) http.
 							Title: err.Error(),
 						}},
 					}}
-					_ = json.NewEncoder(w).Encode(e)
+					_, _ = w.Write([]byte(e.Error()))
 					w.WriteHeader(http.StatusUnprocessableEntity)
 				}
 			default:
 				w.WriteHeader(http.StatusNotFound)
 			}
 		}
-	}
-}
-
-type fakeAuthenticator struct {
-	set   bool
-	fail  bool
-	Token string
-}
-
-func (f *fakeAuthenticator) GetAuthToken(_ context.Context) (string, error) {
-	if f.fail {
-		return "", errors.New("failed")
-	}
-	f.set = true
-	return f.Token, nil
-}
-
-func (f *fakeAuthenticator) Reset() {
-	f.set = false
-}
-
-var _ authenticator = &fakeAuthenticator{}
-
-func authenticationHandler(token string) func(next http.Handler) http.Handler {
-	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			bearer := r.Header.Get("Authorization")
-			if bearer != "Bearer "+token {
-				http.Error(w, "forbidden", http.StatusForbidden)
-				return
-			}
-			next.ServeHTTP(w, r)
-		})
 	}
 }
