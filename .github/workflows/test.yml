@@ -26,7 +26,7 @@ jobs:
       - name: test go v${{ matrix.go }}
         run: |
           go test ./... -race -coverprofile=coverage.txt -covermode=atomic
-      - uses: codecov/codecov-action@v4
+      - uses: codecov/codecov-action@v3
         with:
           file: coverage.txt
           token: ${{ secrets.CODECOV_TOKEN }}
