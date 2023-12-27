@@ -6,7 +6,8 @@ import (
 
 // MakeZoneInfo creates a tado.ZoneInfo. The provided options are used to configure the resulting zoneInfo.
 func MakeZoneInfo(options ...ZoneInfoOption) tado.ZoneInfo {
-	var zoneInfo tado.ZoneInfo
+	zoneInfo := tado.ZoneInfo{TadoMode: "HOME"}
+
 	for _, option := range options {
 		option(&zoneInfo)
 	}
@@ -16,6 +17,17 @@ func MakeZoneInfo(options ...ZoneInfoOption) tado.ZoneInfo {
 
 // ZoneInfoOption configures a tado.ZoneInfo.
 type ZoneInfoOption func(*tado.ZoneInfo)
+
+// ZoneInfoTadoMode sets the TadoMode (home/away) in a tado.ZoneInfo.
+func ZoneInfoTadoMode(home bool) ZoneInfoOption {
+	return func(z *tado.ZoneInfo) {
+		if home {
+			z.TadoMode = "HOME"
+		} else {
+			z.TadoMode = "AWAY"
+		}
+	}
+}
 
 // ZoneInfoTemperature sets the measured & target temperatures in a tado.ZoneInfo.
 func ZoneInfoTemperature(measured, target float64) ZoneInfoOption {
