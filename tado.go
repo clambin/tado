@@ -76,14 +76,14 @@ func callAPI[T any](ctx context.Context, c *APIClient, method, apiClass, endpoin
 	}
 
 	target := c.makeAPIURL(apiClass, endpoint)
-	reqBody := new(bytes.Buffer)
+	var reqBody bytes.Buffer
 	if request != nil {
-		if err = json.NewEncoder(reqBody).Encode(request); err != nil {
+		if err = json.NewEncoder(&reqBody).Encode(request); err != nil {
 			return response, fmt.Errorf("encode: %w", err)
 		}
 	}
 
-	req, _ := http.NewRequestWithContext(ctx, method, target, reqBody)
+	req, _ := http.NewRequestWithContext(ctx, method, target, &reqBody)
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
 
@@ -93,32 +93,27 @@ func callAPI[T any](ctx context.Context, c *APIClient, method, apiClass, endpoin
 	}
 	defer func() { _ = resp.Body.Close() }()
 
-	respBody, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return response, fmt.Errorf("read: %w", err)
-	}
-
 	switch resp.StatusCode {
 	case http.StatusOK:
 		if resp.ContentLength != 0 {
-			err = json.Unmarshal(respBody, &response)
+			err = json.NewDecoder(resp.Body).Decode(&response)
 		}
 	case http.StatusNoContent:
 	case http.StatusForbidden, http.StatusUnauthorized:
 		err = errors.New(resp.Status)
 	case http.StatusUnprocessableEntity:
-		err = &UnprocessableEntryError{err: parseError(respBody)}
+		err = &UnprocessableEntryError{err: parseError(resp.Body)}
 	default:
-		if err = parseError(respBody); !errors.Is(err, &APIError{}) {
+		if err = parseError(resp.Body); !errors.Is(err, &APIError{}) {
 			err = errors.New(resp.Status)
 		}
 	}
 	return
 }
 
-func parseError(body []byte) error {
+func parseError(body io.Reader) error {
 	var errs APIError
-	if err := json.Unmarshal(body, &errs); err != nil {
+	if err := json.NewDecoder(body).Decode(&errs); err != nil {
 		return fmt.Errorf("unparsable error: %w", err)
 	}
 	return &errs
