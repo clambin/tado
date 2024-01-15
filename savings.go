@@ -12,17 +12,18 @@ type EnergySavingsReport struct {
 		Start time.Time `json:"start"`
 		End   time.Time `json:"end"`
 	} `json:"coveredInterval"`
-	TotalSavingsAvailable bool `json:"totalSavingsAvailable"`
-	WithAutoAssist        struct {
+	WithAutoAssist struct {
 		DetectedAwayDuration     IntValue `json:"detectedAwayDuration"`
 		OpenWindowDetectionTimes int      `json:"openWindowDetectionTimes"`
 	} `json:"withAutoAssist"`
+	SunshineDuration               IntValue   `json:"sunshineDuration"`
 	TotalSavingsInThermostaticMode IntValue   `json:"totalSavingsInThermostaticMode"`
 	ManualControlSaving            FloatValue `json:"manualControlSaving"`
 	TotalSavings                   FloatValue `json:"totalSavings"`
-	HideSunshineDuration           bool       `json:"hideSunshineDuration"`
+	SetbackScheduleDurationPerDay  FloatValue `json:"setbackScheduleDurationPerDay"`
 	AwayDuration                   IntValue   `json:"awayDuration"`
-	ShowSavingsInThermostaticMode  bool       `json:"showSavingsInThermostaticMode"`
+	YearMonth                      string     `json:"yearMonth"`
+	OpenWindowDetectionTimes       int        `json:"openWindowDetectionTimes"`
 	CommunityNews                  *struct {
 		Type                   string `json:"type,omitempty"`
 		HumidityLevelDurations struct {
@@ -51,14 +52,13 @@ type EnergySavingsReport struct {
 		TurnOnDateForMajorityOfTadoUsers          string  `json:"turnOnDateForMajorityOfTadoUsers,omitempty"`
 		TurnOnDateForMajorityOfUsersInLocalRegion string  `json:"turnOnDateForMajorityOfUsersInLocalRegion,omitempty"`
 	} `json:"communityNews"`
-	SunshineDuration                        IntValue   `json:"sunshineDuration"`
-	HasAutoAssist                           bool       `json:"hasAutoAssist"`
-	OpenWindowDetectionTimes                int        `json:"openWindowDetectionTimes"`
-	SetbackScheduleDurationPerDay           FloatValue `json:"setbackScheduleDurationPerDay"`
-	TotalSavingsInThermostaticModeAvailable bool       `json:"totalSavingsInThermostaticModeAvailable"`
-	YearMonth                               string     `json:"yearMonth"`
-	HideOpenWindowDetection                 bool       `json:"hideOpenWindowDetection"`
-	Home                                    int        `json:"home"`
+	Home                                    int  `json:"home"`
+	HasAutoAssist                           bool `json:"hasAutoAssist"`
+	ShowSavingsInThermostaticMode           bool `json:"showSavingsInThermostaticMode"`
+	HideSunshineDuration                    bool `json:"hideSunshineDuration"`
+	TotalSavingsInThermostaticModeAvailable bool `json:"totalSavingsInThermostaticModeAvailable"`
+	TotalSavingsAvailable                   bool `json:"totalSavingsAvailable"`
+	HideOpenWindowDetection                 bool `json:"hideOpenWindowDetection"`
 }
 
 // GetEnergySavings returns all available energy savings reports

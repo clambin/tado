@@ -107,18 +107,6 @@ func (c *APIClient) GetActiveHome(ctx context.Context) (Home, bool) {
 
 // HomeInfo contains detailed information about a registered Home
 type HomeInfo struct {
-	ID                         int         `json:"id"`
-	Name                       string      `json:"name"`
-	DateTimeZone               string      `json:"dateTimeZone"`
-	TemperatureUnit            string      `json:"temperatureUnit"`
-	InstallationCompleted      bool        `json:"installationCompleted"`
-	Partner                    interface{} `json:"partner"`
-	SimpleSmartScheduleEnabled bool        `json:"simpleSmartScheduleEnabled"`
-	ContactDetails             struct {
-		Name  string `json:"name"`
-		Email string `json:"email"`
-		Phone string `json:"phone"`
-	} `json:"contactDetails"`
 	Address struct {
 		AddressLine1 string      `json:"addressLine1"`
 		AddressLine2 interface{} `json:"addressLine2"`
@@ -127,10 +115,22 @@ type HomeInfo struct {
 		State        interface{} `json:"state"`
 		Country      string      `json:"country"`
 	} `json:"address"`
-	Geolocation struct {
+	ContactDetails struct {
+		Name  string `json:"name"`
+		Email string `json:"email"`
+		Phone string `json:"phone"`
+	} `json:"contactDetails"`
+	Name            string      `json:"name"`
+	DateTimeZone    string      `json:"dateTimeZone"`
+	TemperatureUnit string      `json:"temperatureUnit"`
+	Partner         interface{} `json:"partner"`
+	Geolocation     struct {
 		Latitude  float64 `json:"latitude"`
 		Longitude float64 `json:"longitude"`
 	} `json:"geolocation"`
+	ID                         int  `json:"id"`
+	InstallationCompleted      bool `json:"installationCompleted"`
+	SimpleSmartScheduleEnabled bool `json:"simpleSmartScheduleEnabled"`
 }
 
 // GetHomeInfo returns detailed information about the active Home
