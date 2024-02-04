@@ -6,27 +6,6 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        go:
-          - '1.20'
-          - '1.21'
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
-        with:
-          go-version: ${{ matrix.go }}
-      - uses: golangci/golangci-lint-action@v3
-        with:
-          args: --issues-exit-code=0 --timeout=3m
-      - name: go vet
-        run: |
-          go vet ./...
-      - name: test go v${{ matrix.go }}
-        run: |
-          go test ./... -race -coverprofile=coverage.txt -covermode=atomic
-      - uses: codecov/codecov-action@v4
-        with:
-          file: coverage.txt
-          token: ${{ secrets.CODECOV_TOKEN }}
+    uses: clambin/workflows/.github/workflows/libtest.yaml@main
+    secrets:
+      codecov-token: ${{ secrets.CODECOV_TOKEN }}
