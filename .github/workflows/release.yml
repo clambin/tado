@@ -8,6 +8,8 @@ on:
 jobs:
   test:
     uses: clambin/workflows/.github/workflows/libtest.yaml@main
+    with:
+      go-previous: "1.21"
     secrets:
       codecov-token: ${{ secrets.CODECOV_TOKEN }}
   publish:
