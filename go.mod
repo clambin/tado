@@ -5,7 +5,7 @@ go 1.21
 toolchain go1.21.6
 
 require (
-	github.com/clambin/go-common/set v0.4.1
+	github.com/clambin/go-common/set v0.4.2
 	github.com/stretchr/testify v1.8.4
 	golang.org/x/oauth2 v0.16.0
 )
