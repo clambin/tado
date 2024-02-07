@@ -6,7 +6,7 @@ on:
 
 jobs:
   test:
-    uses: clambin/workflows/.github/workflows/libtest.yaml@libtest
+    uses: clambin/workflows/.github/workflows/libtest.yaml@main
     # tado only supports 1.21
     with:
       go-previous: "1.21"
