@@ -5,7 +5,7 @@ go 1.21
 require (
 	github.com/clambin/go-common/set v0.4.3
 	github.com/stretchr/testify v1.9.0
-	golang.org/x/oauth2 v0.20.0
+	golang.org/x/oauth2 v0.21.0
 )
 
 require (
