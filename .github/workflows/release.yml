@@ -12,4 +12,4 @@ jobs:
       codecov-token: ${{ secrets.CODECOV_TOKEN }}
   publish:
     needs: test
-    uses: clambin/workflows/.github/workflows/librelease.yaml@go1.23
+    uses: clambin/workflows/.github/workflows/release.yaml@go1.23
