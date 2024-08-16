@@ -7,4 +7,4 @@ on:
 
 jobs:
   vulnerabilities:
-    uses: clambin/workflows/.github/workflows/vulnerabilities.yaml@main
+    uses: clambin/workflows/.github/workflows/vulnerabilities.yaml@go1.23
