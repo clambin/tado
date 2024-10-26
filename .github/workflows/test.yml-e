@@ -6,6 +6,6 @@ on:
 
 jobs:
   test:
-    uses: clambin/workflows/.github/workflows/libtest.yaml@main
+    uses: clambin/workflows/.github/workflows/libtest.yaml@go1.23
     secrets:
       codecov-token: ${{ secrets.CODECOV_TOKEN }}
