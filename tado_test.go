@@ -50,7 +50,7 @@ func TestAPIClient_DecodeError(t *testing.T) {
 }
 
 func TestAPIClient_Timeout(t *testing.T) {
-	c, s := makeTestServer(WeatherInfo{}, func(ctx context.Context) bool { return wait(ctx, 5*time.Second) })
+	c, s := makeTestServer(WeatherInfo{}, func(r *http.Request) bool { return wait(r.Context(), 5*time.Second) })
 	defer s.Close()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
@@ -61,17 +61,12 @@ func TestAPIClient_Timeout(t *testing.T) {
 }
 
 func wait(ctx context.Context, duration time.Duration) (passed bool) {
-	timer := time.NewTimer(duration)
-loop:
-	for {
-		select {
-		case <-timer.C:
-			break loop
-		case <-ctx.Done():
-			return false
-		}
+	select {
+	case <-time.After(duration):
+		return true
+	case <-ctx.Done():
+		return false
 	}
-	return true
 }
 
 func TestAPIClient_TooManyRequests(t *testing.T) {
@@ -119,9 +114,20 @@ func TestAPIClient_NoHomes(t *testing.T) {
 	assert.Equal(t, "no homes detected", err.Error())
 }
 
-func makeTestServer[T any](response T, middleware func(ctx context.Context) bool) (*APIClient, *httptest.Server) {
-	s := testServer[T]{content: response}
-	h := httptest.NewServer(s.handler(middleware))
+func makeTestServer[T any](response T, f func(r *http.Request) bool) (*APIClient, *httptest.Server) {
+	ts := testServer[T]{content: response}
+	handler := http.Handler(&ts)
+	if f != nil {
+		next := handler
+		handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if !f(r) {
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+			next.ServeHTTP(w, r)
+		})
+	}
+	h := httptest.NewServer(handler)
 
 	var c APIClient
 	c.HTTPClient = http.DefaultClient
@@ -134,34 +140,27 @@ type testServer[T any] struct {
 	content T
 }
 
-func (s *testServer[T]) handler(middleware func(ctx context.Context) bool) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		ctx := r.Context()
-		if middleware != nil && !middleware(ctx) {
-			http.Error(w, "error", http.StatusInternalServerError)
-			return
-		}
-		switch r.URL.Path {
-		case "/me":
-			_, _ = w.Write([]byte(`{ "homes": [ { "id" : 242, "name": "home" } ] }`))
-		default:
-			switch r.Method {
-			case http.MethodGet:
-				_ = json.NewEncoder(w).Encode(s.content)
-			case http.MethodPut:
-				if err := json.NewDecoder(r.Body).Decode(&s.content); err != nil {
-					e := UnprocessableEntryError{err: &APIError{
-						Errors: []errorEntry{{
-							Code:  "unprocessable entry",
-							Title: err.Error(),
-						}},
-					}}
-					_, _ = w.Write([]byte(e.Error()))
-					w.WriteHeader(http.StatusUnprocessableEntity)
-				}
-			default:
-				w.WriteHeader(http.StatusNotFound)
+func (s *testServer[T]) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	switch r.URL.Path {
+	case "/me":
+		_, _ = w.Write([]byte(`{ "homes": [ { "id" : 242, "name": "home" } ] }`))
+	default:
+		switch r.Method {
+		case http.MethodGet:
+			_ = json.NewEncoder(w).Encode(s.content)
+		case http.MethodPut:
+			if err := json.NewDecoder(r.Body).Decode(&s.content); err != nil {
+				e := UnprocessableEntryError{err: &APIError{
+					Errors: []errorEntry{{
+						Code:  "unprocessable entry",
+						Title: err.Error(),
+					}},
+				}}
+				_, _ = w.Write([]byte(e.Error()))
+				w.WriteHeader(http.StatusUnprocessableEntity)
 			}
+		default:
+			w.WriteHeader(http.StatusNotFound)
 		}
 	}
 }
