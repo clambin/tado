@@ -1,0 +1,6 @@
+overlay: 1.0.0
+info:
+  title: Overlay ../tado-openapispec-v2/tado-openapispec-v2.yaml => openapi.yaml
+  version: 0.0.0
+actions: []
+
