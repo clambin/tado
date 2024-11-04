@@ -587,17 +587,24 @@ type Error struct {
 	Title *string `json:"title,omitempty"`
 }
 
-// ErrorResponse error object returned for non-200 responses
-type ErrorResponse = []Error
-
-// ErrorResponse422 error object returned for 422 responses
-type ErrorResponse422 = []struct {
+// Error422 defines model for Error422.
+type Error422 struct {
 	// Code meaningful textual code associated with the HTTP status code like 'accessDenied' (for 403) or 'unauthorized' for (401)
 	Code *string `json:"code,omitempty"`
 
 	// Title detailed description of the error in natural language (english)
 	Title    *string   `json:"title,omitempty"`
 	ZoneType *ZoneType `json:"zoneType,omitempty"`
+}
+
+// ErrorResponse error object returned for non-200 responses
+type ErrorResponse struct {
+	Errors *[]Error `json:"errors,omitempty"`
+}
+
+// ErrorResponse422 error object returned for 422 responses
+type ErrorResponse422 struct {
+	Errors *[]Error422 `json:"errors,omitempty"`
 }
 
 // FanLevel Used in AirConditioningZoneSettingsBase and AirConditioningModeCapabilitiesBase

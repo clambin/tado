@@ -2,5 +2,34 @@ overlay: 1.0.0
 info:
   title: Overlay ../tado-openapispec-v2/tado-openapispec-v2.yaml => openapi.yaml
   version: 0.0.0
-actions: []
+actions:
+  - target: $.components.schemas.ErrorResponse
+    update:
+      type: object
+      properties:
+        errors:
+          type: array
+          items:
+            $ref: '#/components/schemas/Error'
+  - target: $.components.schemas
+    update:
+      Error422:
+        description: >
+          The zoneType is only available for certain 422 errors, 
+          to indicate that a certain zone specific operation is not allowed because of the ZoneType of the zone.
+        type: object
+        allOf:
+          - $ref: '#/components/schemas/Error'
+          - properties:
+              zoneType:
+                $ref: '#/components/schemas/ZoneType'
 
+
+  - target: $.components.schemas.ErrorResponse422
+    update:
+      type: object
+      properties:
+        errors:
+          type: array
+          items:
+            $ref: '#/components/schemas/Error422'
