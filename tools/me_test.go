@@ -5,6 +5,7 @@ import (
 	"errors"
 	"github.com/clambin/tado/v2"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"testing"
 )
 
@@ -48,7 +49,10 @@ func TestGetHomes(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			homes, err := GetHomes(context.Background(), tt.client)
 			tt.wantErr(t, err)
-			assert.Equal(t, tt.homes, homes)
+			require.Len(t, homes, len(tt.homes))
+			for i, home := range homes {
+				assert.Equal(t, tt.homes[i], *home.Id)
+			}
 		})
 	}
 }

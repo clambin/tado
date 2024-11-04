@@ -11,7 +11,7 @@ type TadoClient interface {
 }
 
 // GetHomes returns the list of Home ID's that are registered for the user's account.
-func GetHomes(ctx context.Context, client TadoClient) ([]tado.HomeId, error) {
+func GetHomes(ctx context.Context, client TadoClient) ([]tado.HomeBase, error) {
 	me, err := client.GetMeWithResponse(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("GetMeWithResponse: %w", err)
@@ -19,10 +19,5 @@ func GetHomes(ctx context.Context, client TadoClient) ([]tado.HomeId, error) {
 	if me.JSON200 == nil {
 		return nil, Errors(me.JSON401)
 	}
-
-	homeIds := make([]tado.HomeId, 0, len(*me.JSON200.Homes))
-	for _, home := range *me.JSON200.Homes {
-		homeIds = append(homeIds, *home.Id)
-	}
-	return homeIds, nil
+	return *me.JSON200.Homes, nil
 }

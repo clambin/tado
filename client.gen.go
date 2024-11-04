@@ -578,7 +578,7 @@ type EarlyStart struct {
 	Enabled *bool `json:"enabled,omitempty"`
 }
 
-// Error The zoneType is only available for certain 422 errors,  to indicate that a certain zone specific operation is not allowed because of the ZoneType of the zone.
+// Error defines model for Error.
 type Error struct {
 	// Code meaningful textual code associated with the HTTP status code like 'accessDenied' (for 403) or 'unauthorized' for (401)
 	Code *string `json:"code,omitempty"`
