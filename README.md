@@ -1,13 +1,12 @@
 # tado
-![GitHub tag (latest by date)](https://img.shields.io/github/v/tag/clambin/tado?color=green&label=Release&style=plastic)
-![Codecov](https://img.shields.io/codecov/c/gh/clambin/tado?style=plastic)
+![Release](https://img.shields.io/github/v/tag/clambin/tado?color=green&label=Release&style=plastic)
 ![Go Report Card](https://goreportcard.com/badge/github.com/clambin/tado)
-![GitHub](https://img.shields.io/github/license/clambin/tado?style=plastic)
-[![GoDoc](https://pkg.go.dev/badge/github.com/clambin/tado?utm_source=godoc)](http://pkg.go.dev/github.com/clambin/tado)
+![License](https://img.shields.io/github/license/clambin/tado?style=plastic)
+[![GoDoc](https://pkg.go.dev/badge/github.com/clambin/tado?utm_source=godoc)](http://pkg.go.dev/github.com/clambin/tado/v2)
 
 Go API for Tadoº devices.
 
-!!!BREAKING CHANGE: v2 of this module is generated from an OpenAPI Specification. This module is not backwards compatible with v1.
+:warning: v2 of this module is generated from an OpenAPI Specification. This module is not backwards compatible with v1.
 
 ## Authors
 
