@@ -6,7 +6,7 @@
 
 Go API for Tadoº devices.
 
-:warning: v2 of this module is generated from an OpenAPI Specification. This module is not backwards compatible with v1.
+:warning: v2 is generated from an OpenAPI Specification and not backward-compatible with v1.
 
 ## Authors
 
