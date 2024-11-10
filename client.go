@@ -6,11 +6,10 @@ import (
 	"net/http"
 )
 
-////go:generate oapi-codegen -config config.yaml https://raw.githubusercontent.com/kritsel/tado-openapispec-v2/refs/tags/v2.2024.09.22.0/tado-openapispec-v2.yaml
-
 ////go:generate oapi-codegen -config config.yaml ../tado-openapispec-v2/tado-openapispec-v2.yaml
+////go:generate oapi-codegen -config config.yaml https://raw.githubusercontent.com/clambin/tado-openapispec-v2/refs/heads/combined/tado-openapispec-v2.yaml
+//go:generate oapi-codegen -config config.yaml https://raw.githubusercontent.com/kritsel/tado-openapispec-v2/refs/tags/v2.2024.11.10.0/tado-openapispec-v2.yaml
 
-//go:generate oapi-codegen -config config.yaml https://raw.githubusercontent.com/clambin/tado-openapispec-v2/refs/heads/combined/tado-openapispec-v2.yaml
 const ServerURL = "https://my.tado.com/api/v2"
 
 func NewOAuth2Client(ctx context.Context, username string, password string) (*http.Client, error) {

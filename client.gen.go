@@ -190,6 +190,12 @@ const (
 	HOTWATER        ZoneType = "HOT_WATER"
 )
 
+// ActivityDataPoints Part of ZoneState. Empty for a HOT_WATER zone
+type ActivityDataPoints struct {
+	// HeatingPower Used in Weather and ZoneState, to express quantities like heating power, humidity and solar intensity.
+	HeatingPower *PercentageDataPoint `json:"heatingPower,omitempty"`
+}
+
 // AirComfort result of /homes/{homeId}/airComfort
 type AirComfort struct {
 	Comfort *[]struct {
@@ -906,7 +912,7 @@ type PresenceLock struct {
 	HomePresence *HomePresence `json:"homePresence,omitempty"`
 }
 
-// SensorDataPoints empty for a HOT_WATER zone
+// SensorDataPoints Element of ZoneState. Empty for a HOT_WATER zone
 type SensorDataPoints struct {
 	// Humidity Used in Weather and ZoneState, to express quantities like heating power, humidity and solar intensity.
 	Humidity *PercentageDataPoint `json:"humidity,omitempty"`
@@ -1402,13 +1408,10 @@ type ZoneSetting struct {
 
 // ZoneState Result of /homes/{homeId}/zone/{zoneId}/state
 type ZoneState struct {
-	// ActivityDataPoints empty for a HOT_WATER zone
-	ActivityDataPoints *struct {
-		// HeatingPower Used in Weather and ZoneState, to express quantities like heating power, humidity and solar intensity.
-		HeatingPower *PercentageDataPoint `json:"heatingPower,omitempty"`
-	} `json:"activityDataPoints,omitempty"`
-	GeolocationOverride            *bool        `json:"geolocationOverride,omitempty"`
-	GeolocationOverrideDisableTime *interface{} `json:"geolocationOverrideDisableTime"`
+	// ActivityDataPoints Part of ZoneState. Empty for a HOT_WATER zone
+	ActivityDataPoints             *ActivityDataPoints `json:"activityDataPoints,omitempty"`
+	GeolocationOverride            *bool               `json:"geolocationOverride,omitempty"`
+	GeolocationOverrideDisableTime *interface{}        `json:"geolocationOverrideDisableTime"`
 	Link                           *struct {
 		// State known values:
 		// * ONLINE
@@ -1437,7 +1440,7 @@ type ZoneState struct {
 	Preparation            *interface{}     `json:"preparation"`
 	RunningOfflineSchedule *bool            `json:"runningOfflineSchedule,omitempty"`
 
-	// SensorDataPoints empty for a HOT_WATER zone
+	// SensorDataPoints Element of ZoneState. Empty for a HOT_WATER zone
 	SensorDataPoints *SensorDataPoints `json:"sensorDataPoints,omitempty"`
 
 	// Setting (temperature) settings for a zone which is used in scheduled TimeTableBlocks,  in ZoneOverlays (manual override for the scheduled setting), and in AwayConfiguration (settings to be used when the home is in AWAY mode).
