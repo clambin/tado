@@ -165,6 +165,7 @@ const (
 	NIGHTCLOUDY   WeatherState = "NIGHT_CLOUDY"
 	RAIN          WeatherState = "RAIN"
 	SCATTEREDRAIN WeatherState = "SCATTERED_RAIN"
+	SNOW          WeatherState = "SNOW"
 	SUN           WeatherState = "SUN"
 )
 
