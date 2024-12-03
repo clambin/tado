@@ -157,15 +157,20 @@ const (
 
 // Defines values for WeatherState.
 const (
-	CLOUDY        WeatherState = "CLOUDY"
-	CLOUDYMOSTLY  WeatherState = "CLOUDY_MOSTLY"
-	CLOUDYPARTLY  WeatherState = "CLOUDY_PARTLY"
-	FOGGY         WeatherState = "FOGGY"
-	NIGHTCLEAR    WeatherState = "NIGHT_CLEAR"
-	NIGHTCLOUDY   WeatherState = "NIGHT_CLOUDY"
-	RAIN          WeatherState = "RAIN"
-	SCATTEREDRAIN WeatherState = "SCATTERED_RAIN"
-	SUN           WeatherState = "SUN"
+	CLOUDY            WeatherState = "CLOUDY"
+	CLOUDYMOSTLY      WeatherState = "CLOUDY_MOSTLY"
+	CLOUDYPARTLY      WeatherState = "CLOUDY_PARTLY"
+	DRIZZLE           WeatherState = "DRIZZLE"
+	FOGGY             WeatherState = "FOGGY"
+	NIGHTCLEAR        WeatherState = "NIGHT_CLEAR"
+	NIGHTCLOUDY       WeatherState = "NIGHT_CLOUDY"
+	RAIN              WeatherState = "RAIN"
+	SCATTEREDRAIN     WeatherState = "SCATTERED_RAIN"
+	SCATTEREDRAINSNOW WeatherState = "SCATTERED_RAIN_SNOW"
+	SCATTEREDSNOW     WeatherState = "SCATTERED_SNOW"
+	SNOW              WeatherState = "SNOW"
+	SUN               WeatherState = "SUN"
+	THUNDERSTORM      WeatherState = "THUNDERSTORM"
 )
 
 // Defines values for ZoneOverlayTerminationType.
@@ -196,7 +201,7 @@ type ActivityDataPoints struct {
 	HeatingPower *PercentageDataPoint `json:"heatingPower,omitempty"`
 }
 
-// AirComfort result of /homes/{homeId}/airComfort
+// AirComfort Result of /homes/{homeId}/airComfort.  Comfort properties (except roomId) are not present when there is no connection with the measuring device in the room (e.g because of an empty device battery).
 type AirComfort struct {
 	Comfort *[]struct {
 		Coordinate *struct {
@@ -865,6 +870,8 @@ type MobileDeviceSettings struct {
 		IncidentDetection           *bool `json:"incidentDetection,omitempty"`
 		LowBatteryReminder          *bool `json:"lowBatteryReminder,omitempty"`
 		OpenWindowReminder          *bool `json:"openWindowReminder,omitempty"`
+		TariffHighPriceAlert        *bool `json:"tariffHighPriceAlert,omitempty"`
+		TariffLowPriceAlert         *bool `json:"tariffLowPriceAlert,omitempty"`
 	} `json:"pushNotifications,omitempty"`
 	SpecialOffersEnabled *bool `json:"specialOffersEnabled,omitempty"`
 }
