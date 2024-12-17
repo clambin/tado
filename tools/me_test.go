@@ -6,6 +6,7 @@ import (
 	"github.com/clambin/tado/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"net/http"
 	"testing"
 )
 
@@ -19,8 +20,11 @@ func TestGetHomes(t *testing.T) {
 		{
 			name: "success",
 			client: fakeClient{
-				resp: &tado.GetMeResponse{JSON200: &tado.User{Homes: &[]tado.HomeBase{{Id: VarP(tado.HomeId(1))}}}},
-				err:  nil,
+				resp: &tado.GetMeResponse{
+					HTTPResponse: &http.Response{StatusCode: http.StatusOK},
+					JSON200:      &tado.User{Homes: &[]tado.HomeBase{{Id: VarP(tado.HomeId(1))}}},
+				},
+				err: nil,
 			},
 			wantErr: assert.NoError,
 			homes:   []tado.HomeId{1},
@@ -36,9 +40,12 @@ func TestGetHomes(t *testing.T) {
 		{
 			name: "unauthorized",
 			client: fakeClient{
-				resp: &tado.GetMeResponse{JSON401: &tado.Unauthorized401{
-					Errors: &[]tado.Error{{Code: VarP("unauthorized"), Title: VarP("invalid credentials")}},
-				}},
+				resp: &tado.GetMeResponse{
+					HTTPResponse: &http.Response{StatusCode: http.StatusUnauthorized},
+					JSON401: &tado.Unauthorized401{
+						Errors: &[]tado.Error{{Code: VarP("unauthorized"), Title: VarP("invalid credentials")}},
+					},
+				},
 				err: nil,
 			},
 			wantErr: assert.Error,
