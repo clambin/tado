@@ -4,8 +4,6 @@ import (
 	"context"
 	"errors"
 	"github.com/clambin/tado/v2"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"net/http"
 	"testing"
 )
@@ -14,7 +12,7 @@ func TestGetHomes(t *testing.T) {
 	tests := []struct {
 		name    string
 		client  fakeClient
-		wantErr assert.ErrorAssertionFunc
+		wantErr bool
 		homes   []tado.HomeId
 	}{
 		{
@@ -26,7 +24,7 @@ func TestGetHomes(t *testing.T) {
 				},
 				err: nil,
 			},
-			wantErr: assert.NoError,
+			wantErr: false,
 			homes:   []tado.HomeId{1},
 		},
 		{
@@ -35,7 +33,7 @@ func TestGetHomes(t *testing.T) {
 				resp: nil,
 				err:  errors.New("fail"),
 			},
-			wantErr: assert.Error,
+			wantErr: true,
 		},
 		{
 			name: "unauthorized",
@@ -48,17 +46,26 @@ func TestGetHomes(t *testing.T) {
 				},
 				err: nil,
 			},
-			wantErr: assert.Error,
+			wantErr: true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			homes, err := GetHomes(context.Background(), tt.client)
-			tt.wantErr(t, err)
-			require.Len(t, homes, len(tt.homes))
+			if err != nil {
+				if !tt.wantErr {
+					t.Errorf("got error, wanted no error")
+				}
+				return
+			}
+			if len(tt.homes) != len(homes) {
+				t.Fatalf("got %d homes, expected %d", len(homes), len(tt.homes))
+			}
 			for i, home := range homes {
-				assert.Equal(t, tt.homes[i], *home.Id)
+				if *home.Id != tt.homes[i] {
+					t.Errorf("got home %+v, expected home %+v", *home.Id, tt.homes[i])
+				}
 			}
 		})
 	}

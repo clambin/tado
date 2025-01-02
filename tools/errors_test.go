@@ -3,7 +3,6 @@ package tools
 import (
 	"errors"
 	"github.com/clambin/tado/v2"
-	"github.com/stretchr/testify/assert"
 	"net/http"
 	"testing"
 )
@@ -64,7 +63,9 @@ func TestHandleErrors(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Equal(t, tt.want, HandleErrors(tt.resp, tt.tadoErrs).Error())
+			if got := HandleErrors(tt.resp, tt.tadoErrs).Error(); got != tt.want {
+				t.Errorf("HandleErrors() = %v, want %v", got, tt.want)
+			}
 		})
 	}
 }
@@ -73,19 +74,19 @@ func TestErrors(t *testing.T) {
 	tests := []struct {
 		name  string
 		err   *tado.ErrorResponse
-		isErr assert.ErrorAssertionFunc
+		isErr bool
 		want  string
 	}{
 		{
 			name:  "nil error",
-			isErr: assert.NoError,
+			isErr: false,
 		},
 		{
 			name: "single error",
 			err: &tado.ErrorResponse{Errors: &[]tado.Error{
 				{Code: VarP("foo"), Title: VarP("error foo")},
 			}},
-			isErr: assert.Error,
+			isErr: true,
 			want:  "foo - error foo",
 		},
 		{
@@ -94,7 +95,7 @@ func TestErrors(t *testing.T) {
 				{Code: VarP("foo"), Title: VarP("error foo")},
 				{Code: VarP("bar"), Title: VarP("error bar")},
 			}},
-			isErr: assert.Error,
+			isErr: true,
 			want:  "foo - error foo\nbar - error bar",
 		},
 	}
@@ -102,9 +103,18 @@ func TestErrors(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := Errors(tt.err)
-			tt.isErr(t, err)
-			if err != nil {
-				assert.Equal(t, tt.want, err.Error())
+			switch {
+			case err == nil:
+				if tt.isErr {
+					t.Errorf("Errors() = nil, want error")
+				}
+			case err != nil:
+				if !tt.isErr {
+					t.Errorf("Errors() = %v, want no error", err)
+				}
+				if got := err.Error(); got != tt.want {
+					t.Errorf("Errors() = %v, want %v", got, tt.want)
+				}
 			}
 		})
 	}
@@ -114,19 +124,19 @@ func TestErrors422(t *testing.T) {
 	tests := []struct {
 		name  string
 		err   *tado.ErrorResponse422
-		isErr assert.ErrorAssertionFunc
+		isErr bool
 		want  string
 	}{
 		{
 			name:  "nil error",
-			isErr: assert.NoError,
+			isErr: false,
 		},
 		{
 			name: "single error",
 			err: &tado.ErrorResponse422{Errors: &[]tado.Error422{
 				{Code: VarP("foo"), Title: VarP("error foo")},
 			}},
-			isErr: assert.Error,
+			isErr: true,
 			want:  "foo - error foo",
 		},
 		{
@@ -135,7 +145,7 @@ func TestErrors422(t *testing.T) {
 				{Code: VarP("foo"), Title: VarP("error foo")},
 				{Code: VarP("bar"), Title: VarP("error bar")},
 			}},
-			isErr: assert.Error,
+			isErr: true,
 			want:  "foo - error foo\nbar - error bar",
 		},
 		{
@@ -143,7 +153,7 @@ func TestErrors422(t *testing.T) {
 			err: &tado.ErrorResponse422{Errors: &[]tado.Error422{
 				{Code: VarP("foo"), Title: VarP("error foo"), ZoneType: VarP(tado.HEATING)},
 			}},
-			isErr: assert.Error,
+			isErr: true,
 			want:  "foo - error foo (zoneType: HEATING)",
 		},
 	}
@@ -151,9 +161,15 @@ func TestErrors422(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := Errors422(tt.err)
-			tt.isErr(t, err)
-			if err != nil {
-				assert.Equal(t, tt.want, err.Error())
+			switch {
+			case err == nil && tt.isErr:
+				t.Errorf("Errors422() = nil, want error")
+			case err != nil:
+				if !tt.isErr {
+					t.Errorf("Errors422() = %v, want no error", err)
+				} else if got := err.Error(); got != tt.want {
+					t.Errorf("Errors422() = %v, want %v", got, tt.want)
+				}
 			}
 		})
 	}
