@@ -290,13 +290,50 @@ type AwayRadiusInput struct {
 // BatteryState device property known to be present for DeviceType SU02, VA02
 type BatteryState string
 
-// Boiler element of HeatingSystem
-type Boiler struct {
+// Boiler1 element of HeatingSystem
+type Boiler1 struct {
 	Found *bool `json:"found,omitempty"`
 
 	// Id Tado specific id of the type of boiler you have, it gets set when you select a boiler via the app
 	Id      *int  `json:"id,omitempty"`
 	Present *bool `json:"present,omitempty"`
+}
+
+// Boiler2 Response of GET /homeByBridge/{bridgeId}/boilerInfo
+type Boiler2 struct {
+	// BoilerId Tado specific id of the type of boiler you have, it gets set when you select a boiler via the app
+	BoilerId      *int  `json:"boilerId,omitempty"`
+	BoilerPresent *bool `json:"boilerPresent,omitempty"`
+}
+
+// BoilerMaxOutputTemperature Used in GET/POST /homeByBridge/{bridgeId}/boilerMaxOutputTemperature
+type BoilerMaxOutputTemperature struct {
+	BoilerMaxOutputTemperatureInCelsius *float32 `json:"boilerMaxOutputTemperatureInCelsius,omitempty"`
+}
+
+// BoilerWiringInstallationState response of GET /homeByBridge/{bridgeId}/boilerWiringInstallationState
+type BoilerWiringInstallationState struct {
+	Boiler *struct {
+		OutputTemperature *struct {
+			Celsius   *float32   `json:"celsius,omitempty"`
+			Timestamp *time.Time `json:"timestamp,omitempty"`
+		} `json:"outputTemperature,omitempty"`
+	} `json:"boiler,omitempty"`
+	BridgeConnected     *bool `json:"bridgeConnected,omitempty"`
+	DeviceWiredToBoiler *struct {
+		Connected            *bool      `json:"connected,omitempty"`
+		LastRequestTimestamp *time.Time `json:"lastRequestTimestamp,omitempty"`
+		SerialNo             *string    `json:"serialNo,omitempty"`
+
+		// ThermInterfaceType known values:
+		//
+		// * OPENTHERM
+		// * UBA_BUS
+		ThermInterfaceType *string `json:"thermInterfaceType,omitempty"`
+		Type               *string `json:"type,omitempty"`
+	} `json:"deviceWiredToBoiler,omitempty"`
+	HotWaterZonePresent *bool   `json:"hotWaterZonePresent,omitempty"`
+	State               *string `json:"state,omitempty"`
 }
 
 // BooleanDataInterval defines model for BooleanDataInterval.
@@ -312,6 +349,18 @@ type BooleanTimeSeries struct {
 	TimeSeriesType *string                `json:"timeSeriesType,omitempty"`
 	ValueType      *string                `json:"valueType,omitempty"`
 }
+
+// Bridge tado Internet Bridge
+type Bridge struct {
+	// HomeId unique home ID
+	HomeId *HomeId `json:"homeId,omitempty"`
+
+	// Partner meaning and type of this property is unknown
+	Partner *interface{} `json:"partner,omitempty"`
+}
+
+// BridgeId the serialNo of a tado Internet bridge
+type BridgeId = string
 
 // CallForHeatDataInterval defines model for CallForHeatDataInterval.
 type CallForHeatDataInterval struct {
@@ -433,15 +482,19 @@ type Device struct {
 
 	// DeviceType data element of Device
 	//
-	// known values:
-	// * BR02 (Wireless Receiver)
-	// * BU01 (Boiler controller?)
-	// * GW02 (Internet Gateway?)
-	// * IB01 (Internet Bridge)
-	// * RU01 (Remote Thermostat)
+	// known values:  * GW01 (Gateway V1)
+	// * GW02 (Bridge V2)
+	// * IB01 (Internet Bridge V3+)
+	// * BX02 (Box V1)
+	// * BU01 (Extension Kit UK)
+	// * EK01 (Extension Kit UK)
+	// * BR02 (Wireless Receiver V3+)
+	// * BP02 (Wireless Receiver UK V3+)
+	// * RU01 (Smart Thermostat V3)
 	// * RU02 (Wired Smart Thermostat V3+)
-	// * SU02 (Wireless Smart Thermostat V3+)
-	// * VA01
+	// * TS02 (Temp Sensor V1)
+	// * SU02 (Wireless Temperature Sensor V3+)
+	// * VA01 (Smart Radiator Thermostat V3)
 	// * VA02 (Smart Radiator Thermostat V3+)
 	DeviceType *DeviceType `json:"deviceType,omitempty"`
 
@@ -457,10 +510,14 @@ type Device struct {
 
 		// Value known values:
 		// * CALIBRATED
+		// * CALIBRATING
 		Value *string `json:"value,omitempty"`
 	} `json:"mountingState,omitempty"`
 
-	// MountingStateWithError property known to be present for DeviceType VA02; known values: CALIBRATED
+	// MountingStateWithError property known to be present for DeviceType VA02;
+	// known values:
+	// * CALIBRATED
+	// * CALIBRATING
 	MountingStateWithError *string `json:"mountingStateWithError,omitempty"`
 
 	// Orientation tado device property known to be present for DeviceType VA02
@@ -492,15 +549,19 @@ type DeviceExtra struct {
 
 	// DeviceType data element of Device
 	//
-	// known values:
-	// * BR02 (Wireless Receiver)
-	// * BU01 (Boiler controller?)
-	// * GW02 (Internet Gateway?)
-	// * IB01 (Internet Bridge)
-	// * RU01 (Remote Thermostat)
+	// known values:  * GW01 (Gateway V1)
+	// * GW02 (Bridge V2)
+	// * IB01 (Internet Bridge V3+)
+	// * BX02 (Box V1)
+	// * BU01 (Extension Kit UK)
+	// * EK01 (Extension Kit UK)
+	// * BR02 (Wireless Receiver V3+)
+	// * BP02 (Wireless Receiver UK V3+)
+	// * RU01 (Smart Thermostat V3)
 	// * RU02 (Wired Smart Thermostat V3+)
-	// * SU02 (Wireless Smart Thermostat V3+)
-	// * VA01
+	// * TS02 (Temp Sensor V1)
+	// * SU02 (Wireless Temperature Sensor V3+)
+	// * VA01 (Smart Radiator Thermostat V3)
 	// * VA02 (Smart Radiator Thermostat V3+)
 	DeviceType *DeviceType `json:"deviceType,omitempty"`
 	Duties     *[]string   `json:"duties,omitempty"`
@@ -517,10 +578,14 @@ type DeviceExtra struct {
 
 		// Value known values:
 		// * CALIBRATED
+		// * CALIBRATING
 		Value *string `json:"value,omitempty"`
 	} `json:"mountingState,omitempty"`
 
-	// MountingStateWithError property known to be present for DeviceType VA02; known values: CALIBRATED
+	// MountingStateWithError property known to be present for DeviceType VA02;
+	// known values:
+	// * CALIBRATED
+	// * CALIBRATING
 	MountingStateWithError *string `json:"mountingStateWithError,omitempty"`
 
 	// Orientation tado device property known to be present for DeviceType VA02
@@ -548,15 +613,19 @@ type DeviceListItem struct {
 
 	// Type data element of Device
 	//
-	// known values:
-	// * BR02 (Wireless Receiver)
-	// * BU01 (Boiler controller?)
-	// * GW02 (Internet Gateway?)
-	// * IB01 (Internet Bridge)
-	// * RU01 (Remote Thermostat)
+	// known values:  * GW01 (Gateway V1)
+	// * GW02 (Bridge V2)
+	// * IB01 (Internet Bridge V3+)
+	// * BX02 (Box V1)
+	// * BU01 (Extension Kit UK)
+	// * EK01 (Extension Kit UK)
+	// * BR02 (Wireless Receiver V3+)
+	// * BP02 (Wireless Receiver UK V3+)
+	// * RU01 (Smart Thermostat V3)
 	// * RU02 (Wired Smart Thermostat V3+)
-	// * SU02 (Wireless Smart Thermostat V3+)
-	// * VA01
+	// * TS02 (Temp Sensor V1)
+	// * SU02 (Wireless Temperature Sensor V3+)
+	// * VA01 (Smart Radiator Thermostat V3)
 	// * VA02 (Smart Radiator Thermostat V3+)
 	Type *DeviceType `json:"type,omitempty"`
 
@@ -572,15 +641,19 @@ type DeviceListItem struct {
 
 // DeviceType data element of Device
 //
-// known values:
-// * BR02 (Wireless Receiver)
-// * BU01 (Boiler controller?)
-// * GW02 (Internet Gateway?)
-// * IB01 (Internet Bridge)
-// * RU01 (Remote Thermostat)
+// known values:  * GW01 (Gateway V1)
+// * GW02 (Bridge V2)
+// * IB01 (Internet Bridge V3+)
+// * BX02 (Box V1)
+// * BU01 (Extension Kit UK)
+// * EK01 (Extension Kit UK)
+// * BR02 (Wireless Receiver V3+)
+// * BP02 (Wireless Receiver UK V3+)
+// * RU01 (Smart Thermostat V3)
 // * RU02 (Wired Smart Thermostat V3+)
-// * SU02 (Wireless Smart Thermostat V3+)
-// * VA01
+// * TS02 (Temp Sensor V1)
+// * SU02 (Wireless Temperature Sensor V3+)
+// * VA01 (Smart Radiator Thermostat V3)
 // * VA02 (Smart Radiator Thermostat V3+)
 type DeviceType = string
 
@@ -666,7 +739,7 @@ type HeatingSettingValue struct {
 // HeatingSystem result of /homes/{homeId}/heatingSystem
 type HeatingSystem struct {
 	// Boiler element of HeatingSystem
-	Boiler *Boiler `json:"boiler,omitempty"`
+	Boiler *Boiler1 `json:"boiler,omitempty"`
 
 	// UnderfloorHeating Element of HeatingSystem
 	UnderfloorHeating *UnderfloorHeating `json:"underfloorHeating,omitempty"`
@@ -703,6 +776,7 @@ type Home struct {
 
 	// Generation known values:
 	// * PRE_LINE_X
+	// * LINE_X
 	Generation *string `json:"generation,omitempty"`
 
 	// Geolocation Geo location of this home.
@@ -726,7 +800,9 @@ type Home struct {
 	Language              *string            `json:"language,omitempty"`
 
 	// Name user assigned name for this home
-	Name                       *string      `json:"name,omitempty"`
+	Name *string `json:"name,omitempty"`
+
+	// Partner meaning and type of this property is unknown
 	Partner                    *interface{} `json:"partner"`
 	ShowAutoAssistReminders    *bool        `json:"showAutoAssistReminders,omitempty"`
 	SimpleSmartScheduleEnabled *bool        `json:"simpleSmartScheduleEnabled,omitempty"`
@@ -793,13 +869,18 @@ type HomeId = int64
 type HomePresence string
 
 // HomeState Indicates if tado acts as if there are people present in the home or not. Result of /homes/{homeId}/state.
-// Presence can be auto-determined by tado based on geofencing of the mobile devices linked to the home (requires a paid Auto-Assist subscription), or can be manually set by a user.
+//
+// Presence can be auto-determined by tado based on geo-tracking of the mobile devices linked to the home
+// (requires a paid Auto-Assist subscription), or can be manually set by a user.
 type HomeState struct {
 	Presence       *HomePresence `json:"presence,omitempty"`
 	PresenceLocked *bool         `json:"presenceLocked,omitempty"`
 
-	// ShowHomePresenceSwitchButton This property is present when all mobile devices linked to this home which have geofencing enabled  are no longer in (or near) the home.
-	// It is a hint to the user to manually set the home presence to AWAY.  When you have a Auto-Assist subscription, tado will do that automatically for you.
+	// ShowHomePresenceSwitchButton This property is present when all mobile devices linked to this home which have geo-tracking enabled
+	// are no longer in (or near) the home.
+	//
+	// It is a hint to the user to manually set the home presence to AWAY.
+	// When you have a Auto-Assist subscription, tado will do that automatically for you.
 	ShowHomePresenceSwitchButton *bool `json:"showHomePresenceSwitchButton,omitempty"`
 }
 
@@ -833,7 +914,7 @@ type MobileDevice struct {
 	} `json:"deviceMetadata,omitempty"`
 	Id *MobileDeviceId `json:"id,omitempty"`
 
-	// Location This data element is only present for mobile devices which have geofencing switched on in their tado app.
+	// Location This data element is only present for mobile devices which have geo-tracking switched on in their tado app.
 	Location *MobileDeviceLocation `json:"location,omitempty"`
 
 	// Name user assigned name for this device
@@ -846,7 +927,7 @@ type MobileDevice struct {
 // MobileDeviceId defines model for MobileDeviceId.
 type MobileDeviceId = int64
 
-// MobileDeviceLocation This data element is only present for mobile devices which have geofencing switched on in their tado app.
+// MobileDeviceLocation This data element is only present for mobile devices which have geo-tracking switched on in their tado app.
 type MobileDeviceLocation struct {
 	AtHome          *bool `json:"atHome,omitempty"`
 	BearingFromHome *struct {
@@ -859,7 +940,7 @@ type MobileDeviceLocation struct {
 
 // MobileDeviceSettings Data element of a MobileDevice. And used in /homes/{homeId}/mobileDevices/{mobileDeviceId}/settings.
 type MobileDeviceSettings struct {
-	// GeoTrackingEnabled When geotracking is enabled for a MobileDevice,  and the tado app installed on the device has location permissions on the device,  the MobileDevice object will also contain location details.
+	// GeoTrackingEnabled When geo-tracking is enabled for a MobileDevice,  and the tado app installed on the device has location permissions on the device,  the MobileDevice object will also contain location details.
 	GeoTrackingEnabled          *bool `json:"geoTrackingEnabled,omitempty"`
 	OnDemandLogRetrievalEnabled *bool `json:"onDemandLogRetrievalEnabled,omitempty"`
 	PushNotifications           *struct {
@@ -1387,8 +1468,8 @@ type ZoneOverlays struct {
 		// Termination of the zone overlay (either never, a set time or when the next block in the active timetable starts)  is part of the zone overlay definition.
 		Overlay *ZoneOverlay `json:"overlay,omitempty"`
 
-		// Room Type of a ZoneOverlay. Only known value is MANUAL, but not entirely sure, so no enum
-		Room *ZoneOverlayType `json:"room,omitempty"`
+		// Room ID of a zone (unique only within the home it belongs to)
+		Room *ZoneId `json:"room,omitempty"`
 	} `json:"overlays,omitempty"`
 }
 
@@ -1399,6 +1480,7 @@ type ZoneSetting struct {
 
 	// HorizontalSwing Used in AirConditioningZoneSettingsBase and AirConditioningModeCapabilitiesBase
 	HorizontalSwing *HorizontalSwing `json:"horizontalSwing,omitempty"`
+	IsBoost         *bool            `json:"isBoost,omitempty"`
 
 	// Light Used in AirConditioningZoneSettingsBase and AirConditioningModeCapabilitiesBase
 	Light *Light               `json:"light,omitempty"`
@@ -1420,8 +1502,13 @@ type ZoneState struct {
 	GeolocationOverride            *bool               `json:"geolocationOverride,omitempty"`
 	GeolocationOverrideDisableTime *interface{}        `json:"geolocationOverrideDisableTime"`
 	Link                           *struct {
+		Reason *struct {
+			Code  *string `json:"code,omitempty"`
+			Title *string `json:"title,omitempty"`
+		} `json:"reason,omitempty"`
+
 		// State known values:
-		// * ONLINE
+		// * ONLINE * OFFLINE
 		State *string `json:"state,omitempty"`
 	} `json:"link,omitempty"`
 	NextScheduleChange *struct {
@@ -1478,6 +1565,36 @@ type NotFound404 = ErrorResponse
 // Unauthorized401 error object returned for non-200 responses
 type Unauthorized401 = ErrorResponse
 
+// GetBridgeParams defines parameters for GetBridge.
+type GetBridgeParams struct {
+	// AuthKey printed on your tado Internet Bridge
+	AuthKey string `form:"authKey" json:"authKey"`
+}
+
+// GetBoilerInfoParams defines parameters for GetBoilerInfo.
+type GetBoilerInfoParams struct {
+	// AuthKey printed on your tado Internet Bridge
+	AuthKey string `form:"authKey" json:"authKey"`
+}
+
+// GetBoilerMaxOutputTemperatureParams defines parameters for GetBoilerMaxOutputTemperature.
+type GetBoilerMaxOutputTemperatureParams struct {
+	// AuthKey printed on your tado Internet Bridge
+	AuthKey string `form:"authKey" json:"authKey"`
+}
+
+// SetBoilerMaxOutputTemperatureParams defines parameters for SetBoilerMaxOutputTemperature.
+type SetBoilerMaxOutputTemperatureParams struct {
+	// AuthKey printed on your tado Internet Bridge
+	AuthKey string `form:"authKey" json:"authKey"`
+}
+
+// GetBoilerWiringInstallationStateParams defines parameters for GetBoilerWiringInstallationState.
+type GetBoilerWiringInstallationStateParams struct {
+	// AuthKey printed on your tado Internet Bridge
+	AuthKey string `form:"authKey" json:"authKey"`
+}
+
 // DeleteMobileDeviceFromHomeParams defines parameters for DeleteMobileDeviceFromHome.
 type DeleteMobileDeviceFromHomeParams struct {
 	// ContentType Strangely enough a 'Content-Type' header with value 'application/json'  is mandatory for this specific endpoint. No other endpoint requires it.
@@ -1525,6 +1642,9 @@ type SetTimetableBlocksForDayTypeJSONBody = []TimetableBlock
 // SetTemperatureOffsetJSONRequestBody defines body for SetTemperatureOffset for application/json ContentType.
 type SetTemperatureOffsetJSONRequestBody = Temperature
 
+// SetBoilerMaxOutputTemperatureJSONRequestBody defines body for SetBoilerMaxOutputTemperature for application/json ContentType.
+type SetBoilerMaxOutputTemperatureJSONRequestBody = BoilerMaxOutputTemperature
+
 // SetAwayRadiusInMetersJSONRequestBody defines body for SetAwayRadiusInMeters for application/json ContentType.
 type SetAwayRadiusInMetersJSONRequestBody = AwayRadiusInput
 
@@ -1532,7 +1652,7 @@ type SetAwayRadiusInMetersJSONRequestBody = AwayRadiusInput
 type SetHomeDetailsJSONRequestBody = HomeDetails
 
 // SetBoilerJSONRequestBody defines body for SetBoiler for application/json ContentType.
-type SetBoilerJSONRequestBody = Boiler
+type SetBoilerJSONRequestBody = Boiler1
 
 // SetUnderfloorHeatingJSONRequestBody defines body for SetUnderfloorHeating for application/json ContentType.
 type SetUnderfloorHeatingJSONRequestBody = UnderfloorHeating
@@ -1661,8 +1781,14 @@ func WithRequestEditorFn(fn RequestEditorFn) ClientOption {
 
 // The interface specification for the client above.
 type ClientInterface interface {
+	// GetBridge request
+	GetBridge(ctx context.Context, bridgeId BridgeId, params *GetBridgeParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// GetDevice request
 	GetDevice(ctx context.Context, deviceId DeviceId, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// SetChildLock request
+	SetChildLock(ctx context.Context, deviceId DeviceId, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// IdentifyDevice request
 	IdentifyDevice(ctx context.Context, deviceId DeviceId, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -1674,6 +1800,20 @@ type ClientInterface interface {
 	SetTemperatureOffsetWithBody(ctx context.Context, deviceId DeviceId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	SetTemperatureOffset(ctx context.Context, deviceId DeviceId, body SetTemperatureOffsetJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetBoilerInfo request
+	GetBoilerInfo(ctx context.Context, bridgeId BridgeId, params *GetBoilerInfoParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetBoilerMaxOutputTemperature request
+	GetBoilerMaxOutputTemperature(ctx context.Context, bridgeId BridgeId, params *GetBoilerMaxOutputTemperatureParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// SetBoilerMaxOutputTemperatureWithBody request with any body
+	SetBoilerMaxOutputTemperatureWithBody(ctx context.Context, bridgeId BridgeId, params *SetBoilerMaxOutputTemperatureParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	SetBoilerMaxOutputTemperature(ctx context.Context, bridgeId BridgeId, params *SetBoilerMaxOutputTemperatureParams, body SetBoilerMaxOutputTemperatureJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetBoilerWiringInstallationState request
+	GetBoilerWiringInstallationState(ctx context.Context, bridgeId BridgeId, params *GetBoilerWiringInstallationStateParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetHome request
 	GetHome(ctx context.Context, homeId HomeId, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -1882,12 +2022,42 @@ type ClientInterface interface {
 	// GetZoneState request
 	GetZoneState(ctx context.Context, homeId HomeId, zoneId ZoneId, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// DeactivateOpenWindowState request
+	DeactivateOpenWindowState(ctx context.Context, homeId HomeId, zoneId ZoneId, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ActivateOpenWindowState request
+	ActivateOpenWindowState(ctx context.Context, homeId HomeId, zoneId ZoneId, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// GetMe request
 	GetMe(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 }
 
+func (c *Client) GetBridge(ctx context.Context, bridgeId BridgeId, params *GetBridgeParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetBridgeRequest(c.Server, bridgeId, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 func (c *Client) GetDevice(ctx context.Context, deviceId DeviceId, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetDeviceRequest(c.Server, deviceId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) SetChildLock(ctx context.Context, deviceId DeviceId, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSetChildLockRequest(c.Server, deviceId)
 	if err != nil {
 		return nil, err
 	}
@@ -1936,6 +2106,66 @@ func (c *Client) SetTemperatureOffsetWithBody(ctx context.Context, deviceId Devi
 
 func (c *Client) SetTemperatureOffset(ctx context.Context, deviceId DeviceId, body SetTemperatureOffsetJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewSetTemperatureOffsetRequest(c.Server, deviceId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetBoilerInfo(ctx context.Context, bridgeId BridgeId, params *GetBoilerInfoParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetBoilerInfoRequest(c.Server, bridgeId, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetBoilerMaxOutputTemperature(ctx context.Context, bridgeId BridgeId, params *GetBoilerMaxOutputTemperatureParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetBoilerMaxOutputTemperatureRequest(c.Server, bridgeId, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) SetBoilerMaxOutputTemperatureWithBody(ctx context.Context, bridgeId BridgeId, params *SetBoilerMaxOutputTemperatureParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSetBoilerMaxOutputTemperatureRequestWithBody(c.Server, bridgeId, params, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) SetBoilerMaxOutputTemperature(ctx context.Context, bridgeId BridgeId, params *SetBoilerMaxOutputTemperatureParams, body SetBoilerMaxOutputTemperatureJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSetBoilerMaxOutputTemperatureRequest(c.Server, bridgeId, params, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetBoilerWiringInstallationState(ctx context.Context, bridgeId BridgeId, params *GetBoilerWiringInstallationStateParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetBoilerWiringInstallationStateRequest(c.Server, bridgeId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -2858,6 +3088,30 @@ func (c *Client) GetZoneState(ctx context.Context, homeId HomeId, zoneId ZoneId,
 	return c.Client.Do(req)
 }
 
+func (c *Client) DeactivateOpenWindowState(ctx context.Context, homeId HomeId, zoneId ZoneId, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeactivateOpenWindowStateRequest(c.Server, homeId, zoneId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ActivateOpenWindowState(ctx context.Context, homeId HomeId, zoneId ZoneId, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewActivateOpenWindowStateRequest(c.Server, homeId, zoneId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 func (c *Client) GetMe(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetMeRequest(c.Server)
 	if err != nil {
@@ -2868,6 +3122,58 @@ func (c *Client) GetMe(ctx context.Context, reqEditors ...RequestEditorFn) (*htt
 		return nil, err
 	}
 	return c.Client.Do(req)
+}
+
+// NewGetBridgeRequest generates requests for GetBridge
+func NewGetBridgeRequest(server string, bridgeId BridgeId, params *GetBridgeParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "bridgeId", runtime.ParamLocationPath, bridgeId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/bridges/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if queryFrag, err := runtime.StyleParamWithLocation("form", true, "authKey", runtime.ParamLocationQuery, params.AuthKey); err != nil {
+			return nil, err
+		} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+			return nil, err
+		} else {
+			for k, v := range parsed {
+				for _, v2 := range v {
+					queryValues.Add(k, v2)
+				}
+			}
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
 }
 
 // NewGetDeviceRequest generates requests for GetDevice
@@ -2897,6 +3203,40 @@ func NewGetDeviceRequest(server string, deviceId DeviceId) (*http.Request, error
 	}
 
 	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewSetChildLockRequest generates requests for SetChildLock
+func NewSetChildLockRequest(server string, deviceId DeviceId) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "deviceId", runtime.ParamLocationPath, deviceId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/devices/%s/childLock", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("PUT", queryURL.String(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -3015,6 +3355,227 @@ func NewSetTemperatureOffsetRequestWithBody(server string, deviceId DeviceId, co
 	}
 
 	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewGetBoilerInfoRequest generates requests for GetBoilerInfo
+func NewGetBoilerInfoRequest(server string, bridgeId BridgeId, params *GetBoilerInfoParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "bridgeId", runtime.ParamLocationPath, bridgeId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/homeByBridge/%s/boilerInfo", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if queryFrag, err := runtime.StyleParamWithLocation("form", true, "authKey", runtime.ParamLocationQuery, params.AuthKey); err != nil {
+			return nil, err
+		} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+			return nil, err
+		} else {
+			for k, v := range parsed {
+				for _, v2 := range v {
+					queryValues.Add(k, v2)
+				}
+			}
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetBoilerMaxOutputTemperatureRequest generates requests for GetBoilerMaxOutputTemperature
+func NewGetBoilerMaxOutputTemperatureRequest(server string, bridgeId BridgeId, params *GetBoilerMaxOutputTemperatureParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "bridgeId", runtime.ParamLocationPath, bridgeId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/homeByBridge/%s/boilerMaxOutputTemperature", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if queryFrag, err := runtime.StyleParamWithLocation("form", true, "authKey", runtime.ParamLocationQuery, params.AuthKey); err != nil {
+			return nil, err
+		} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+			return nil, err
+		} else {
+			for k, v := range parsed {
+				for _, v2 := range v {
+					queryValues.Add(k, v2)
+				}
+			}
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewSetBoilerMaxOutputTemperatureRequest calls the generic SetBoilerMaxOutputTemperature builder with application/json body
+func NewSetBoilerMaxOutputTemperatureRequest(server string, bridgeId BridgeId, params *SetBoilerMaxOutputTemperatureParams, body SetBoilerMaxOutputTemperatureJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewSetBoilerMaxOutputTemperatureRequestWithBody(server, bridgeId, params, "application/json", bodyReader)
+}
+
+// NewSetBoilerMaxOutputTemperatureRequestWithBody generates requests for SetBoilerMaxOutputTemperature with any type of body
+func NewSetBoilerMaxOutputTemperatureRequestWithBody(server string, bridgeId BridgeId, params *SetBoilerMaxOutputTemperatureParams, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "bridgeId", runtime.ParamLocationPath, bridgeId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/homeByBridge/%s/boilerMaxOutputTemperature", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if queryFrag, err := runtime.StyleParamWithLocation("form", true, "authKey", runtime.ParamLocationQuery, params.AuthKey); err != nil {
+			return nil, err
+		} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+			return nil, err
+		} else {
+			for k, v := range parsed {
+				for _, v2 := range v {
+					queryValues.Add(k, v2)
+				}
+			}
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
+	req, err := http.NewRequest("PUT", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewGetBoilerWiringInstallationStateRequest generates requests for GetBoilerWiringInstallationState
+func NewGetBoilerWiringInstallationStateRequest(server string, bridgeId BridgeId, params *GetBoilerWiringInstallationStateParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "bridgeId", runtime.ParamLocationPath, bridgeId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/homeByBridge/%s/boilerWiringInstallationState", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if queryFrag, err := runtime.StyleParamWithLocation("form", true, "authKey", runtime.ParamLocationQuery, params.AuthKey); err != nil {
+			return nil, err
+		} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+			return nil, err
+		} else {
+			for k, v := range parsed {
+				for _, v2 := range v {
+					queryValues.Add(k, v2)
+				}
+			}
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
 
 	return req, nil
 }
@@ -5514,6 +6075,88 @@ func NewGetZoneStateRequest(server string, homeId HomeId, zoneId ZoneId) (*http.
 	return req, nil
 }
 
+// NewDeactivateOpenWindowStateRequest generates requests for DeactivateOpenWindowState
+func NewDeactivateOpenWindowStateRequest(server string, homeId HomeId, zoneId ZoneId) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "homeId", runtime.ParamLocationPath, homeId)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "zoneId", runtime.ParamLocationPath, zoneId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/homes/%s/zones/%s/state/openWindow", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("DELETE", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewActivateOpenWindowStateRequest generates requests for ActivateOpenWindowState
+func NewActivateOpenWindowStateRequest(server string, homeId HomeId, zoneId ZoneId) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "homeId", runtime.ParamLocationPath, homeId)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "zoneId", runtime.ParamLocationPath, zoneId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/homes/%s/zones/%s/state/openWindow/activate", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewGetMeRequest generates requests for GetMe
 func NewGetMeRequest(server string) (*http.Request, error) {
 	var err error
@@ -5584,8 +6227,14 @@ func WithBaseURL(baseURL string) ClientOption {
 
 // ClientWithResponsesInterface is the interface specification for the client with responses above.
 type ClientWithResponsesInterface interface {
+	// GetBridgeWithResponse request
+	GetBridgeWithResponse(ctx context.Context, bridgeId BridgeId, params *GetBridgeParams, reqEditors ...RequestEditorFn) (*GetBridgeResponse, error)
+
 	// GetDeviceWithResponse request
 	GetDeviceWithResponse(ctx context.Context, deviceId DeviceId, reqEditors ...RequestEditorFn) (*GetDeviceResponse, error)
+
+	// SetChildLockWithResponse request
+	SetChildLockWithResponse(ctx context.Context, deviceId DeviceId, reqEditors ...RequestEditorFn) (*SetChildLockResponse, error)
 
 	// IdentifyDeviceWithResponse request
 	IdentifyDeviceWithResponse(ctx context.Context, deviceId DeviceId, reqEditors ...RequestEditorFn) (*IdentifyDeviceResponse, error)
@@ -5597,6 +6246,20 @@ type ClientWithResponsesInterface interface {
 	SetTemperatureOffsetWithBodyWithResponse(ctx context.Context, deviceId DeviceId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SetTemperatureOffsetResponse, error)
 
 	SetTemperatureOffsetWithResponse(ctx context.Context, deviceId DeviceId, body SetTemperatureOffsetJSONRequestBody, reqEditors ...RequestEditorFn) (*SetTemperatureOffsetResponse, error)
+
+	// GetBoilerInfoWithResponse request
+	GetBoilerInfoWithResponse(ctx context.Context, bridgeId BridgeId, params *GetBoilerInfoParams, reqEditors ...RequestEditorFn) (*GetBoilerInfoResponse, error)
+
+	// GetBoilerMaxOutputTemperatureWithResponse request
+	GetBoilerMaxOutputTemperatureWithResponse(ctx context.Context, bridgeId BridgeId, params *GetBoilerMaxOutputTemperatureParams, reqEditors ...RequestEditorFn) (*GetBoilerMaxOutputTemperatureResponse, error)
+
+	// SetBoilerMaxOutputTemperatureWithBodyWithResponse request with any body
+	SetBoilerMaxOutputTemperatureWithBodyWithResponse(ctx context.Context, bridgeId BridgeId, params *SetBoilerMaxOutputTemperatureParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SetBoilerMaxOutputTemperatureResponse, error)
+
+	SetBoilerMaxOutputTemperatureWithResponse(ctx context.Context, bridgeId BridgeId, params *SetBoilerMaxOutputTemperatureParams, body SetBoilerMaxOutputTemperatureJSONRequestBody, reqEditors ...RequestEditorFn) (*SetBoilerMaxOutputTemperatureResponse, error)
+
+	// GetBoilerWiringInstallationStateWithResponse request
+	GetBoilerWiringInstallationStateWithResponse(ctx context.Context, bridgeId BridgeId, params *GetBoilerWiringInstallationStateParams, reqEditors ...RequestEditorFn) (*GetBoilerWiringInstallationStateResponse, error)
 
 	// GetHomeWithResponse request
 	GetHomeWithResponse(ctx context.Context, homeId HomeId, reqEditors ...RequestEditorFn) (*GetHomeResponse, error)
@@ -5805,8 +6468,38 @@ type ClientWithResponsesInterface interface {
 	// GetZoneStateWithResponse request
 	GetZoneStateWithResponse(ctx context.Context, homeId HomeId, zoneId ZoneId, reqEditors ...RequestEditorFn) (*GetZoneStateResponse, error)
 
+	// DeactivateOpenWindowStateWithResponse request
+	DeactivateOpenWindowStateWithResponse(ctx context.Context, homeId HomeId, zoneId ZoneId, reqEditors ...RequestEditorFn) (*DeactivateOpenWindowStateResponse, error)
+
+	// ActivateOpenWindowStateWithResponse request
+	ActivateOpenWindowStateWithResponse(ctx context.Context, homeId HomeId, zoneId ZoneId, reqEditors ...RequestEditorFn) (*ActivateOpenWindowStateResponse, error)
+
 	// GetMeWithResponse request
 	GetMeWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetMeResponse, error)
+}
+
+type GetBridgeResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *Bridge
+	JSON401      *Unauthorized401
+	JSON403      *AccessDenied403
+}
+
+// Status returns HTTPResponse.Status
+func (r GetBridgeResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetBridgeResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
 }
 
 type GetDeviceResponse struct {
@@ -5827,6 +6520,29 @@ func (r GetDeviceResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r GetDeviceResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type SetChildLockResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON401      *Unauthorized401
+	JSON403      *AccessDenied403
+}
+
+// Status returns HTTPResponse.Status
+func (r SetChildLockResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r SetChildLockResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -5899,6 +6615,106 @@ func (r SetTemperatureOffsetResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r SetTemperatureOffsetResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetBoilerInfoResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *Boiler2
+	JSON401      *Unauthorized401
+	JSON403      *AccessDenied403
+	JSON404      *NotFound404
+}
+
+// Status returns HTTPResponse.Status
+func (r GetBoilerInfoResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetBoilerInfoResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetBoilerMaxOutputTemperatureResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *BoilerMaxOutputTemperature
+	JSON401      *Unauthorized401
+	JSON403      *AccessDenied403
+	JSON404      *NotFound404
+}
+
+// Status returns HTTPResponse.Status
+func (r GetBoilerMaxOutputTemperatureResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetBoilerMaxOutputTemperatureResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type SetBoilerMaxOutputTemperatureResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON401      *Unauthorized401
+	JSON403      *AccessDenied403
+	JSON404      *NotFound404
+	JSON422      *InputError422
+}
+
+// Status returns HTTPResponse.Status
+func (r SetBoilerMaxOutputTemperatureResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r SetBoilerMaxOutputTemperatureResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetBoilerWiringInstallationStateResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *BoilerWiringInstallationState
+	JSON401      *Unauthorized401
+	JSON403      *AccessDenied403
+	JSON404      *NotFound404
+}
+
+// Status returns HTTPResponse.Status
+func (r GetBoilerWiringInstallationStateResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetBoilerWiringInstallationStateResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -7254,6 +8070,54 @@ func (r GetZoneStateResponse) StatusCode() int {
 	return 0
 }
 
+type DeactivateOpenWindowStateResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON401      *Unauthorized401
+	JSON403      *AccessDenied403
+	JSON404      *NotFound404
+}
+
+// Status returns HTTPResponse.Status
+func (r DeactivateOpenWindowStateResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DeactivateOpenWindowStateResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type ActivateOpenWindowStateResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON401      *Unauthorized401
+	JSON403      *AccessDenied403
+	JSON404      *NotFound404
+}
+
+// Status returns HTTPResponse.Status
+func (r ActivateOpenWindowStateResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ActivateOpenWindowStateResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 type GetMeResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -7277,6 +8141,15 @@ func (r GetMeResponse) StatusCode() int {
 	return 0
 }
 
+// GetBridgeWithResponse request returning *GetBridgeResponse
+func (c *ClientWithResponses) GetBridgeWithResponse(ctx context.Context, bridgeId BridgeId, params *GetBridgeParams, reqEditors ...RequestEditorFn) (*GetBridgeResponse, error) {
+	rsp, err := c.GetBridge(ctx, bridgeId, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetBridgeResponse(rsp)
+}
+
 // GetDeviceWithResponse request returning *GetDeviceResponse
 func (c *ClientWithResponses) GetDeviceWithResponse(ctx context.Context, deviceId DeviceId, reqEditors ...RequestEditorFn) (*GetDeviceResponse, error) {
 	rsp, err := c.GetDevice(ctx, deviceId, reqEditors...)
@@ -7284,6 +8157,15 @@ func (c *ClientWithResponses) GetDeviceWithResponse(ctx context.Context, deviceI
 		return nil, err
 	}
 	return ParseGetDeviceResponse(rsp)
+}
+
+// SetChildLockWithResponse request returning *SetChildLockResponse
+func (c *ClientWithResponses) SetChildLockWithResponse(ctx context.Context, deviceId DeviceId, reqEditors ...RequestEditorFn) (*SetChildLockResponse, error) {
+	rsp, err := c.SetChildLock(ctx, deviceId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSetChildLockResponse(rsp)
 }
 
 // IdentifyDeviceWithResponse request returning *IdentifyDeviceResponse
@@ -7319,6 +8201,50 @@ func (c *ClientWithResponses) SetTemperatureOffsetWithResponse(ctx context.Conte
 		return nil, err
 	}
 	return ParseSetTemperatureOffsetResponse(rsp)
+}
+
+// GetBoilerInfoWithResponse request returning *GetBoilerInfoResponse
+func (c *ClientWithResponses) GetBoilerInfoWithResponse(ctx context.Context, bridgeId BridgeId, params *GetBoilerInfoParams, reqEditors ...RequestEditorFn) (*GetBoilerInfoResponse, error) {
+	rsp, err := c.GetBoilerInfo(ctx, bridgeId, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetBoilerInfoResponse(rsp)
+}
+
+// GetBoilerMaxOutputTemperatureWithResponse request returning *GetBoilerMaxOutputTemperatureResponse
+func (c *ClientWithResponses) GetBoilerMaxOutputTemperatureWithResponse(ctx context.Context, bridgeId BridgeId, params *GetBoilerMaxOutputTemperatureParams, reqEditors ...RequestEditorFn) (*GetBoilerMaxOutputTemperatureResponse, error) {
+	rsp, err := c.GetBoilerMaxOutputTemperature(ctx, bridgeId, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetBoilerMaxOutputTemperatureResponse(rsp)
+}
+
+// SetBoilerMaxOutputTemperatureWithBodyWithResponse request with arbitrary body returning *SetBoilerMaxOutputTemperatureResponse
+func (c *ClientWithResponses) SetBoilerMaxOutputTemperatureWithBodyWithResponse(ctx context.Context, bridgeId BridgeId, params *SetBoilerMaxOutputTemperatureParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SetBoilerMaxOutputTemperatureResponse, error) {
+	rsp, err := c.SetBoilerMaxOutputTemperatureWithBody(ctx, bridgeId, params, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSetBoilerMaxOutputTemperatureResponse(rsp)
+}
+
+func (c *ClientWithResponses) SetBoilerMaxOutputTemperatureWithResponse(ctx context.Context, bridgeId BridgeId, params *SetBoilerMaxOutputTemperatureParams, body SetBoilerMaxOutputTemperatureJSONRequestBody, reqEditors ...RequestEditorFn) (*SetBoilerMaxOutputTemperatureResponse, error) {
+	rsp, err := c.SetBoilerMaxOutputTemperature(ctx, bridgeId, params, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSetBoilerMaxOutputTemperatureResponse(rsp)
+}
+
+// GetBoilerWiringInstallationStateWithResponse request returning *GetBoilerWiringInstallationStateResponse
+func (c *ClientWithResponses) GetBoilerWiringInstallationStateWithResponse(ctx context.Context, bridgeId BridgeId, params *GetBoilerWiringInstallationStateParams, reqEditors ...RequestEditorFn) (*GetBoilerWiringInstallationStateResponse, error) {
+	rsp, err := c.GetBoilerWiringInstallationState(ctx, bridgeId, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetBoilerWiringInstallationStateResponse(rsp)
 }
 
 // GetHomeWithResponse request returning *GetHomeResponse
@@ -7984,6 +8910,24 @@ func (c *ClientWithResponses) GetZoneStateWithResponse(ctx context.Context, home
 	return ParseGetZoneStateResponse(rsp)
 }
 
+// DeactivateOpenWindowStateWithResponse request returning *DeactivateOpenWindowStateResponse
+func (c *ClientWithResponses) DeactivateOpenWindowStateWithResponse(ctx context.Context, homeId HomeId, zoneId ZoneId, reqEditors ...RequestEditorFn) (*DeactivateOpenWindowStateResponse, error) {
+	rsp, err := c.DeactivateOpenWindowState(ctx, homeId, zoneId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDeactivateOpenWindowStateResponse(rsp)
+}
+
+// ActivateOpenWindowStateWithResponse request returning *ActivateOpenWindowStateResponse
+func (c *ClientWithResponses) ActivateOpenWindowStateWithResponse(ctx context.Context, homeId HomeId, zoneId ZoneId, reqEditors ...RequestEditorFn) (*ActivateOpenWindowStateResponse, error) {
+	rsp, err := c.ActivateOpenWindowState(ctx, homeId, zoneId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseActivateOpenWindowStateResponse(rsp)
+}
+
 // GetMeWithResponse request returning *GetMeResponse
 func (c *ClientWithResponses) GetMeWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetMeResponse, error) {
 	rsp, err := c.GetMe(ctx, reqEditors...)
@@ -7991,6 +8935,46 @@ func (c *ClientWithResponses) GetMeWithResponse(ctx context.Context, reqEditors 
 		return nil, err
 	}
 	return ParseGetMeResponse(rsp)
+}
+
+// ParseGetBridgeResponse parses an HTTP response from a GetBridgeWithResponse call
+func ParseGetBridgeResponse(rsp *http.Response) (*GetBridgeResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetBridgeResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Bridge
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized401
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest AccessDenied403
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	}
+
+	return response, nil
 }
 
 // ParseGetDeviceResponse parses an HTTP response from a GetDeviceWithResponse call
@@ -8014,6 +8998,39 @@ func ParseGetDeviceResponse(rsp *http.Response) (*GetDeviceResponse, error) {
 		}
 		response.JSON200 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized401
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest AccessDenied403
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseSetChildLockResponse parses an HTTP response from a SetChildLockWithResponse call
+func ParseSetChildLockResponse(rsp *http.Response) (*SetChildLockResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &SetChildLockResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
 		var dest Unauthorized401
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -8147,6 +9164,194 @@ func ParseSetTemperatureOffsetResponse(rsp *http.Response) (*SetTemperatureOffse
 			return nil, err
 		}
 		response.JSON422 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetBoilerInfoResponse parses an HTTP response from a GetBoilerInfoWithResponse call
+func ParseGetBoilerInfoResponse(rsp *http.Response) (*GetBoilerInfoResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetBoilerInfoResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Boiler2
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized401
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest AccessDenied403
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound404
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetBoilerMaxOutputTemperatureResponse parses an HTTP response from a GetBoilerMaxOutputTemperatureWithResponse call
+func ParseGetBoilerMaxOutputTemperatureResponse(rsp *http.Response) (*GetBoilerMaxOutputTemperatureResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetBoilerMaxOutputTemperatureResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest BoilerMaxOutputTemperature
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized401
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest AccessDenied403
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound404
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseSetBoilerMaxOutputTemperatureResponse parses an HTTP response from a SetBoilerMaxOutputTemperatureWithResponse call
+func ParseSetBoilerMaxOutputTemperatureResponse(rsp *http.Response) (*SetBoilerMaxOutputTemperatureResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &SetBoilerMaxOutputTemperatureResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized401
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest AccessDenied403
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound404
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 422:
+		var dest InputError422
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON422 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetBoilerWiringInstallationStateResponse parses an HTTP response from a GetBoilerWiringInstallationStateWithResponse call
+func ParseGetBoilerWiringInstallationStateResponse(rsp *http.Response) (*GetBoilerWiringInstallationStateResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetBoilerWiringInstallationStateResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest BoilerWiringInstallationState
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized401
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest AccessDenied403
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound404
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
 
 	}
 
@@ -10530,6 +11735,86 @@ func ParseGetZoneStateResponse(rsp *http.Response) (*GetZoneStateResponse, error
 		}
 		response.JSON200 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized401
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest AccessDenied403
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound404
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseDeactivateOpenWindowStateResponse parses an HTTP response from a DeactivateOpenWindowStateWithResponse call
+func ParseDeactivateOpenWindowStateResponse(rsp *http.Response) (*DeactivateOpenWindowStateResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DeactivateOpenWindowStateResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized401
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest AccessDenied403
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound404
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseActivateOpenWindowStateResponse parses an HTTP response from a ActivateOpenWindowStateWithResponse call
+func ParseActivateOpenWindowStateResponse(rsp *http.Response) (*ActivateOpenWindowStateResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ActivateOpenWindowStateResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
 		var dest Unauthorized401
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {

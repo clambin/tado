@@ -7,7 +7,7 @@ import (
 )
 
 ////go:generate oapi-codegen -config config.yaml ../tado-openapispec-v2/tado-openapispec-v2.yaml
-//go:generate oapi-codegen -config config.yaml https://raw.githubusercontent.com/kritsel/tado-openapispec-v2/refs/tags/v2.2024.12.16.0/tado-openapispec-v2.yaml
+//go:generate oapi-codegen -config config.yaml https://raw.githubusercontent.com/kritsel/tado-openapispec-v2/refs/tags/v2.2024.12.30.1/tado-openapispec-v2.yaml
 
 const ServerURL = "https://my.tado.com/api/v2"
 
