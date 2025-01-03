@@ -72,22 +72,22 @@ func TestHandleErrors(t *testing.T) {
 
 func TestErrors(t *testing.T) {
 	tests := []struct {
-		name  string
-		err   *tado.ErrorResponse
-		isErr bool
-		want  string
+		name    string
+		err     *tado.ErrorResponse
+		wantErr bool
+		want    string
 	}{
 		{
-			name:  "nil error",
-			isErr: false,
+			name:    "nil error",
+			wantErr: false,
 		},
 		{
 			name: "single error",
 			err: &tado.ErrorResponse{Errors: &[]tado.Error{
 				{Code: VarP("foo"), Title: VarP("error foo")},
 			}},
-			isErr: true,
-			want:  "foo - error foo",
+			wantErr: true,
+			want:    "foo - error foo",
 		},
 		{
 			name: "multiple errors",
@@ -95,23 +95,18 @@ func TestErrors(t *testing.T) {
 				{Code: VarP("foo"), Title: VarP("error foo")},
 				{Code: VarP("bar"), Title: VarP("error bar")},
 			}},
-			isErr: true,
-			want:  "foo - error foo\nbar - error bar",
+			wantErr: true,
+			want:    "foo - error foo\nbar - error bar",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := Errors(tt.err)
-			switch {
-			case err == nil:
-				if tt.isErr {
-					t.Errorf("Errors() = nil, want error")
-				}
-			case err != nil:
-				if !tt.isErr {
-					t.Errorf("Errors() = %v, want no error", err)
-				}
+			if tt.wantErr != (err != nil) {
+				t.Errorf("Errors() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if err != nil {
 				if got := err.Error(); got != tt.want {
 					t.Errorf("Errors() = %v, want %v", got, tt.want)
 				}
@@ -122,22 +117,22 @@ func TestErrors(t *testing.T) {
 
 func TestErrors422(t *testing.T) {
 	tests := []struct {
-		name  string
-		err   *tado.ErrorResponse422
-		isErr bool
-		want  string
+		name    string
+		err     *tado.ErrorResponse422
+		wantErr bool
+		want    string
 	}{
 		{
-			name:  "nil error",
-			isErr: false,
+			name:    "nil error",
+			wantErr: false,
 		},
 		{
 			name: "single error",
 			err: &tado.ErrorResponse422{Errors: &[]tado.Error422{
 				{Code: VarP("foo"), Title: VarP("error foo")},
 			}},
-			isErr: true,
-			want:  "foo - error foo",
+			wantErr: true,
+			want:    "foo - error foo",
 		},
 		{
 			name: "multiple errors",
@@ -145,29 +140,27 @@ func TestErrors422(t *testing.T) {
 				{Code: VarP("foo"), Title: VarP("error foo")},
 				{Code: VarP("bar"), Title: VarP("error bar")},
 			}},
-			isErr: true,
-			want:  "foo - error foo\nbar - error bar",
+			wantErr: true,
+			want:    "foo - error foo\nbar - error bar",
 		},
 		{
 			name: "with zoneType",
 			err: &tado.ErrorResponse422{Errors: &[]tado.Error422{
 				{Code: VarP("foo"), Title: VarP("error foo"), ZoneType: VarP(tado.HEATING)},
 			}},
-			isErr: true,
-			want:  "foo - error foo (zoneType: HEATING)",
+			wantErr: true,
+			want:    "foo - error foo (zoneType: HEATING)",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := Errors422(tt.err)
-			switch {
-			case err == nil && tt.isErr:
-				t.Errorf("Errors422() = nil, want error")
-			case err != nil:
-				if !tt.isErr {
-					t.Errorf("Errors422() = %v, want no error", err)
-				} else if got := err.Error(); got != tt.want {
+			if tt.wantErr != (err != nil) {
+				t.Errorf("Errors() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if err != nil {
+				if got := err.Error(); got != tt.want {
 					t.Errorf("Errors422() = %v, want %v", got, tt.want)
 				}
 			}

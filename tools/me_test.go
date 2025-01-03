@@ -53,10 +53,10 @@ func TestGetHomes(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			homes, err := GetHomes(context.Background(), tt.client)
+			if tt.wantErr != (err != nil) {
+				t.Errorf("Errors() error = %v, wantErr %v", err, tt.wantErr)
+			}
 			if err != nil {
-				if !tt.wantErr {
-					t.Errorf("got error, wanted no error")
-				}
 				return
 			}
 			if len(tt.homes) != len(homes) {
