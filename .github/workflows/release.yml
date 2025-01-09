@@ -1,10 +1,10 @@
 name: Release
-
 on:
   push:
     tags:
       - 'v*'
-
+permissions:
+  contents: write
 jobs:
   test:
     uses: clambin/workflows/.github/workflows/libtest.yaml@main
