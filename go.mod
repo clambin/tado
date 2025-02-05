@@ -4,7 +4,7 @@ go 1.23
 
 require (
 	github.com/oapi-codegen/runtime v1.1.1
-	golang.org/x/oauth2 v0.25.0
+	golang.org/x/oauth2 v0.26.0
 )
 
 require (
