@@ -75,12 +75,6 @@ const (
 	FanLevelSILENT FanLevel = "SILENT"
 )
 
-// Defines values for HomeTemperatureUnit.
-const (
-	CELSIUS    HomeTemperatureUnit = "CELSIUS"
-	FAHRENHEIT HomeTemperatureUnit = "FAHRENHEIT"
-)
-
 // Defines values for HomePresence.
 const (
 	AWAY HomePresence = "AWAY"
@@ -128,6 +122,12 @@ const (
 	TemperatureLevelCOMFY TemperatureLevel = "COMFY"
 	TemperatureLevelHOT   TemperatureLevel = "HOT"
 	TemperatureLevelWARM  TemperatureLevel = "WARM"
+)
+
+// Defines values for TemperatureUnit.
+const (
+	CELSIUS    TemperatureUnit = "CELSIUS"
+	FAHRENHEIT TemperatureUnit = "FAHRENHEIT"
 )
 
 // Defines values for TimetableTypeId.
@@ -197,6 +197,9 @@ const (
 
 // ActivityDataPoints Part of ZoneState. Empty for a HOT_WATER zone
 type ActivityDataPoints struct {
+	// AcPower Used in ZoneState, to express acPower.
+	AcPower *PowerDataPoint `json:"acPower,omitempty"`
+
 	// HeatingPower Used in Weather and ZoneState, to express quantities like heating power, humidity and solar intensity.
 	HeatingPower *PercentageDataPoint `json:"heatingPower,omitempty"`
 }
@@ -219,6 +222,8 @@ type AirComfort struct {
 		TemperatureLevel *TemperatureLevel `json:"temperatureLevel,omitempty"`
 	} `json:"comfort,omitempty"`
 	Freshness *struct {
+		AcPoweredOn    *bool      `json:"acPoweredOn,omitempty"`
+		LastAcPowerOff *time.Time `json:"lastAcPowerOff,omitempty"`
 		LastOpenWindow *time.Time `json:"lastOpenWindow,omitempty"`
 
 		// Value The air freshness level for the entire home. Used in AirComfort.
@@ -381,6 +386,11 @@ type CallForHeatTimeSeries struct {
 // CallForHeatValue element of DayReport
 type CallForHeatValue string
 
+// ChildLock input for PUT /devices/{deviceId}/childLock
+type ChildLock struct {
+	ChildLockEnabled *bool `json:"childLockEnabled,omitempty"`
+}
+
 // DataInterval element of a DayReport
 type DataInterval struct {
 	From *time.Time `json:"from,omitempty"`
@@ -389,6 +399,9 @@ type DataInterval struct {
 
 // DayReport result of /homes/{homeId}/zones/{zoneId}/dayReport
 type DayReport struct {
+	// AcActivity Element of DayReport.  Used to express acActivity.
+	AcActivity *PowerTimeSeries `json:"acActivity,omitempty"`
+
 	// CallForHeat element of DayReport
 	CallForHeat *CallForHeatTimeSeries `json:"callForHeat,omitempty"`
 
@@ -411,7 +424,7 @@ type DayReport struct {
 	} `json:"measuredData,omitempty"`
 
 	// Settings element of DayReport
-	Settings *HeatingSettingTimeSeries `json:"settings,omitempty"`
+	Settings *ZoneSettingTimeSeries `json:"settings,omitempty"`
 
 	// Stripes Element of DayReport
 	Stripes *StripesTimeSeries `json:"stripes,omitempty"`
@@ -463,6 +476,11 @@ type DefaultZoneOverlay struct {
 //
 // Some of the properties are only available for certain device types.  Certain values for some properties are only applicable to certain device types.  Wherever device type specific information is known, it is documented.  But you cannot count on this information being fully complete.
 type Device struct {
+	// AccessPointWiFi property known to be present for DeviceType WR02 (AC control)
+	AccessPointWiFi *struct {
+		Ssid *string `json:"ssid,omitempty"`
+	} `json:"accessPointWiFi,omitempty"`
+
 	// BatteryState device property known to be present for DeviceType SU02, VA02
 	BatteryState    *BatteryState `json:"batteryState,omitempty"`
 	Characteristics *struct {
@@ -473,6 +491,9 @@ type Device struct {
 	// ChildLockEnabled property known to be present for DeviceType VA02
 	ChildLockEnabled *bool `json:"childLockEnabled,omitempty"`
 
+	// CommandTableUploadState property known to be present for DeviceType WR02 (AC control)
+	CommandTableUploadState *string `json:"commandTableUploadState,omitempty"`
+
 	// ConnectionState property known to be present for DeviceType SU02, VA02, BR02
 	ConnectionState *struct {
 		Timestamp *time.Time `json:"timestamp,omitempty"`
@@ -482,7 +503,8 @@ type Device struct {
 
 	// DeviceType data element of Device
 	//
-	// known values:  * GW01 (Gateway V1)
+	// known values:
+	// * GW01 (Gateway V1)
 	// * GW02 (Bridge V2)
 	// * IB01 (Internet Bridge V3+)
 	// * BX02 (Box V1)
@@ -496,6 +518,8 @@ type Device struct {
 	// * SU02 (Wireless Temperature Sensor V3+)
 	// * VA01 (Smart Radiator Thermostat V3)
 	// * VA02 (Smart Radiator Thermostat V3+)
+	// * WR01 (Smart AC Control V3)
+	// * WR02 (Smart AC Control V3+)
 	DeviceType *DeviceType `json:"deviceType,omitempty"`
 
 	// InPairingMode property known to be present for DeviceType IB01
@@ -530,6 +554,11 @@ type Device struct {
 
 // DeviceExtra defines model for DeviceExtra.
 type DeviceExtra struct {
+	// AccessPointWiFi property known to be present for DeviceType WR02 (AC control)
+	AccessPointWiFi *struct {
+		Ssid *string `json:"ssid,omitempty"`
+	} `json:"accessPointWiFi,omitempty"`
+
 	// BatteryState device property known to be present for DeviceType SU02, VA02
 	BatteryState    *BatteryState `json:"batteryState,omitempty"`
 	Characteristics *struct {
@@ -540,6 +569,9 @@ type DeviceExtra struct {
 	// ChildLockEnabled property known to be present for DeviceType VA02
 	ChildLockEnabled *bool `json:"childLockEnabled,omitempty"`
 
+	// CommandTableUploadState property known to be present for DeviceType WR02 (AC control)
+	CommandTableUploadState *string `json:"commandTableUploadState,omitempty"`
+
 	// ConnectionState property known to be present for DeviceType SU02, VA02, BR02
 	ConnectionState *struct {
 		Timestamp *time.Time `json:"timestamp,omitempty"`
@@ -549,7 +581,8 @@ type DeviceExtra struct {
 
 	// DeviceType data element of Device
 	//
-	// known values:  * GW01 (Gateway V1)
+	// known values:
+	// * GW01 (Gateway V1)
 	// * GW02 (Bridge V2)
 	// * IB01 (Internet Bridge V3+)
 	// * BX02 (Box V1)
@@ -563,6 +596,8 @@ type DeviceExtra struct {
 	// * SU02 (Wireless Temperature Sensor V3+)
 	// * VA01 (Smart Radiator Thermostat V3)
 	// * VA02 (Smart Radiator Thermostat V3+)
+	// * WR01 (Smart AC Control V3)
+	// * WR02 (Smart AC Control V3+)
 	DeviceType *DeviceType `json:"deviceType,omitempty"`
 	Duties     *[]string   `json:"duties,omitempty"`
 
@@ -613,7 +648,8 @@ type DeviceListItem struct {
 
 	// Type data element of Device
 	//
-	// known values:  * GW01 (Gateway V1)
+	// known values:
+	// * GW01 (Gateway V1)
 	// * GW02 (Bridge V2)
 	// * IB01 (Internet Bridge V3+)
 	// * BX02 (Box V1)
@@ -627,6 +663,8 @@ type DeviceListItem struct {
 	// * SU02 (Wireless Temperature Sensor V3+)
 	// * VA01 (Smart Radiator Thermostat V3)
 	// * VA02 (Smart Radiator Thermostat V3+)
+	// * WR01 (Smart AC Control V3)
+	// * WR02 (Smart AC Control V3+)
 	Type *DeviceType `json:"type,omitempty"`
 
 	// Zone This property is not present for devices of type 'IB01' (Internet Bridge) and 'BR02' (Wireless Receiver).
@@ -641,7 +679,8 @@ type DeviceListItem struct {
 
 // DeviceType data element of Device
 //
-// known values:  * GW01 (Gateway V1)
+// known values:
+// * GW01 (Gateway V1)
 // * GW02 (Bridge V2)
 // * IB01 (Internet Bridge V3+)
 // * BX02 (Box V1)
@@ -655,6 +694,8 @@ type DeviceListItem struct {
 // * SU02 (Wireless Temperature Sensor V3+)
 // * VA01 (Smart Radiator Thermostat V3)
 // * VA02 (Smart Radiator Thermostat V3+)
+// * WR01 (Smart AC Control V3)
+// * WR02 (Smart AC Control V3+)
 type DeviceType = string
 
 // EarlyStart defines model for EarlyStart.
@@ -694,6 +735,32 @@ type ErrorResponse422 struct {
 // FanLevel Used in AirConditioningZoneSettingsBase and AirConditioningModeCapabilitiesBase
 type FanLevel string
 
+// FlowTemperatureOptimization Result of 'GET /homes/{homeId}/flowTemperatureOptimization'
+type FlowTemperatureOptimization struct {
+	AutoAdaptation *struct {
+		Enabled            *bool `json:"enabled,omitempty"`
+		MaxFlowTemperature *int  `json:"maxFlowTemperature"`
+	} `json:"autoAdaptation,omitempty"`
+	HasMultipleBoilerControlDevices *bool `json:"hasMultipleBoilerControlDevices,omitempty"`
+
+	// MaxFlowTemperature Not clear if this property always represents a centigrade value, or if the unit is based on `Home.temperatureUnit`
+	MaxFlowTemperature            *int `json:"maxFlowTemperature,omitempty"`
+	MaxFlowTemperatureConstraints *struct {
+		// Max Not clear if this property always represents a centigrade value, or if the unit is based on `Home.temperatureUnit`
+		Max *int `json:"max,omitempty"`
+
+		// Min Not clear if this property always represents a centigrade value, or if the unit is based on `Home.temperatureUnit`
+		Min *int `json:"min,omitempty"`
+	} `json:"maxFlowTemperatureConstraints,omitempty"`
+	OpenThermDeviceSerialNumber *string `json:"openThermDeviceSerialNumber,omitempty"`
+}
+
+// FlowTemperatureOptimizationInput Input for 'PUT /homes/{homeId}/flowTemperatureOptimization'
+type FlowTemperatureOptimizationInput struct {
+	// MaxFlowTemperature Not clear if this property always represents a centigrade value, or if the unit is based on `Home.temperatureUnit`
+	MaxFlowTemperature *float32 `json:"maxFlowTemperature,omitempty"`
+}
+
 // HeatingCircuit Result of /homes/{homeId}/heatingCircuits
 //
 // A tado device which controls a heating circuit
@@ -712,28 +779,6 @@ type HeatingCircuitId = int
 // HeatingCircuitInput Used in PUT /homes/{homeId}/zones/{zoneId}/control/heatingCircuit
 type HeatingCircuitInput struct {
 	CircuitNumber *HeatingCircuitId `json:"circuitNumber,omitempty"`
-}
-
-// HeatingSettingDataInterval defines model for HeatingSettingDataInterval.
-type HeatingSettingDataInterval struct {
-	From  *time.Time           `json:"from,omitempty"`
-	To    *time.Time           `json:"to,omitempty"`
-	Value *HeatingSettingValue `json:"value,omitempty"`
-}
-
-// HeatingSettingTimeSeries element of DayReport
-type HeatingSettingTimeSeries struct {
-	DataIntervals  *[]HeatingSettingDataInterval `json:"dataIntervals,omitempty"`
-	TimeSeriesType *string                       `json:"timeSeriesType,omitempty"`
-	ValueType      *string                       `json:"valueType,omitempty"`
-}
-
-// HeatingSettingValue defines model for HeatingSettingValue.
-type HeatingSettingValue struct {
-	// Power used in ZoneSetting
-	Power       *Power       `json:"power,omitempty"`
-	Temperature *Temperature `json:"temperature,omitempty"`
-	Type        *string      `json:"type,omitempty"`
 }
 
 // HeatingSystem result of /homes/{homeId}/heatingSystem
@@ -758,7 +803,7 @@ type Home struct {
 		State   *string `json:"state"`
 		ZipCode *string `json:"zipCode,omitempty"`
 	} `json:"address,omitempty"`
-	AwayRadiusInMeters *int `json:"awayRadiusInMeters,omitempty"`
+	AwayRadiusInMeters *float32 `json:"awayRadiusInMeters,omitempty"`
 
 	// ChristmasModeEnabled no idea what this means, but would be really interesting to know more...
 	ChristmasModeEnabled  *bool `json:"christmasModeEnabled,omitempty"`
@@ -808,16 +853,13 @@ type Home struct {
 	SimpleSmartScheduleEnabled *bool        `json:"simpleSmartScheduleEnabled,omitempty"`
 
 	// Skills this is assumed to be an array of strings, currently tested set-up returns an empty array
-	Skills                              *[]string            `json:"skills,omitempty"`
-	SupportsFlowTemperatureOptimization *bool                `json:"supportsFlowTemperatureOptimization,omitempty"`
-	TemperatureUnit                     *HomeTemperatureUnit `json:"temperatureUnit,omitempty"`
+	Skills                              *[]string        `json:"skills,omitempty"`
+	SupportsFlowTemperatureOptimization *bool            `json:"supportsFlowTemperatureOptimization,omitempty"`
+	TemperatureUnit                     *TemperatureUnit `json:"temperatureUnit,omitempty"`
 
 	// ZonesCount number of zones is this home
 	ZonesCount *int `json:"zonesCount,omitempty"`
 }
-
-// HomeTemperatureUnit defines model for Home.TemperatureUnit.
-type HomeTemperatureUnit string
 
 // HomeBase basic home information which is present in the User component
 type HomeBase struct {
@@ -900,6 +942,78 @@ type IncidentDetection struct {
 type IncidentDetectionInput struct {
 	Enabled *bool `json:"enabled,omitempty"`
 }
+
+// Installation Result of GET /home/{homeId}/installations.
+// Only present for ACs.
+type Installation struct {
+	AcInstallationInformation *struct {
+		AcSettingCommandSetRecording *interface{} `json:"acSettingCommandSetRecording"`
+		AcSpecs                      *struct {
+			AcUnitDisplaysSetPointTemperature *bool `json:"acUnitDisplaysSetPointTemperature,omitempty"`
+			Manufacturer                      *struct {
+				Name *string `json:"name,omitempty"`
+			} `json:"manufacturer,omitempty"`
+			RemoteControl *struct {
+				CommandType     *string          `json:"commandType,omitempty"`
+				ModelName       *interface{}     `json:"modelName"`
+				PhotoS3Key      *interface{}     `json:"photoS3Key"`
+				TemperatureUnit *TemperatureUnit `json:"temperatureUnit,omitempty"`
+			} `json:"remoteControl,omitempty"`
+		} `json:"acSpecs,omitempty"`
+		CreatedZone *struct {
+			// Id ID of a zone (unique only within the home it belongs to)
+			Id *ZoneId `json:"id,omitempty"`
+		} `json:"createdZone,omitempty"`
+		KeyCommandSetRecording            *interface{} `json:"keyCommandSetRecording"`
+		SelectedSetupBranch               *string      `json:"selectedSetupBranch,omitempty"`
+		WirelessRemoteHasRequiredFirmware *bool        `json:"wirelessRemoteHasRequiredFirmware,omitempty"`
+	} `json:"acInstallationInformation,omitempty"`
+	Devices *[]Device `json:"devices,omitempty"`
+
+	// Id ID of an (AC) installation (unique only within the home it belongs to)
+	Id       *InstallationId `json:"id,omitempty"`
+	Revision *int            `json:"revision,omitempty"`
+	State    *string         `json:"state,omitempty"`
+	Type     *string         `json:"type,omitempty"`
+}
+
+// InstallationId ID of an (AC) installation (unique only within the home it belongs to)
+type InstallationId = int
+
+// Invitation defines model for Invitation.
+type Invitation struct {
+	Email     *openapi_types.Email `json:"email,omitempty"`
+	FirstSent *openapi_types.Date  `json:"firstSent,omitempty"`
+
+	// Home A home controlled by tado. Result of /homes
+	Home    *Home `json:"home,omitempty"`
+	Inviter *struct {
+		Email   *openapi_types.Email `json:"email,omitempty"`
+		Enabled *bool                `json:"enabled,omitempty"`
+
+		// HomeId unique home ID
+		HomeId *HomeId `json:"homeId,omitempty"`
+
+		// Id globally unique user ID
+		Id       *openapi_types.UUID `json:"id,omitempty"`
+		Locale   *string             `json:"locale,omitempty"`
+		Name     *string             `json:"name,omitempty"`
+		Type     *string             `json:"type,omitempty"`
+		Username *string             `json:"username,omitempty"`
+	} `json:"inviter,omitempty"`
+	LastSent *openapi_types.Date `json:"lastSent,omitempty"`
+
+	// Token hexadecimal unique invitation identifier
+	Token *InvitationToken `json:"token,omitempty"`
+}
+
+// InvitationRequest input for POST /homes/{homeId}/invitations
+type InvitationRequest struct {
+	Email *openapi_types.Email `json:"email,omitempty"`
+}
+
+// InvitationToken hexadecimal unique invitation identifier
+type InvitationToken = string
 
 // Light Used in AirConditioningZoneSettingsBase and AirConditioningModeCapabilitiesBase
 type Light string
@@ -992,8 +1106,36 @@ type PercentageTimeSeries struct {
 	ValueType      *string                            `json:"valueType,omitempty"`
 }
 
-// Power used in ZoneSetting
+// Power Used in ZoneSetting, PowerDataInterval and PowerDataPoint;
+// to express if heating or air conditioning is on or off.
 type Power string
+
+// PowerDataInterval defines model for PowerDataInterval.
+type PowerDataInterval struct {
+	From *time.Time `json:"from,omitempty"`
+	To   *time.Time `json:"to,omitempty"`
+
+	// Value Used in ZoneSetting, PowerDataInterval and PowerDataPoint;
+	// to express if heating or air conditioning is on or off.
+	Value *Power `json:"value,omitempty"`
+}
+
+// PowerDataPoint Used in ZoneState, to express acPower.
+type PowerDataPoint struct {
+	Timestamp *time.Time `json:"timestamp,omitempty"`
+	Type      *string    `json:"type,omitempty"`
+
+	// Value Used in ZoneSetting, PowerDataInterval and PowerDataPoint;
+	// to express if heating or air conditioning is on or off.
+	Value *Power `json:"value,omitempty"`
+}
+
+// PowerTimeSeries Element of DayReport.  Used to express acActivity.
+type PowerTimeSeries struct {
+	DataIntervals  *[]PowerDataInterval `json:"dataIntervals,omitempty"`
+	TimeSeriesType *string              `json:"timeSeriesType,omitempty"`
+	ValueType      *string              `json:"valueType,omitempty"`
+}
 
 // PresenceLock Used in /homes/{homeId}/presenceLock
 type PresenceLock struct {
@@ -1028,6 +1170,8 @@ type StripesDataInterval struct {
 		//  * OPEN_WINDOW_DETECTED
 		//
 		//  * OVERLAY_ACTIVE
+		//
+		//  * MEASURING_DEVICE_DISCONNECTED
 		StripeType *string `json:"stripeType,omitempty"`
 	} `json:"value,omitempty"`
 }
@@ -1061,11 +1205,14 @@ type TemperatureCapability struct {
 
 // TemperatureDataPoint defines model for TemperatureDataPoint.
 type TemperatureDataPoint struct {
-	Celsius    *float32              `json:"celsius,omitempty"`
-	Fahrenheit *float32              `json:"fahrenheit,omitempty"`
-	Precision  *TemperaturePrecision `json:"precision,omitempty"`
-	Timestamp  *time.Time            `json:"timestamp,omitempty"`
-	Type       *string               `json:"type,omitempty"`
+	Celsius    *float32 `json:"celsius,omitempty"`
+	Fahrenheit *float32 `json:"fahrenheit,omitempty"`
+
+	// Precision Even when temperature precision is reported as 0.1,
+	// the API can report temperatures with a higher precision like 17.52
+	Precision *TemperaturePrecision `json:"precision,omitempty"`
+	Timestamp *time.Time            `json:"timestamp,omitempty"`
+	Type      *string               `json:"type,omitempty"`
 }
 
 // TemperatureDataPointInTimeSeries Element of DayReport
@@ -1077,7 +1224,8 @@ type TemperatureDataPointInTimeSeries struct {
 // TemperatureLevel Used in AirComfort
 type TemperatureLevel string
 
-// TemperaturePrecision defines model for TemperaturePrecision.
+// TemperaturePrecision Even when temperature precision is reported as 0.1,
+// the API can report temperatures with a higher precision like 17.52
 type TemperaturePrecision struct {
 	Celsius    *float32 `json:"celsius,omitempty"`
 	Fahrenheit *float32 `json:"fahrenheit,omitempty"`
@@ -1091,6 +1239,9 @@ type TemperatureTimeSeries struct {
 	TimeSeriesType *string                             `json:"timeSeriesType,omitempty"`
 	ValueType      *string                             `json:"valueType,omitempty"`
 }
+
+// TemperatureUnit defines model for TemperatureUnit.
+type TemperatureUnit string
 
 // TimetableBlock Time segment of a scheduled timetable to control the (temperature) settings of a zone (a.k.a. room)
 type TimetableBlock struct {
@@ -1486,13 +1637,36 @@ type ZoneSetting struct {
 	Light *Light               `json:"light,omitempty"`
 	Mode  *AirConditioningMode `json:"mode,omitempty"`
 
-	// Power used in ZoneSetting
+	// Power Used in ZoneSetting, PowerDataInterval and PowerDataPoint;
+	// to express if heating or air conditioning is on or off.
 	Power       *Power       `json:"power,omitempty"`
 	Temperature *Temperature `json:"temperature,omitempty"`
 	Type        *ZoneType    `json:"type,omitempty"`
 
 	// VerticalSwing Used in AirConditioningZoneSettingsBase and AirConditioningModeCapabilitiesBase
 	VerticalSwing *VerticalSwing `json:"verticalSwing,omitempty"`
+}
+
+// ZoneSettingDataInterval defines model for ZoneSettingDataInterval.
+type ZoneSettingDataInterval struct {
+	From *time.Time `json:"from,omitempty"`
+	To   *time.Time `json:"to,omitempty"`
+
+	// Value (temperature) settings for a zone which is used in scheduled TimeTableBlocks,  in ZoneOverlays (manual override for the scheduled setting), and in AwayConfiguration (settings to be used when the home is in AWAY mode).
+	//
+	// The applicable properties depend on the zone type and the zone capabilities.
+	Value *ZoneSetting `json:"value,omitempty"`
+}
+
+// ZoneSettingTimeSeries element of DayReport
+type ZoneSettingTimeSeries struct {
+	DataIntervals  *[]ZoneSettingDataInterval `json:"dataIntervals,omitempty"`
+	TimeSeriesType *string                    `json:"timeSeriesType,omitempty"`
+
+	// ValueType known values:
+	// * heatingSetting
+	// * airConditioningSetting
+	ValueType *string `json:"valueType,omitempty"`
 }
 
 // ZoneState Result of /homes/{homeId}/zone/{zoneId}/state
@@ -1508,7 +1682,8 @@ type ZoneState struct {
 		} `json:"reason,omitempty"`
 
 		// State known values:
-		// * ONLINE * OFFLINE
+		// * ONLINE
+		// * OFFLINE
 		State *string `json:"state,omitempty"`
 	} `json:"link,omitempty"`
 	NextScheduleChange *struct {
@@ -1615,7 +1790,8 @@ type CreateZoneParams struct {
 
 // GetZoneDayReportParams defines parameters for GetZoneDayReport.
 type GetZoneDayReportParams struct {
-	Date openapi_types.Date `form:"date" json:"date"`
+	// Date current date is used when this query parameter is not provided
+	Date *openapi_types.Date `form:"date,omitempty" json:"date,omitempty"`
 }
 
 // MoveDeviceJSONBody defines parameters for MoveDevice.
@@ -1639,6 +1815,9 @@ type SetZoneMeasuringDeviceJSONBody struct {
 // SetTimetableBlocksForDayTypeJSONBody defines parameters for SetTimetableBlocksForDayType.
 type SetTimetableBlocksForDayTypeJSONBody = []TimetableBlock
 
+// SetChildLockJSONRequestBody defines body for SetChildLock for application/json ContentType.
+type SetChildLockJSONRequestBody = ChildLock
+
 // SetTemperatureOffsetJSONRequestBody defines body for SetTemperatureOffset for application/json ContentType.
 type SetTemperatureOffsetJSONRequestBody = Temperature
 
@@ -1651,6 +1830,9 @@ type SetAwayRadiusInMetersJSONRequestBody = AwayRadiusInput
 // SetHomeDetailsJSONRequestBody defines body for SetHomeDetails for application/json ContentType.
 type SetHomeDetailsJSONRequestBody = HomeDetails
 
+// SetFlowTemperatureOptimizationJSONRequestBody defines body for SetFlowTemperatureOptimization for application/json ContentType.
+type SetFlowTemperatureOptimizationJSONRequestBody = FlowTemperatureOptimizationInput
+
 // SetBoilerJSONRequestBody defines body for SetBoiler for application/json ContentType.
 type SetBoilerJSONRequestBody = Boiler1
 
@@ -1659,6 +1841,9 @@ type SetUnderfloorHeatingJSONRequestBody = UnderfloorHeating
 
 // SetIncidentDetectionJSONRequestBody defines body for SetIncidentDetection for application/json ContentType.
 type SetIncidentDetectionJSONRequestBody = IncidentDetectionInput
+
+// SendInvitationJSONRequestBody defines body for SendInvitation for application/json ContentType.
+type SendInvitationJSONRequestBody = InvitationRequest
 
 // SetMobileDeviceSettingsJSONRequestBody defines body for SetMobileDeviceSettings for application/json ContentType.
 type SetMobileDeviceSettingsJSONRequestBody = MobileDeviceSettings
@@ -1787,8 +1972,10 @@ type ClientInterface interface {
 	// GetDevice request
 	GetDevice(ctx context.Context, deviceId DeviceId, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// SetChildLock request
-	SetChildLock(ctx context.Context, deviceId DeviceId, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// SetChildLockWithBody request with any body
+	SetChildLockWithBody(ctx context.Context, deviceId DeviceId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	SetChildLock(ctx context.Context, deviceId DeviceId, body SetChildLockJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// IdentifyDevice request
 	IdentifyDevice(ctx context.Context, deviceId DeviceId, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -1837,6 +2024,14 @@ type ClientInterface interface {
 	// GetDevices request
 	GetDevices(ctx context.Context, homeId HomeId, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// GetFlowTemperatureOptimization request
+	GetFlowTemperatureOptimization(ctx context.Context, homeId HomeId, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// SetFlowTemperatureOptimizationWithBody request with any body
+	SetFlowTemperatureOptimizationWithBody(ctx context.Context, homeId HomeId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	SetFlowTemperatureOptimization(ctx context.Context, homeId HomeId, body SetFlowTemperatureOptimizationJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// GetHeatingCircuits request
 	GetHeatingCircuits(ctx context.Context, homeId HomeId, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -1863,6 +2058,23 @@ type ClientInterface interface {
 
 	// GetInstallations request
 	GetInstallations(ctx context.Context, homeId HomeId, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetInstallation request
+	GetInstallation(ctx context.Context, homeId HomeId, installationId InstallationId, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetInvitations request
+	GetInvitations(ctx context.Context, homeId HomeId, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// SendInvitationWithBody request with any body
+	SendInvitationWithBody(ctx context.Context, homeId HomeId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	SendInvitation(ctx context.Context, homeId HomeId, body SendInvitationJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// RevokeInvitation request
+	RevokeInvitation(ctx context.Context, homeId HomeId, invitationToken InvitationToken, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ResendInvitation request
+	ResendInvitation(ctx context.Context, homeId HomeId, invitationToken InvitationToken, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetMobileDevices request
 	GetMobileDevices(ctx context.Context, homeId HomeId, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -2056,8 +2268,20 @@ func (c *Client) GetDevice(ctx context.Context, deviceId DeviceId, reqEditors ..
 	return c.Client.Do(req)
 }
 
-func (c *Client) SetChildLock(ctx context.Context, deviceId DeviceId, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewSetChildLockRequest(c.Server, deviceId)
+func (c *Client) SetChildLockWithBody(ctx context.Context, deviceId DeviceId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSetChildLockRequestWithBody(c.Server, deviceId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) SetChildLock(ctx context.Context, deviceId DeviceId, body SetChildLockJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSetChildLockRequest(c.Server, deviceId, body)
 	if err != nil {
 		return nil, err
 	}
@@ -2272,6 +2496,42 @@ func (c *Client) GetDevices(ctx context.Context, homeId HomeId, reqEditors ...Re
 	return c.Client.Do(req)
 }
 
+func (c *Client) GetFlowTemperatureOptimization(ctx context.Context, homeId HomeId, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetFlowTemperatureOptimizationRequest(c.Server, homeId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) SetFlowTemperatureOptimizationWithBody(ctx context.Context, homeId HomeId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSetFlowTemperatureOptimizationRequestWithBody(c.Server, homeId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) SetFlowTemperatureOptimization(ctx context.Context, homeId HomeId, body SetFlowTemperatureOptimizationJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSetFlowTemperatureOptimizationRequest(c.Server, homeId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 func (c *Client) GetHeatingCircuits(ctx context.Context, homeId HomeId, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetHeatingCircuitsRequest(c.Server, homeId)
 	if err != nil {
@@ -2382,6 +2642,78 @@ func (c *Client) SetIncidentDetection(ctx context.Context, homeId HomeId, body S
 
 func (c *Client) GetInstallations(ctx context.Context, homeId HomeId, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetInstallationsRequest(c.Server, homeId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetInstallation(ctx context.Context, homeId HomeId, installationId InstallationId, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetInstallationRequest(c.Server, homeId, installationId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetInvitations(ctx context.Context, homeId HomeId, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetInvitationsRequest(c.Server, homeId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) SendInvitationWithBody(ctx context.Context, homeId HomeId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSendInvitationRequestWithBody(c.Server, homeId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) SendInvitation(ctx context.Context, homeId HomeId, body SendInvitationJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSendInvitationRequest(c.Server, homeId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) RevokeInvitation(ctx context.Context, homeId HomeId, invitationToken InvitationToken, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRevokeInvitationRequest(c.Server, homeId, invitationToken)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ResendInvitation(ctx context.Context, homeId HomeId, invitationToken InvitationToken, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewResendInvitationRequest(c.Server, homeId, invitationToken)
 	if err != nil {
 		return nil, err
 	}
@@ -3210,8 +3542,19 @@ func NewGetDeviceRequest(server string, deviceId DeviceId) (*http.Request, error
 	return req, nil
 }
 
-// NewSetChildLockRequest generates requests for SetChildLock
-func NewSetChildLockRequest(server string, deviceId DeviceId) (*http.Request, error) {
+// NewSetChildLockRequest calls the generic SetChildLock builder with application/json body
+func NewSetChildLockRequest(server string, deviceId DeviceId, body SetChildLockJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewSetChildLockRequestWithBody(server, deviceId, "application/json", bodyReader)
+}
+
+// NewSetChildLockRequestWithBody generates requests for SetChildLock with any type of body
+func NewSetChildLockRequestWithBody(server string, deviceId DeviceId, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -3236,10 +3579,12 @@ func NewSetChildLockRequest(server string, deviceId DeviceId) (*http.Request, er
 		return nil, err
 	}
 
-	req, err := http.NewRequest("PUT", queryURL.String(), nil)
+	req, err := http.NewRequest("PUT", queryURL.String(), body)
 	if err != nil {
 		return nil, err
 	}
+
+	req.Header.Add("Content-Type", contentType)
 
 	return req, nil
 }
@@ -3810,6 +4155,87 @@ func NewGetDevicesRequest(server string, homeId HomeId) (*http.Request, error) {
 	return req, nil
 }
 
+// NewGetFlowTemperatureOptimizationRequest generates requests for GetFlowTemperatureOptimization
+func NewGetFlowTemperatureOptimizationRequest(server string, homeId HomeId) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "homeId", runtime.ParamLocationPath, homeId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/homes/%s/flowTemperatureOptimization", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewSetFlowTemperatureOptimizationRequest calls the generic SetFlowTemperatureOptimization builder with application/json body
+func NewSetFlowTemperatureOptimizationRequest(server string, homeId HomeId, body SetFlowTemperatureOptimizationJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewSetFlowTemperatureOptimizationRequestWithBody(server, homeId, "application/json", bodyReader)
+}
+
+// NewSetFlowTemperatureOptimizationRequestWithBody generates requests for SetFlowTemperatureOptimization with any type of body
+func NewSetFlowTemperatureOptimizationRequestWithBody(server string, homeId HomeId, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "homeId", runtime.ParamLocationPath, homeId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/homes/%s/flowTemperatureOptimization", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("PUT", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
 // NewGetHeatingCircuitsRequest generates requests for GetHeatingCircuits
 func NewGetHeatingCircuitsRequest(server string, homeId HomeId) (*http.Request, error) {
 	var err error
@@ -4080,6 +4506,210 @@ func NewGetInstallationsRequest(server string, homeId HomeId) (*http.Request, er
 	}
 
 	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetInstallationRequest generates requests for GetInstallation
+func NewGetInstallationRequest(server string, homeId HomeId, installationId InstallationId) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "homeId", runtime.ParamLocationPath, homeId)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "installationId", runtime.ParamLocationPath, installationId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/homes/%s/installations/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetInvitationsRequest generates requests for GetInvitations
+func NewGetInvitationsRequest(server string, homeId HomeId) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "homeId", runtime.ParamLocationPath, homeId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/homes/%s/invitations", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewSendInvitationRequest calls the generic SendInvitation builder with application/json body
+func NewSendInvitationRequest(server string, homeId HomeId, body SendInvitationJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewSendInvitationRequestWithBody(server, homeId, "application/json", bodyReader)
+}
+
+// NewSendInvitationRequestWithBody generates requests for SendInvitation with any type of body
+func NewSendInvitationRequestWithBody(server string, homeId HomeId, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "homeId", runtime.ParamLocationPath, homeId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/homes/%s/invitations", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewRevokeInvitationRequest generates requests for RevokeInvitation
+func NewRevokeInvitationRequest(server string, homeId HomeId, invitationToken InvitationToken) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "homeId", runtime.ParamLocationPath, homeId)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "invitationToken", runtime.ParamLocationPath, invitationToken)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/homes/%s/invitations/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("DELETE", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewResendInvitationRequest generates requests for ResendInvitation
+func NewResendInvitationRequest(server string, homeId HomeId, invitationToken InvitationToken) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "homeId", runtime.ParamLocationPath, homeId)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "invitationToken", runtime.ParamLocationPath, invitationToken)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/homes/%s/invitations/%s/resend", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -4902,16 +5532,20 @@ func NewGetZoneDayReportRequest(server string, homeId HomeId, zoneId ZoneId, par
 	if params != nil {
 		queryValues := queryURL.Query()
 
-		if queryFrag, err := runtime.StyleParamWithLocation("form", true, "date", runtime.ParamLocationQuery, params.Date); err != nil {
-			return nil, err
-		} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
-			return nil, err
-		} else {
-			for k, v := range parsed {
-				for _, v2 := range v {
-					queryValues.Add(k, v2)
+		if params.Date != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "date", runtime.ParamLocationQuery, *params.Date); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
 				}
 			}
+
 		}
 
 		queryURL.RawQuery = queryValues.Encode()
@@ -6233,8 +6867,10 @@ type ClientWithResponsesInterface interface {
 	// GetDeviceWithResponse request
 	GetDeviceWithResponse(ctx context.Context, deviceId DeviceId, reqEditors ...RequestEditorFn) (*GetDeviceResponse, error)
 
-	// SetChildLockWithResponse request
-	SetChildLockWithResponse(ctx context.Context, deviceId DeviceId, reqEditors ...RequestEditorFn) (*SetChildLockResponse, error)
+	// SetChildLockWithBodyWithResponse request with any body
+	SetChildLockWithBodyWithResponse(ctx context.Context, deviceId DeviceId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SetChildLockResponse, error)
+
+	SetChildLockWithResponse(ctx context.Context, deviceId DeviceId, body SetChildLockJSONRequestBody, reqEditors ...RequestEditorFn) (*SetChildLockResponse, error)
 
 	// IdentifyDeviceWithResponse request
 	IdentifyDeviceWithResponse(ctx context.Context, deviceId DeviceId, reqEditors ...RequestEditorFn) (*IdentifyDeviceResponse, error)
@@ -6283,6 +6919,14 @@ type ClientWithResponsesInterface interface {
 	// GetDevicesWithResponse request
 	GetDevicesWithResponse(ctx context.Context, homeId HomeId, reqEditors ...RequestEditorFn) (*GetDevicesResponse, error)
 
+	// GetFlowTemperatureOptimizationWithResponse request
+	GetFlowTemperatureOptimizationWithResponse(ctx context.Context, homeId HomeId, reqEditors ...RequestEditorFn) (*GetFlowTemperatureOptimizationResponse, error)
+
+	// SetFlowTemperatureOptimizationWithBodyWithResponse request with any body
+	SetFlowTemperatureOptimizationWithBodyWithResponse(ctx context.Context, homeId HomeId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SetFlowTemperatureOptimizationResponse, error)
+
+	SetFlowTemperatureOptimizationWithResponse(ctx context.Context, homeId HomeId, body SetFlowTemperatureOptimizationJSONRequestBody, reqEditors ...RequestEditorFn) (*SetFlowTemperatureOptimizationResponse, error)
+
 	// GetHeatingCircuitsWithResponse request
 	GetHeatingCircuitsWithResponse(ctx context.Context, homeId HomeId, reqEditors ...RequestEditorFn) (*GetHeatingCircuitsResponse, error)
 
@@ -6309,6 +6953,23 @@ type ClientWithResponsesInterface interface {
 
 	// GetInstallationsWithResponse request
 	GetInstallationsWithResponse(ctx context.Context, homeId HomeId, reqEditors ...RequestEditorFn) (*GetInstallationsResponse, error)
+
+	// GetInstallationWithResponse request
+	GetInstallationWithResponse(ctx context.Context, homeId HomeId, installationId InstallationId, reqEditors ...RequestEditorFn) (*GetInstallationResponse, error)
+
+	// GetInvitationsWithResponse request
+	GetInvitationsWithResponse(ctx context.Context, homeId HomeId, reqEditors ...RequestEditorFn) (*GetInvitationsResponse, error)
+
+	// SendInvitationWithBodyWithResponse request with any body
+	SendInvitationWithBodyWithResponse(ctx context.Context, homeId HomeId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SendInvitationResponse, error)
+
+	SendInvitationWithResponse(ctx context.Context, homeId HomeId, body SendInvitationJSONRequestBody, reqEditors ...RequestEditorFn) (*SendInvitationResponse, error)
+
+	// RevokeInvitationWithResponse request
+	RevokeInvitationWithResponse(ctx context.Context, homeId HomeId, invitationToken InvitationToken, reqEditors ...RequestEditorFn) (*RevokeInvitationResponse, error)
+
+	// ResendInvitationWithResponse request
+	ResendInvitationWithResponse(ctx context.Context, homeId HomeId, invitationToken InvitationToken, reqEditors ...RequestEditorFn) (*ResendInvitationResponse, error)
 
 	// GetMobileDevicesWithResponse request
 	GetMobileDevicesWithResponse(ctx context.Context, homeId HomeId, reqEditors ...RequestEditorFn) (*GetMobileDevicesResponse, error)
@@ -6865,6 +7526,55 @@ func (r GetDevicesResponse) StatusCode() int {
 	return 0
 }
 
+type GetFlowTemperatureOptimizationResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *FlowTemperatureOptimization
+	JSON401      *Unauthorized401
+	JSON403      *AccessDenied403
+	JSON404      *NotFound404
+}
+
+// Status returns HTTPResponse.Status
+func (r GetFlowTemperatureOptimizationResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetFlowTemperatureOptimizationResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type SetFlowTemperatureOptimizationResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON401      *Unauthorized401
+	JSON403      *AccessDenied403
+	JSON422      *InputError422
+}
+
+// Status returns HTTPResponse.Status
+func (r SetFlowTemperatureOptimizationResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r SetFlowTemperatureOptimizationResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 type GetHeatingCircuitsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -7012,7 +7722,7 @@ func (r SetIncidentDetectionResponse) StatusCode() int {
 type GetInstallationsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON200      *[]map[string]interface{}
+	JSON200      *[]Installation
 	JSON401      *Unauthorized401
 	JSON403      *AccessDenied403
 }
@@ -7027,6 +7737,127 @@ func (r GetInstallationsResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r GetInstallationsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetInstallationResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *Installation
+	JSON401      *Unauthorized401
+	JSON403      *AccessDenied403
+	JSON404      *NotFound404
+}
+
+// Status returns HTTPResponse.Status
+func (r GetInstallationResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetInstallationResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetInvitationsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *[]Invitation
+	JSON401      *Unauthorized401
+	JSON403      *AccessDenied403
+}
+
+// Status returns HTTPResponse.Status
+func (r GetInvitationsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetInvitationsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type SendInvitationResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *Invitation
+	JSON401      *Unauthorized401
+	JSON403      *AccessDenied403
+}
+
+// Status returns HTTPResponse.Status
+func (r SendInvitationResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r SendInvitationResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type RevokeInvitationResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON401      *Unauthorized401
+	JSON403      *AccessDenied403
+	JSON404      *NotFound404
+}
+
+// Status returns HTTPResponse.Status
+func (r RevokeInvitationResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r RevokeInvitationResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type ResendInvitationResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON401      *Unauthorized401
+	JSON403      *AccessDenied403
+	JSON404      *NotFound404
+}
+
+// Status returns HTTPResponse.Status
+func (r ResendInvitationResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ResendInvitationResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -7702,6 +8533,7 @@ func (r GetZoneMeasuringDeviceResponse) StatusCode() int {
 type SetZoneMeasuringDeviceResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	JSON200      *Device
 	JSON401      *Unauthorized401
 	JSON403      *AccessDenied403
 	JSON404      *NotFound404
@@ -8159,9 +8991,17 @@ func (c *ClientWithResponses) GetDeviceWithResponse(ctx context.Context, deviceI
 	return ParseGetDeviceResponse(rsp)
 }
 
-// SetChildLockWithResponse request returning *SetChildLockResponse
-func (c *ClientWithResponses) SetChildLockWithResponse(ctx context.Context, deviceId DeviceId, reqEditors ...RequestEditorFn) (*SetChildLockResponse, error) {
-	rsp, err := c.SetChildLock(ctx, deviceId, reqEditors...)
+// SetChildLockWithBodyWithResponse request with arbitrary body returning *SetChildLockResponse
+func (c *ClientWithResponses) SetChildLockWithBodyWithResponse(ctx context.Context, deviceId DeviceId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SetChildLockResponse, error) {
+	rsp, err := c.SetChildLockWithBody(ctx, deviceId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSetChildLockResponse(rsp)
+}
+
+func (c *ClientWithResponses) SetChildLockWithResponse(ctx context.Context, deviceId DeviceId, body SetChildLockJSONRequestBody, reqEditors ...RequestEditorFn) (*SetChildLockResponse, error) {
+	rsp, err := c.SetChildLock(ctx, deviceId, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -8317,6 +9157,32 @@ func (c *ClientWithResponses) GetDevicesWithResponse(ctx context.Context, homeId
 	return ParseGetDevicesResponse(rsp)
 }
 
+// GetFlowTemperatureOptimizationWithResponse request returning *GetFlowTemperatureOptimizationResponse
+func (c *ClientWithResponses) GetFlowTemperatureOptimizationWithResponse(ctx context.Context, homeId HomeId, reqEditors ...RequestEditorFn) (*GetFlowTemperatureOptimizationResponse, error) {
+	rsp, err := c.GetFlowTemperatureOptimization(ctx, homeId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetFlowTemperatureOptimizationResponse(rsp)
+}
+
+// SetFlowTemperatureOptimizationWithBodyWithResponse request with arbitrary body returning *SetFlowTemperatureOptimizationResponse
+func (c *ClientWithResponses) SetFlowTemperatureOptimizationWithBodyWithResponse(ctx context.Context, homeId HomeId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SetFlowTemperatureOptimizationResponse, error) {
+	rsp, err := c.SetFlowTemperatureOptimizationWithBody(ctx, homeId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSetFlowTemperatureOptimizationResponse(rsp)
+}
+
+func (c *ClientWithResponses) SetFlowTemperatureOptimizationWithResponse(ctx context.Context, homeId HomeId, body SetFlowTemperatureOptimizationJSONRequestBody, reqEditors ...RequestEditorFn) (*SetFlowTemperatureOptimizationResponse, error) {
+	rsp, err := c.SetFlowTemperatureOptimization(ctx, homeId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSetFlowTemperatureOptimizationResponse(rsp)
+}
+
 // GetHeatingCircuitsWithResponse request returning *GetHeatingCircuitsResponse
 func (c *ClientWithResponses) GetHeatingCircuitsWithResponse(ctx context.Context, homeId HomeId, reqEditors ...RequestEditorFn) (*GetHeatingCircuitsResponse, error) {
 	rsp, err := c.GetHeatingCircuits(ctx, homeId, reqEditors...)
@@ -8402,6 +9268,59 @@ func (c *ClientWithResponses) GetInstallationsWithResponse(ctx context.Context, 
 		return nil, err
 	}
 	return ParseGetInstallationsResponse(rsp)
+}
+
+// GetInstallationWithResponse request returning *GetInstallationResponse
+func (c *ClientWithResponses) GetInstallationWithResponse(ctx context.Context, homeId HomeId, installationId InstallationId, reqEditors ...RequestEditorFn) (*GetInstallationResponse, error) {
+	rsp, err := c.GetInstallation(ctx, homeId, installationId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetInstallationResponse(rsp)
+}
+
+// GetInvitationsWithResponse request returning *GetInvitationsResponse
+func (c *ClientWithResponses) GetInvitationsWithResponse(ctx context.Context, homeId HomeId, reqEditors ...RequestEditorFn) (*GetInvitationsResponse, error) {
+	rsp, err := c.GetInvitations(ctx, homeId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetInvitationsResponse(rsp)
+}
+
+// SendInvitationWithBodyWithResponse request with arbitrary body returning *SendInvitationResponse
+func (c *ClientWithResponses) SendInvitationWithBodyWithResponse(ctx context.Context, homeId HomeId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SendInvitationResponse, error) {
+	rsp, err := c.SendInvitationWithBody(ctx, homeId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSendInvitationResponse(rsp)
+}
+
+func (c *ClientWithResponses) SendInvitationWithResponse(ctx context.Context, homeId HomeId, body SendInvitationJSONRequestBody, reqEditors ...RequestEditorFn) (*SendInvitationResponse, error) {
+	rsp, err := c.SendInvitation(ctx, homeId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSendInvitationResponse(rsp)
+}
+
+// RevokeInvitationWithResponse request returning *RevokeInvitationResponse
+func (c *ClientWithResponses) RevokeInvitationWithResponse(ctx context.Context, homeId HomeId, invitationToken InvitationToken, reqEditors ...RequestEditorFn) (*RevokeInvitationResponse, error) {
+	rsp, err := c.RevokeInvitation(ctx, homeId, invitationToken, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRevokeInvitationResponse(rsp)
+}
+
+// ResendInvitationWithResponse request returning *ResendInvitationResponse
+func (c *ClientWithResponses) ResendInvitationWithResponse(ctx context.Context, homeId HomeId, invitationToken InvitationToken, reqEditors ...RequestEditorFn) (*ResendInvitationResponse, error) {
+	rsp, err := c.ResendInvitation(ctx, homeId, invitationToken, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseResendInvitationResponse(rsp)
 }
 
 // GetMobileDevicesWithResponse request returning *GetMobileDevicesResponse
@@ -9598,6 +10517,93 @@ func ParseGetDevicesResponse(rsp *http.Response) (*GetDevicesResponse, error) {
 	return response, nil
 }
 
+// ParseGetFlowTemperatureOptimizationResponse parses an HTTP response from a GetFlowTemperatureOptimizationWithResponse call
+func ParseGetFlowTemperatureOptimizationResponse(rsp *http.Response) (*GetFlowTemperatureOptimizationResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetFlowTemperatureOptimizationResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest FlowTemperatureOptimization
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized401
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest AccessDenied403
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound404
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseSetFlowTemperatureOptimizationResponse parses an HTTP response from a SetFlowTemperatureOptimizationWithResponse call
+func ParseSetFlowTemperatureOptimizationResponse(rsp *http.Response) (*SetFlowTemperatureOptimizationResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &SetFlowTemperatureOptimizationResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized401
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest AccessDenied403
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 422:
+		var dest InputError422
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON422 = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseGetHeatingCircuitsResponse parses an HTTP response from a GetHeatingCircuitsWithResponse call
 func ParseGetHeatingCircuitsResponse(rsp *http.Response) (*GetHeatingCircuitsResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -9853,7 +10859,7 @@ func ParseGetInstallationsResponse(rsp *http.Response) (*GetInstallationsRespons
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest []map[string]interface{}
+		var dest []Installation
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -9872,6 +10878,213 @@ func ParseGetInstallationsResponse(rsp *http.Response) (*GetInstallationsRespons
 			return nil, err
 		}
 		response.JSON403 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetInstallationResponse parses an HTTP response from a GetInstallationWithResponse call
+func ParseGetInstallationResponse(rsp *http.Response) (*GetInstallationResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetInstallationResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Installation
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized401
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest AccessDenied403
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound404
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetInvitationsResponse parses an HTTP response from a GetInvitationsWithResponse call
+func ParseGetInvitationsResponse(rsp *http.Response) (*GetInvitationsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetInvitationsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest []Invitation
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized401
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest AccessDenied403
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseSendInvitationResponse parses an HTTP response from a SendInvitationWithResponse call
+func ParseSendInvitationResponse(rsp *http.Response) (*SendInvitationResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &SendInvitationResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Invitation
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized401
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest AccessDenied403
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseRevokeInvitationResponse parses an HTTP response from a RevokeInvitationWithResponse call
+func ParseRevokeInvitationResponse(rsp *http.Response) (*RevokeInvitationResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &RevokeInvitationResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized401
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest AccessDenied403
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound404
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseResendInvitationResponse parses an HTTP response from a ResendInvitationWithResponse call
+func ParseResendInvitationResponse(rsp *http.Response) (*ResendInvitationResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ResendInvitationResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized401
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest AccessDenied403
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound404
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
 
 	}
 
@@ -11098,6 +12311,13 @@ func ParseSetZoneMeasuringDeviceResponse(rsp *http.Response) (*SetZoneMeasuringD
 	}
 
 	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Device
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
 		var dest Unauthorized401
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
