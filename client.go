@@ -11,8 +11,8 @@ import (
 
 const ServerURL = "https://my.tado.com/api/v2"
 
-// tadoOAuthConfig as per https://github.com/kritsel/tado-openapispec-v2
-var tadoOAuthConfig = oauth2.Config{
+// TadoOAuthConfig as per https://github.com/kritsel/tado-openapispec-v2
+var TadoOAuthConfig = oauth2.Config{
 	ClientID:     "public-api-preview",
 	ClientSecret: "4HJGRffVR8xb3XdEUQpjgZ1VplJi6Xgw",
 	Endpoint: oauth2.Endpoint{
@@ -24,11 +24,11 @@ var tadoOAuthConfig = oauth2.Config{
 }
 
 func NewOAuth2Client(ctx context.Context, username string, password string) (*http.Client, error) {
-	tok, err := tadoOAuthConfig.PasswordCredentialsToken(ctx, username, password)
+	tok, err := TadoOAuthConfig.PasswordCredentialsToken(ctx, username, password)
 	if err != nil {
 		return nil, err
 	}
-	return oauth2.NewClient(ctx, tadoOAuthConfig.TokenSource(ctx, tok)), nil
+	return oauth2.NewClient(ctx, TadoOAuthConfig.TokenSource(ctx, tok)), nil
 }
 
 func MustNewOAuth2Client(ctx context.Context, username string, password string) *http.Client {
