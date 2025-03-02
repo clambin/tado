@@ -38,20 +38,21 @@ var Config = oauth2.Config{
 //
 // [here]: https://github.com/wmalgadey/PyTado/issues/155
 func NewOAuth2Client(ctx context.Context, tokenStorePath string, tokenStorePassphrase string, deviceAuthCallback func(response *oauth2.DeviceAuthResponse)) (*http.Client, error) {
-	ts := newEncryptedTokenStore(tokenStorePath, tokenStorePassphrase)
-	token, err := ts.Token()
+	pts := persistentTokenSource{TokenStore: newEncryptedTokenStore(tokenStorePath, tokenStorePassphrase)}
+	// check if the store has a valid token
+	token, err := pts.Token()
 	if err != nil {
+		// if not, perform the device authentication exchange
 		if token, err = deviceAuthToken(ctx, deviceAuthCallback); err == nil {
-			err = ts.Store(token)
+			err = pts.TokenStore.Store(token)
 		}
 	}
 	if err != nil {
 		return nil, err
 	}
-	return oauth2.NewClient(ctx, persistentTokenSource{
-		TokenStore:  ts,
-		TokenSource: Config.TokenSource(ctx, token),
-	}), nil
+	// set up a TokenSource and return the http client
+	pts.TokenSource = Config.TokenSource(ctx, token)
+	return oauth2.NewClient(ctx, &pts), err
 }
 
 func deviceAuthToken(ctx context.Context, deviceAuthCallback func(response *oauth2.DeviceAuthResponse)) (*oauth2.Token, error) {

@@ -7,7 +7,6 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"golang.org/x/oauth2"
 	"os"
 	"sync"
@@ -16,12 +15,18 @@ import (
 
 var _ oauth2.TokenSource = &persistentTokenSource{}
 
+// A persistentTokenSource implements an oauth2.TokenSource that maintains a stored copy of the active token.
+// This allows a process to reuse a valid token from a previous run, avoiding another (possibly manual) authentication flow.
+//
+// A persistentTokenSource is implemented as a standard oauth2 TokenSource (which maintains an active token and renews it when required),
+// combined with a tokenStore that stores an encrypted version of the token on disk.
 type persistentTokenSource struct {
 	TokenStore  *tokenStore
 	TokenSource oauth2.TokenSource
 }
 
 func (p persistentTokenSource) Token() (*oauth2.Token, error) {
+	// if the store contains a valid token, use it.
 	token, err := p.TokenStore.Token()
 	if err == nil && token.Valid() {
 		return token, nil
@@ -31,6 +36,7 @@ func (p persistentTokenSource) Token() (*oauth2.Token, error) {
 		return nil, errors.New("no token source")
 	}
 
+	// token is invalid (most likely expired). use TokenSource to obtain a new token.
 	if token, err = p.TokenSource.Token(); err == nil {
 		err = p.TokenStore.Store(token)
 	}
@@ -147,7 +153,7 @@ func decryptAES(data []byte, key []byte) ([]byte, error) {
 	}
 	nonceSize := aesGCM.NonceSize()
 	if len(data) < nonceSize {
-		return nil, fmt.Errorf("invalid ciphertext")
+		return nil, errors.New("invalid ciphertext")
 	}
 	nonce, ciphertext := data[:nonceSize], data[nonceSize:]
 	return aesGCM.Open(nil, nonce, ciphertext, nil)
