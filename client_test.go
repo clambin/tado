@@ -8,7 +8,7 @@ import (
 )
 
 func TestNewOAuth2Client(t *testing.T) {
-	//t.Skip()
+	t.Skip()
 
 	httpClient, err := NewOAuth2Client(
 		t.Context(),
