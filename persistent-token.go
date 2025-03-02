@@ -9,7 +9,6 @@ import (
 	"errors"
 	"golang.org/x/oauth2"
 	"os"
-	"sync"
 	"sync/atomic"
 )
 
@@ -19,83 +18,56 @@ var _ oauth2.TokenSource = &persistentTokenSource{}
 // This allows a process to reuse a valid token from a previous run, avoiding another (possibly manual) authentication flow.
 //
 // A persistentTokenSource is implemented as a standard oauth2 TokenSource (which maintains an active token and renews it when required),
-// combined with a tokenStore that stores an encrypted version of the token on disk.
+// combined with a storedToken that stores an encrypted version of the token on disk.
 type persistentTokenSource struct {
-	TokenStore  *tokenStore
-	TokenSource oauth2.TokenSource
+	TokenSource  oauth2.TokenSource
+	currentToken atomic.Value
+	storedToken  storedToken
 }
 
-func (p persistentTokenSource) Token() (*oauth2.Token, error) {
-	// if the store contains a valid token, use it.
-	token, err := p.TokenStore.Token()
-	if err == nil && token.Valid() {
-		return token, nil
-	}
-
+func (p *persistentTokenSource) Token() (token *oauth2.Token, err error) {
 	if p.TokenSource == nil {
 		return nil, errors.New("no token source")
 	}
 
-	// token is invalid (most likely expired). use TokenSource to obtain a new token.
-	if token, err = p.TokenSource.Token(); err == nil {
-		err = p.TokenStore.Store(token)
+	// get an active token
+	token, err = p.TokenSource.Token()
+	if err != nil {
+		return nil, err
+	}
+
+	// save it if needed
+	if current := p.currentToken.Load(); current == nil || current.(*oauth2.Token) != token {
+		if err = p.storedToken.save(token); err == nil {
+			p.currentToken.Store(token)
+		}
 	}
 	return token, err
 }
 
-type tokenStore struct {
-	persistentToken
-	current  atomic.Pointer[oauth2.Token]
-	loadOnce sync.Once
-}
-
-type persistentToken interface {
-	save(*oauth2.Token) error
-	load() (*oauth2.Token, error)
-}
-
-func newEncryptedTokenStore(path string, passphrase string) *tokenStore {
-	s := encryptedToken{path: path}
-	s.setEncryptionKey(passphrase)
-	return &tokenStore{persistentToken: &s}
-}
-
-// Token returns the stored token.  For performance reasons, Token() only read the file the first time it is called.
-// After that, we use a cached 'current' copy instead.
-func (ts *tokenStore) Token() (*oauth2.Token, error) {
-	var err error
-	if ts.current.Load() == nil {
-		ts.loadOnce.Do(func() { err = ts.load() })
+func (p *persistentTokenSource) initialToken() (token *oauth2.Token, err error) {
+	token, err = p.storedToken.load()
+	if err == nil && !token.Valid() {
+		err = errors.New("invalid token")
 	}
-	return ts.current.Load(), err
-}
-
-// load reads the token file and sets the cached 'current' token.
-func (ts *tokenStore) load() error {
-	token, err := ts.persistentToken.load()
 	if err == nil {
-		ts.current.Store(token)
+		p.currentToken.Store(token)
 	}
-	return err
+	return token, err
 }
 
-// Store saves the token to disk and updates the cached 'current' token.
-func (ts *tokenStore) Store(token *oauth2.Token) error {
-	err := ts.persistentToken.save(token)
-	if err == nil {
-		ts.current.Store(token)
-	}
-	return err
-}
-
-var _ persistentToken = &encryptedToken{}
-
-type encryptedToken struct {
+type storedToken struct {
 	path string
 	key  []byte
 }
 
-func (e *encryptedToken) save(token *oauth2.Token) error {
+func newStoredToken(path string, passphrase string) storedToken {
+	key := sha256.Sum256([]byte(passphrase))
+	t := storedToken{path: path, key: key[:32]}
+	return t
+}
+
+func (e storedToken) save(token *oauth2.Token) error {
 	bytes, err := json.Marshal(token)
 	if err == nil {
 		bytes, err = encryptAES(bytes, e.key)
@@ -106,7 +78,7 @@ func (e *encryptedToken) save(token *oauth2.Token) error {
 	return err
 }
 
-func (e *encryptedToken) load() (*oauth2.Token, error) {
+func (e storedToken) load() (*oauth2.Token, error) {
 	bytes, err := os.ReadFile(e.path)
 	if err == nil {
 		bytes, err = decryptAES(bytes, e.key)
@@ -117,11 +89,6 @@ func (e *encryptedToken) load() (*oauth2.Token, error) {
 	var token oauth2.Token
 	err = json.Unmarshal(bytes, &token)
 	return &token, err
-}
-
-func (e *encryptedToken) setEncryptionKey(passphrase string) {
-	key := sha256.Sum256([]byte(passphrase))
-	e.key = key[:32]
 }
 
 // AES encryption

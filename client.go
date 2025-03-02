@@ -37,29 +37,29 @@ var Config = oauth2.Config{
 // and the user will need to log in again.
 //
 // [here]: https://github.com/wmalgadey/PyTado/issues/155
-func NewOAuth2Client(ctx context.Context, tokenStorePath string, tokenStorePassphrase string, deviceAuthCallback func(response *oauth2.DeviceAuthResponse)) (*http.Client, error) {
-	pts := persistentTokenSource{TokenStore: newEncryptedTokenStore(tokenStorePath, tokenStorePassphrase)}
+func NewOAuth2Client(ctx context.Context, tokenStorePath string, tokenStorePassphrase string, deviceAuthCallback func(response *oauth2.DeviceAuthResponse)) (client *http.Client, err error) {
+	pts := persistentTokenSource{storedToken: newStoredToken(tokenStorePath, tokenStorePassphrase)}
 	// check if the store has a valid token
-	token, err := pts.Token()
+	token, err := pts.initialToken()
 	if err != nil {
 		// if not, perform the device authentication exchange
 		if token, err = deviceAuthToken(ctx, deviceAuthCallback); err == nil {
-			err = pts.TokenStore.Store(token)
+			err = pts.storedToken.save(token)
 		}
 	}
-	if err != nil {
-		return nil, err
+	if err == nil {
+		// set up a TokenSource for the token and create the http client
+		pts.TokenSource = Config.TokenSource(ctx, token)
+		client = oauth2.NewClient(ctx, &pts)
 	}
-	// set up a TokenSource and return the http client
-	pts.TokenSource = Config.TokenSource(ctx, token)
-	return oauth2.NewClient(ctx, &pts), err
+	return client, err
 }
 
-func deviceAuthToken(ctx context.Context, deviceAuthCallback func(response *oauth2.DeviceAuthResponse)) (*oauth2.Token, error) {
+func deviceAuthToken(ctx context.Context, deviceAuthCallback func(response *oauth2.DeviceAuthResponse)) (token *oauth2.Token, err error) {
 	devAuth, err := Config.DeviceAuth(ctx)
-	if err != nil {
-		return nil, err
+	if err == nil {
+		deviceAuthCallback(devAuth)
+		token, err = Config.DeviceAccessToken(ctx, devAuth)
 	}
-	deviceAuthCallback(devAuth)
-	return Config.DeviceAccessToken(ctx, devAuth)
+	return token, err
 }
