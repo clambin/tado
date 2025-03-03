@@ -2,8 +2,10 @@ package tado
 
 import (
 	"context"
+	"github.com/clambin/tado/v2/oauth2store"
 	"golang.org/x/oauth2"
 	"net/http"
+	"time"
 )
 
 //go:generate go tool oapi-codegen -config config.yaml https://raw.githubusercontent.com/kritsel/tado-openapispec-v2/refs/tags/v2.2025.02.03.0/tado-openapispec-v2.yaml
@@ -21,6 +23,9 @@ var Config = oauth2.Config{
 	Scopes: []string{"offline_access"},
 }
 
+// Tado refresh token is valid for 30 days
+const maxTokenFileAge = 30 * 24 * time.Hour
+
 // NewOAuth2Client returns a http.Client that can access the Tadoº API.
 //
 // In previous versions, this call took a username & password. However, Tadoº has decided to decommission this flow (see [here]),
@@ -31,28 +36,26 @@ var Config = oauth2.Config{
 //   - It calls deviceAuthCallback with the oauth2.DeviceAuthResponse, which contains the verification link (VerificationURIComplete).
 //   - The application should display/log this link, asking the user to verify the login request.
 //   - Once the client receives a token, it stores this in tokenStorePath. For security, the token is encrypted with the tokenStorePassphrase.
-//   - Every time the token is renewed (10 min), the stored token is updated.
+//   - Every time the token is renewed (10 min), the stored token is written to disk.
 //
 // When the application restarts, it reuses the stored token if the token is still valid. Otherwise, a new device code authentication flow is performed,
 // and the user will need to log in again.
 //
 // [here]: https://github.com/wmalgadey/PyTado/issues/155
 func NewOAuth2Client(ctx context.Context, tokenStorePath string, tokenStorePassphrase string, deviceAuthCallback func(response *oauth2.DeviceAuthResponse)) (client *http.Client, err error) {
-	pts := persistentTokenSource{storedToken: newStoredToken(tokenStorePath, tokenStorePassphrase)}
+	pts := oauth2store.NewPersistentTokenSource(tokenStorePath, tokenStorePassphrase)
 	// check if the store has a valid token
-	token, err := pts.initialToken()
+	token, err := pts.GetStoredToken(maxTokenFileAge)
 	if err != nil {
 		// if not, perform the device authentication exchange
-		if token, err = deviceAuthToken(ctx, deviceAuthCallback); err == nil {
-			err = pts.storedToken.save(token)
-		}
+		token, err = deviceAuthToken(ctx, deviceAuthCallback)
 	}
-	if err == nil {
-		// set up a TokenSource for the token and create the http client
-		pts.TokenSource = Config.TokenSource(ctx, token)
-		client = oauth2.NewClient(ctx, &pts)
+	if err != nil {
+		return nil, err
 	}
-	return client, err
+	// set up a TokenSource for the token and create the http client
+	pts.TokenSource = Config.TokenSource(ctx, token)
+	return oauth2.NewClient(ctx, pts), nil
 }
 
 func deviceAuthToken(ctx context.Context, deviceAuthCallback func(response *oauth2.DeviceAuthResponse)) (token *oauth2.Token, err error) {
