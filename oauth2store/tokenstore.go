@@ -22,20 +22,20 @@ type TokenStore interface {
 	Load() (*oauth2.Token, error)
 }
 
-var _ TokenStore = &EncryptedFileTokenStore{}
+var _ TokenStore = &encryptedFileTokenStore{}
 
-// An EncryptedFileTokenStore stores an encrypted oauth2.Token to a file.
-type EncryptedFileTokenStore struct {
+// An encryptedFileTokenStore stores an encrypted oauth2.Token to a file.
+type encryptedFileTokenStore struct {
 	path       string
 	key        []byte
 	expiration time.Duration
 }
 
-// NewEncryptedFileTokenStore returns an EncryptedFileTokenStore that saved a token to path, using passphrase to generate the encryption key.
+// NewEncryptedFileTokenStore returns an encryptedFileTokenStore that saved a token to path, using passphrase to generate the encryption key.
 // Tokens written older than the expiration date are considered expired and are not loaded.
-func NewEncryptedFileTokenStore(path, passphrase string, expiration time.Duration) *EncryptedFileTokenStore {
+func NewEncryptedFileTokenStore(path, passphrase string, expiration time.Duration) TokenStore {
 	key := sha256.Sum256([]byte(passphrase))
-	return &EncryptedFileTokenStore{
+	return &encryptedFileTokenStore{
 		path:       path,
 		key:        key[:],
 		expiration: expiration,
@@ -43,7 +43,7 @@ func NewEncryptedFileTokenStore(path, passphrase string, expiration time.Duratio
 }
 
 // Save stores a token to disk.
-func (e EncryptedFileTokenStore) Save(token *oauth2.Token) error {
+func (e encryptedFileTokenStore) Save(token *oauth2.Token) error {
 	// encrypt & write the token
 	bytes, err := json.Marshal(token)
 	if err == nil {
@@ -56,7 +56,7 @@ func (e EncryptedFileTokenStore) Save(token *oauth2.Token) error {
 }
 
 // Load returns a stored token.  If the token is too old (as specified by the expiration parameter), an error is returned.
-func (e EncryptedFileTokenStore) Load() (*oauth2.Token, error) {
+func (e encryptedFileTokenStore) Load() (*oauth2.Token, error) {
 	// check if the file hasn't expired
 	stats, err := os.Stat(e.path)
 	if err != nil {
