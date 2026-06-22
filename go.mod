@@ -3,7 +3,7 @@ module github.com/clambin/tado/v2
 go 1.25.0
 
 require (
-	github.com/oapi-codegen/runtime v1.4.1
+	github.com/oapi-codegen/runtime v1.4.2
 	golang.org/x/oauth2 v0.36.0
 )
 
