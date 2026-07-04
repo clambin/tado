@@ -1,14 +1,15 @@
 package tado
 
 import (
-	"golang.org/x/oauth2"
 	"net/http"
 	"path/filepath"
 	"testing"
+
+	"golang.org/x/oauth2"
 )
 
 func TestNewOAuth2Client(t *testing.T) {
-	t.Skip()
+	t.Skip() // interactive test
 
 	httpClient, err := NewOAuth2Client(
 		t.Context(),

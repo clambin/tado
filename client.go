@@ -3,15 +3,20 @@ package tado
 import (
 	"context"
 	"fmt"
-	"github.com/clambin/tado/v2/oauth2store"
-	"golang.org/x/oauth2"
 	"net/http"
 	"time"
+
+	"github.com/clambin/tado/v2/oauth2store"
+	"golang.org/x/oauth2"
 )
 
 //go:generate go tool oapi-codegen -config config.yaml https://raw.githubusercontent.com/kritsel/tado-openapispec-v2/refs/tags/v2.2025.02.03.0/tado-openapispec-v2.yaml
 
-const ServerURL = "https://my.tado.com/api/v2"
+const (
+	ServerURL = "https://my.tado.com/api/v2"
+	// Tado refresh tokens are valid for 30 days
+	maxTokenAge = 30 * 24 * time.Hour
+)
 
 // Config contains the oauth2 config to access the Tadoº API, as per https://github.com/wmalgadey/PyTado/issues/155
 var Config = oauth2.Config{
@@ -24,13 +29,10 @@ var Config = oauth2.Config{
 	Scopes: []string{"offline_access"},
 }
 
-// Tado refresh token is valid for 30 days
-const maxTokenFileAge = 30 * 24 * time.Hour
-
-// NewOAuth2Client returns a http.Client that can access the Tadoº API.
+// NewOAuth2Client returns an http.Client that can access the Tadoº API.
 //
-// In previous versions, this call took a username & password. However, Tadoº has decided to decommission this flow (see [here]),
-// in favour of the oauth2 device code authentication flow instead.
+// In previous versions, this call took a username and password. However, Tadoº has decided to decommission this flow (see [here]),
+// in favor of the oauth2 device code authentication flow instead.
 //
 // Since this flow requires manual action, NewOAuth2Client returns an oauth2-enabled http.Client that works as follows:
 //   - On first start-up, the client performs the device code authentication flow to get a first token.
@@ -45,10 +47,14 @@ const maxTokenFileAge = 30 * 24 * time.Hour
 // [here]: https://github.com/wmalgadey/PyTado/issues/155
 func NewOAuth2Client(ctx context.Context, tokenStorePath string, tokenStorePassphrase string, deviceAuthCallback func(response *oauth2.DeviceAuthResponse)) (client *http.Client, err error) {
 	// store to save our token
-	store := oauth2store.NewEncryptedFileTokenStore(tokenStorePath, tokenStorePassphrase, maxTokenFileAge)
-	token, err := store.Load()
-	if err != nil {
-		// store doesn't contain a valid token. ask the user to log in
+	store := oauth2store.NewEncryptedFileTokenStore(tokenStorePath, tokenStorePassphrase)
+	var token *oauth2.Token
+	// Tado refresh token is valid for 30 days
+	if time.Since(store.LastSaved()) < maxTokenAge {
+		token, _ = store.Load()
+	}
+	// if our store doesn't have a valid token, ask the user to log in
+	if token == nil {
 		var devAuthResponse *oauth2.DeviceAuthResponse
 		if devAuthResponse, err = Config.DeviceAuth(ctx); err != nil {
 			return nil, fmt.Errorf("DevAuth: %w", err)

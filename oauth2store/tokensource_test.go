@@ -1,11 +1,11 @@
 package oauth2store_test
 
 import (
-	"errors"
-	"github.com/clambin/tado/v2/oauth2store"
-	"golang.org/x/oauth2"
 	"sync/atomic"
 	"testing"
+
+	"github.com/clambin/tado/v2/oauth2store"
+	"golang.org/x/oauth2"
 )
 
 func TestTokenSource_Token(t *testing.T) {
@@ -14,7 +14,9 @@ func TestTokenSource_Token(t *testing.T) {
 
 	ts := oauth2store.TokenSource{
 		TokenSource: oauth2.StaticTokenSource(token),
-		TokenStore:  &store,
+		TokenStore: oauth2store.TokenStore{
+			Storer: &store,
+		},
 	}
 
 	// get token twice. OnChangedToken should only be called the first time.
@@ -29,7 +31,7 @@ func TestTokenSource_Token(t *testing.T) {
 	}
 
 	// store now holds token
-	loaded, err := store.Load()
+	loaded, err := ts.TokenStore.Load()
 	if err != nil {
 		t.Fatalf("failed to load token: %s", err)
 	}
@@ -55,22 +57,19 @@ func TestTokenSource_Token(t *testing.T) {
 	}
 }
 
-var _ oauth2store.TokenStore = &fakeTokenStore{}
+var _ oauth2store.Storer = (*fakeTokenStore)(nil)
 
 type fakeTokenStore struct {
 	token     atomic.Value
 	saveCount atomic.Int32
 }
 
-func (f *fakeTokenStore) Save(token *oauth2.Token) error {
-	f.token.Store(token)
+func (f *fakeTokenStore) Save(bytes []byte) error {
+	f.token.Store(bytes)
 	f.saveCount.Add(1)
 	return nil
 }
 
-func (f *fakeTokenStore) Load() (*oauth2.Token, error) {
-	if token, ok := f.token.Load().(*oauth2.Token); ok {
-		return token, nil
-	}
-	return nil, errors.New("token not found")
+func (f *fakeTokenStore) Load() ([]byte, error) {
+	return f.token.Load().([]byte), nil
 }

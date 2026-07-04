@@ -1,115 +1,65 @@
 package oauth2store
 
 import (
-	"crypto/aes"
-	"crypto/cipher"
-	"crypto/rand"
-	"crypto/sha256"
 	"encoding/json"
-	"errors"
-	"golang.org/x/oauth2"
+	"fmt"
 	"os"
 	"time"
+
+	"codeberg.org/clambin/go-crypt"
+	"golang.org/x/oauth2"
 )
 
-// The TokenStore interface saves and loads oauth2 Tokens. In conjunction with this package's TokenSource,
+// Storer interface decouples the TokenStore from the underlying storage mechanism.
+type Storer interface {
+	Save([]byte) error
+	Load() ([]byte, error)
+}
+
+// A TokenStore saves and loads oauth2 Tokens. In conjunction with this package's TokenSource,
 // it allows calling applications to persist tokens and reuse them between runs.
 //
 // The main use case is to persist tokens that require manual action to create (e.g. device authentication flow), so that
 // a previously created token may be reused if the application is restarted.
-type TokenStore interface {
-	Save(token *oauth2.Token) error
-	Load() (*oauth2.Token, error)
+type TokenStore struct {
+	Path string
+	Storer
 }
 
-var _ TokenStore = &encryptedFileTokenStore{}
-
-// An encryptedFileTokenStore stores an encrypted oauth2.Token to a file.
-type encryptedFileTokenStore struct {
-	path       string
-	key        []byte
-	expiration time.Duration
-}
-
-// NewEncryptedFileTokenStore returns an encryptedFileTokenStore that saved a token to path, using passphrase to generate the encryption key.
-// Tokens written older than the expiration date are considered expired and are not loaded.
-func NewEncryptedFileTokenStore(path, passphrase string, expiration time.Duration) TokenStore {
-	key := sha256.Sum256([]byte(passphrase))
-	return &encryptedFileTokenStore{
-		path:       path,
-		key:        key[:],
-		expiration: expiration,
+// NewEncryptedFileTokenStore returns a TokenStore that stored the encrypted token to disk.
+// Expired tokens are not loaded.
+func NewEncryptedFileTokenStore(path, passphrase string) TokenStore {
+	return TokenStore{
+		Path:   path,
+		Storer: crypt.New(path, passphrase),
 	}
 }
 
-// Save stores a token to disk.
-func (e encryptedFileTokenStore) Save(token *oauth2.Token) error {
-	// encrypt & write the token
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+func (t TokenStore) Save(token *oauth2.Token) error {
 	bytes, err := json.Marshal(token)
-	if err == nil {
-		bytes, err = encryptAES(bytes, e.key)
+	if err != nil {
+		return fmt.Errorf("json: %w", err)
 	}
-	if err == nil {
-		err = os.WriteFile(e.path, bytes, 0600)
-	}
-	return err
+	return t.Storer.Save(bytes)
 }
 
-// Load returns a stored token.  If the token is too old (as specified by the expiration parameter), an error is returned.
-func (e encryptedFileTokenStore) Load() (*oauth2.Token, error) {
-	// check if the file hasn't expired
-	stats, err := os.Stat(e.path)
-	if err != nil {
-		return nil, err
-	}
-	if time.Since(stats.ModTime()) > e.expiration {
-		return nil, errors.New("token too old")
-	}
-
-	// read & decrypt the token
-	bytes, err := os.ReadFile(e.path)
-	if err == nil {
-		bytes, err = decryptAES(bytes, e.key)
-	}
+func (t TokenStore) Load() (*oauth2.Token, error) {
+	bytes, err := t.Storer.Load()
 	if err != nil {
 		return nil, err
 	}
 	var token oauth2.Token
-	err = json.Unmarshal(bytes, &token)
-	return &token, err
+	if err = json.Unmarshal(bytes, &token); err != nil {
+		return nil, fmt.Errorf("json: %w", err)
+	}
+	return &token, nil
 }
 
-// AES encryption
-func encryptAES(data []byte, key []byte) ([]byte, error) {
-	block, err := aes.NewCipher(key)
-	if err != nil {
-		return nil, err
+func (t TokenStore) LastSaved() time.Time {
+	if fileInfo, err := os.Stat(t.Path); err == nil {
+		return fileInfo.ModTime()
 	}
-	aesGCM, err := cipher.NewGCM(block)
-	if err != nil {
-		return nil, err
-	}
-	nonce := make([]byte, aesGCM.NonceSize())
-	if _, err = rand.Read(nonce); err != nil {
-		return nil, err
-	}
-	return aesGCM.Seal(nonce, nonce, data, nil), nil
-}
-
-// AES decryption
-func decryptAES(data []byte, key []byte) ([]byte, error) {
-	block, err := aes.NewCipher(key)
-	if err != nil {
-		return nil, err
-	}
-	aesGCM, err := cipher.NewGCM(block)
-	if err != nil {
-		return nil, err
-	}
-	nonceSize := aesGCM.NonceSize()
-	if len(data) < nonceSize {
-		return nil, errors.New("invalid ciphertext")
-	}
-	nonce, ciphertext := data[:nonceSize], data[nonceSize:]
-	return aesGCM.Open(nil, nonce, ciphertext, nil)
+	return time.Time{}
 }

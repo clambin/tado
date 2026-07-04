@@ -3,9 +3,9 @@ package oauth2store_test
 import (
 	"context"
 	"fmt"
+
 	"github.com/clambin/tado/v2/oauth2store"
 	"golang.org/x/oauth2"
-	"time"
 )
 
 func ExampleTokenSource() {
@@ -13,7 +13,7 @@ func ExampleTokenSource() {
 	ctx := context.Background()
 
 	// create a store to save the token
-	store := oauth2store.NewEncryptedFileTokenStore("token.enc", "my-very-secret-passphrase", 24*time.Hour)
+	store := oauth2store.NewEncryptedFileTokenStore("token.enc", "my-very-secret-passphrase")
 	token, err := store.Load()
 	if err != nil {
 		// store does not contain a valid token. let's create one ...
