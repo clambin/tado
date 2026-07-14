@@ -31,7 +31,7 @@ func (ts *TokenSource) Token() (token *oauth2.Token, err error) {
 	// if the token is new or has changed, save it so we can load it on startup
 	currentToken := ts.currentToken.Load()
 	if currentToken == nil || currentToken.AccessToken != token.AccessToken {
-		if err = ts.TokenStore.Save(token); err == nil {
+		if err = ts.Save(token); err == nil {
 			ts.currentToken.Store(token)
 		}
 	}

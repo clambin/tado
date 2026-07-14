@@ -22,8 +22,8 @@ type Storer interface {
 // The main use case is to persist tokens that require manual action to create (e.g. device authentication flow), so that
 // a previously created token may be reused if the application is restarted.
 type TokenStore struct {
-	Path string
 	Storer
+	Path string
 }
 
 // NewEncryptedFileTokenStore returns a TokenStore that stored the encrypted token to disk.

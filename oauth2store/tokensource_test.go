@@ -31,7 +31,7 @@ func TestTokenSource_Token(t *testing.T) {
 	}
 
 	// store now holds token
-	loaded, err := ts.TokenStore.Load()
+	loaded, err := ts.Load()
 	if err != nil {
 		t.Fatalf("failed to load token: %s", err)
 	}
