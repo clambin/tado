@@ -16,8 +16,8 @@ var _ oauth2.TokenSource = &TokenSource{}
 // [oauth2.TokenSource]: https://pkg.go.dev/golang.org/x/oauth2#TokenSource
 type TokenSource struct {
 	oauth2.TokenSource
-	TokenStore
 	currentToken atomic.Pointer[oauth2.Token]
+	TokenStore
 }
 
 // Token implements the oauth2.TokenSource interface. It gets a token from the underlying TokenSource and,
