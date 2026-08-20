@@ -4,7 +4,7 @@ go 1.25.0
 
 require (
 	codeberg.org/clambin/go-crypt v0.1.2
-	github.com/oapi-codegen/runtime v1.6.0
+	github.com/oapi-codegen/runtime v1.7.0
 	golang.org/x/oauth2 v0.36.0
 )
 
