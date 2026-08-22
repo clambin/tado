@@ -1,6 +1,6 @@
 module github.com/clambin/tado/v2
 
-go 1.25.0
+go 1.26
 
 require (
 	codeberg.org/clambin/go-crypt v0.1.2
