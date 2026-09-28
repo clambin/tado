@@ -1,6 +1,5 @@
 # tado
 ![Release](https://img.shields.io/github/v/tag/clambin/tado?color=green&label=Release&style=plastic)
-![Go Report Card](https://goreportcard.com/badge/github.com/clambin/tado)
 ![License](https://img.shields.io/github/license/clambin/tado?style=plastic)
 [![GoDoc](https://pkg.go.dev/badge/github.com/clambin/tado?utm_source=godoc)](http://pkg.go.dev/github.com/clambin/tado/v2)
 
