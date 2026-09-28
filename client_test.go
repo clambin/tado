@@ -5,16 +5,18 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/clambin/tado/v2/auth"
 	"golang.org/x/oauth2"
 )
 
-func TestNewOAuth2Client(t *testing.T) {
+func TestNewTadoHTTPClient(t *testing.T) {
 	t.Skip() // interactive test
 
-	httpClient, err := NewOAuth2Client(
+	store := auth.NewEncryptedFileTokenStore(filepath.Join(t.TempDir(), "token.enc"), "my-very-secret-passphrase")
+
+	httpClient, err := NewTadoHTTPClient(
 		t.Context(),
-		filepath.Join(t.TempDir(), "token.enc"),
-		"my-very-secret-passphrase",
+		store,
 		func(response *oauth2.DeviceAuthResponse) {
 			t.Logf("confirm login request: %+v", response.VerificationURIComplete)
 		},
