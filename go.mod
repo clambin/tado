@@ -5,7 +5,7 @@ go 1.26.0
 require (
 	codeberg.org/clambin/go-crypt v0.1.2
 	github.com/oapi-codegen/runtime v1.7.0
-	golang.org/x/oauth2 v0.37.0
+	golang.org/x/oauth2 v0.38.0
 )
 
 require (
